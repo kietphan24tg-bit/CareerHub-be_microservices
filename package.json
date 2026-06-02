@@ -1,0 +1,16 @@
+{
+  "name": "careerhub-be-microservices",
+  "private": true,
+  "packageManager": "pnpm@10.12.4",
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "install:all": "pnpm install"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.2"
+  }
+}

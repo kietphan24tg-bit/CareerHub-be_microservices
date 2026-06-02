@@ -1,0 +1,363 @@
+Project CareerHub {
+  database_type: "PostgreSQL"
+  Note: "CareerHub Job Portal + CV Builder"
+}
+
+Table users {
+  id bigint [pk, increment]
+  email varchar [not null, unique]
+  password_hash varchar [not null]
+  role varchar [not null, note: "candidate | employer"]
+  is_active boolean [not null, default: true]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table profiles {
+  id bigint [pk, increment]
+  user_id bigint [not null, unique]
+  full_name varchar [not null]
+  avatar_url varchar
+  phone varchar
+  headline varchar
+  bio text
+  city varchar
+  country varchar
+  github_url varchar
+  linkedin_url varchar
+  portfolio_url varchar
+  years_experience int
+  resume_id bigint
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table company_profiles {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  company_name varchar [not null]
+  logo_url varchar
+  website varchar
+  industry varchar
+  company_size varchar
+  founded_year int
+  description text
+  city varchar
+  country varchar
+  tax_code varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table jobs {
+  id bigint [pk, increment]
+  company_id bigint [not null]
+  title varchar [not null]
+  slug varchar [not null, unique]
+  description text
+  requirements text
+  responsibilities text [note: "Optional; job detail responsibilities section"]
+  benefits text
+  employment_type varchar [note: "fulltime | parttime | intern | contract"]
+  level varchar [note: "intern | fresher | junior | mid | senior | lead"]
+  category varchar
+  city varchar
+  country varchar
+  is_remote boolean [default: false]
+  salary_min decimal
+  salary_max decimal
+  currency varchar
+  status varchar [note: "draft | published | closed | archived"]
+  expires_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table applications {
+  id bigint [pk, increment]
+  job_id bigint [not null]
+  candidate_user_id bigint [not null]
+  resume_id bigint
+  cover_letter text
+  status varchar [not null, note: "applied | reviewed | shortlisted | interview | offer | hired | rejected"]
+  applied_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    (job_id, candidate_user_id) [unique]
+  }
+}
+
+Table application_histories {
+  id bigint [pk, increment]
+  application_id bigint [not null]
+  old_status varchar
+  new_status varchar
+  changed_by_user_id bigint [not null]
+  event_type varchar [note: "status_change | interview_scheduled | interview_status_changed | offer_created | offer_sent | offer_viewed | offer_accepted | offer_rejected | offer_discussion_requested | note_added"]
+  note text
+  created_at timestamp
+}
+
+Table interviews {
+  id bigint [pk, increment]
+  application_id bigint [not null]
+  job_id bigint [not null]
+  candidate_user_id bigint [not null]
+  company_id bigint [not null]
+  scheduled_by_user_id bigint [not null]
+  type varchar [not null, note: "online | onsite | phone"]
+  round varchar [not null, note: "hr_screen | technical | final"]
+  status varchar [not null, note: "scheduled | confirmed | completed | cancelled | rescheduled | no_show"]
+  date date
+  start_time time
+  end_time time
+  timezone varchar
+  interviewer_name varchar
+  interviewer_role varchar
+  notes_to_candidate text
+  platform varchar
+  meeting_link varchar
+  meeting_id varchar
+  passcode varchar
+  office_name varchar
+  full_address text
+  floor_room varchar
+  reception_note text
+  map_link varchar
+  contact_person varchar
+  phone_number varchar
+  arrival_instructions text
+  parking_info text
+  bring_laptop boolean
+  bring_documents boolean
+  contact_info varchar
+  caller_info varchar
+  candidate_response_note text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table job_offers {
+  id bigint [pk, increment]
+  application_id bigint [not null, unique]
+  job_id bigint [not null]
+  candidate_user_id bigint [not null]
+  company_id bigint [not null]
+  title varchar [not null]
+  seniority_label varchar [note: "Optional; offer UI seniority / band label"]
+  message text
+  bonus_details text [note: "Optional; bonus / commission copy"]
+  contract_document_url varchar [note: "Optional; uploaded offer / contract PDF"]
+  salary decimal
+  currency varchar
+  employment_type varchar
+  work_model varchar [note: "remote | onsite | hybrid"]
+  start_date date
+  location varchar
+  benefits text
+  status varchar [not null, note: "draft | sent | viewed | accepted | rejected | expired"]
+  expires_at timestamp
+  sent_at timestamp
+  viewed_at timestamp
+  responded_at timestamp
+  created_by_user_id bigint [not null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table recruiter_notes {
+  id bigint [pk, increment]
+  application_id bigint [not null]
+  author_user_id bigint [not null]
+  body text [not null]
+  created_at timestamp
+}
+
+Table offer_discussions {
+  id bigint [pk, increment]
+  offer_id bigint [not null]
+  author_role varchar [not null, note: "candidate | employer"]
+  author_user_id bigint [not null]
+  message text [not null]
+  created_at timestamp
+}
+
+Table mock_emails {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  related_interview_id bigint
+  related_offer_id bigint
+  subject varchar [not null]
+  preview text
+  sent_at timestamp
+}
+
+Table saved_jobs {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  job_id bigint [not null]
+  created_at timestamp
+
+  Indexes {
+    (user_id, job_id) [unique]
+  }
+}
+
+Table notifications {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  type varchar
+  title varchar
+  message text
+  
+  metadata json
+  created_at timestamp
+}
+
+Table password_resets {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  token varchar [not null]
+  expires_at timestamp
+  used_at timestamp
+  created_at timestamp
+}
+
+Table resumes {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  title varchar [not null]
+  summary text
+  is_default boolean [default: false]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table resume_skills {
+  id bigint [pk, increment]
+  resume_id bigint [not null]
+  name varchar [not null]
+  category varchar [note: "technical | soft | language"]
+  level varchar
+  sort_order int
+}
+
+Table resume_educations {
+  id bigint [pk, increment]
+  resume_id bigint [not null]
+  school_name varchar [not null]
+  degree varchar
+  major varchar
+  start_date date
+  end_date date
+  gpa varchar
+  description text
+  sort_order int
+}
+
+Table resume_experiences {
+  id bigint [pk, increment]
+  resume_id bigint [not null]
+  company_name varchar [not null]
+  position varchar [not null]
+  employment_type varchar
+  start_date date
+  end_date date
+  is_current boolean [default: false]
+  location varchar
+  description text
+  achievements text
+  tech_stack text
+  sort_order int
+}
+
+Table resume_projects {
+  id bigint [pk, increment]
+  resume_id bigint [not null]
+  project_name varchar [not null]
+  role varchar
+  start_date date
+  end_date date
+  description text
+  responsibilities text
+  tech_stack text
+  github_url varchar
+  demo_url varchar
+  sort_order int
+}
+
+Table resume_certifications {
+  id bigint [pk, increment]
+  resume_id bigint [not null]
+  name varchar [not null]
+  issuer varchar
+  issue_date date
+  expire_date date
+  credential_url varchar
+}
+
+Table resume_awards {
+  id bigint [pk, increment]
+  resume_id bigint [not null]
+  title varchar [not null]
+  organization varchar
+  award_date date
+  description text
+}
+
+/* =========================
+   RELATIONSHIPS
+========================= */
+
+Ref: profiles.user_id > users.id
+Ref: profiles.resume_id > resumes.id
+
+Ref: company_profiles.user_id > users.id
+
+Ref: jobs.company_id > company_profiles.id
+
+Ref: applications.job_id > jobs.id
+Ref: applications.candidate_user_id > users.id
+Ref: applications.resume_id > resumes.id
+
+Ref: application_histories.application_id > applications.id
+Ref: application_histories.changed_by_user_id > users.id
+
+Ref: interviews.application_id > applications.id
+Ref: interviews.job_id > jobs.id
+Ref: interviews.candidate_user_id > users.id
+Ref: interviews.company_id > company_profiles.id
+Ref: interviews.scheduled_by_user_id > users.id
+
+Ref: job_offers.application_id > applications.id
+Ref: job_offers.job_id > jobs.id
+Ref: job_offers.candidate_user_id > users.id
+Ref: job_offers.company_id > company_profiles.id
+Ref: job_offers.created_by_user_id > users.id
+
+Ref: recruiter_notes.application_id > applications.id
+Ref: recruiter_notes.author_user_id > users.id
+
+Ref: offer_discussions.offer_id > job_offers.id
+Ref: offer_discussions.author_user_id > users.id
+
+Ref: mock_emails.user_id > users.id
+Ref: mock_emails.related_interview_id > interviews.id
+Ref: mock_emails.related_offer_id > job_offers.id
+
+Ref: saved_jobs.user_id > users.id
+Ref: saved_jobs.job_id > jobs.id
+
+Ref: notifications.user_id > users.id
+
+Ref: password_resets.user_id > users.id
+
+Ref: resumes.user_id > users.id
+
+Ref: resume_skills.resume_id > resumes.id
+Ref: resume_educations.resume_id > resumes.id
+Ref: resume_experiences.resume_id > resumes.id
+Ref: resume_projects.resume_id > resumes.id
+Ref: resume_certifications.resume_id > resumes.id
+Ref: resume_awards.resume_id > resumes.id
