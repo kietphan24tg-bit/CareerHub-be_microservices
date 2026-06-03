@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { InfrastructureError } from '../errors/infrastructure-error';
 
-const booleanLikeSchema = z.preprocess((value) => {
+const booleanLikeSchema = z.preprocess(value => {
     if (typeof value === 'boolean') {
         return value;
     }
@@ -29,14 +29,12 @@ export const runtimeNodeEnvSchema = z.enum([
 export const runtimeLogLevelSchema = z.enum(['debug', 'info', 'warn', 'error']);
 
 export const runtimeEnvironmentSchema = z.object({
-    BROKER_URL: z.string().min(1).optional(),
-    DATABASE_URL: z.string().min(1).optional(),
     HTTP_LOG_ENABLED: booleanLikeSchema.optional(),
     LOG_LEVEL: runtimeLogLevelSchema.optional(),
     LOG_PRETTY: booleanLikeSchema.optional(),
     NODE_ENV: runtimeNodeEnvSchema.default('development'),
     PORT: z.coerce.number().int().positive().max(65535).default(3000),
-    REDIS_URL: z.string().min(1).optional(),
+
     SERVICE_NAME: z.string().min(1, 'SERVICE_NAME is required.')
 });
 
@@ -60,11 +58,12 @@ export function validateEnvironment(
             LOG_LEVEL:
                 parsed.data.LOG_LEVEL ??
                 (parsed.data.NODE_ENV === 'production' ? 'info' : 'debug'),
-            LOG_PRETTY: parsed.data.LOG_PRETTY ?? parsed.data.NODE_ENV !== 'production'
+            LOG_PRETTY:
+                parsed.data.LOG_PRETTY ?? parsed.data.NODE_ENV !== 'production'
         };
     }
 
-    const issues = parsed.error.issues.map((issue) => ({
+    const issues = parsed.error.issues.map(issue => ({
         message: issue.message,
         path: issue.path.join('.') || 'env'
     }));

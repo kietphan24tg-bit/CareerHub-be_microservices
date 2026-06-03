@@ -1,0 +1,22 @@
+{
+  "name": "@careerhub/gateway",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/main.ts",
+  "types": "src/main.ts",
+  "dependencies": {
+    "@grpc/grpc-js": "^1.14.4",
+    "@grpc/proto-loader": "^0.8.1",
+    "@careerhub/contracts": "workspace:*",
+    "@careerhub/nest-common": "workspace:*",
+    "@careerhub/shared-kernel": "workspace:*",
+    "@nestjs/common": "^11.1.19",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/core": "^11.1.24",
+    "@nestjs/platform-express": "^11.1.24",
+    "reflect-metadata": "^0.2.2"
+  },
+  "scripts": {
+    "start": "node dist/main.js"
+  }
+}

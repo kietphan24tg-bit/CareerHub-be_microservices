@@ -9,7 +9,17 @@
   "scripts": {
     "install:all": "pnpm install"
   },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.13.4",
+    "@grpc/proto-loader": "^0.8.0",
+    "@nestjs/core": "^11.1.19",
+    "@nestjs/platform-express": "^11.1.19",
+    "amqplib": "^0.10.9",
+    "express": "^5.1.0",
+    "reflect-metadata": "^0.2.2"
+  },
   "devDependencies": {
+    "@types/amqplib": "^0.10.7",
     "@types/node": "^24.0.0",
     "typescript": "^5.8.2"
   }

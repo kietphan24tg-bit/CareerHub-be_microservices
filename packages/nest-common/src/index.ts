@@ -20,4 +20,6 @@ export * from './metrics/register-metrics-endpoint';
 export * from './request/request-id';
 export * from './rpc/rpc-error.mapper';
 export * from './rpc/rpc-to-http-error.mapper';
+export * from './transport/grpc-request-context';
+export * from './transport/rabbitmq-request-context';
 export * from './validation/validation-pipe.factory';

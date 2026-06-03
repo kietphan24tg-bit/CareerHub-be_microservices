@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "declaration": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "dist",
+    "paths": {
+      "@careerhub/contracts": ["packages/contracts/src/index.ts"],
+      "@careerhub/contracts/*": ["packages/contracts/src/*"],
+      "@careerhub/nest-common": ["packages/nest-common/src/index.ts"],
+      "@careerhub/nest-common/*": ["packages/nest-common/src/*"],
+      "@careerhub/shared-kernel": ["packages/shared-kernel/src/index.ts"],
+      "@careerhub/shared-kernel/*": ["packages/shared-kernel/src/*"]
+    },
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2022",
+    "types": ["node"]
+  }
+}

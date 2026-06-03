@@ -19,7 +19,9 @@ export type RuntimeConfig = {
     serviceName: string;
 };
 
-type RuntimeConfigModuleOptions = Omit<ConfigModuleOptions, 'validate'>;
+type RuntimeConfigModuleOptions = Omit<ConfigModuleOptions, 'validate'> & {
+    validate?: ConfigModuleOptions['validate'];
+};
 
 function mapEnvironmentToRuntimeConfig(
     environment: EnvironmentVariables
@@ -45,7 +47,7 @@ export function createRuntimeConfigModule(
         expandVariables: true,
         isGlobal: true,
         ...options,
-        validate: validateEnvironment
+        validate: options?.validate ?? validateEnvironment
     });
 }
 
