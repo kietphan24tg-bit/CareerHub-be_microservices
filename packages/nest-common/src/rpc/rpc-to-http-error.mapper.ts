@@ -12,12 +12,27 @@ import type { RpcErrorPayload } from './rpc-error.mapper';
 type HttpExceptionCtor = new (objectOrError?: string | object, descriptionOrOptions?: string | object) => HttpException;
 
 const HTTP_EXCEPTION_BY_RPC_CODE: Record<string, HttpExceptionCtor> = {
+    ALREADY_EXISTS: ConflictException,
     BAD_REQUEST: BadRequestException,
     CONFLICT: ConflictException,
     FORBIDDEN: ForbiddenException,
+    INVALID_ARGUMENT: BadRequestException,
+    INVALID_CONFIGURATION: InternalServerErrorException,
+    INTERNAL: InternalServerErrorException,
     NOT_FOUND: NotFoundException,
+    PERMISSION_DENIED: ForbiddenException,
+    UNAUTHENTICATED: UnauthorizedException,
     UNAUTHORIZED: UnauthorizedException,
     VALIDATION_ERROR: BadRequestException
+};
+
+const HTTP_EXCEPTION_BY_GRPC_STATUS: Record<number, HttpExceptionCtor> = {
+    3: BadRequestException,
+    5: NotFoundException,
+    6: ConflictException,
+    7: ForbiddenException,
+    13: InternalServerErrorException,
+    16: UnauthorizedException
 };
 
 type RpcErrorLike = {
@@ -45,7 +60,9 @@ function createBody(code: string, message: string, details?: unknown): ErrorBody
     };
 }
 
-function normalizeRpcErrorPayload(error: unknown): RpcErrorPayload {
+function normalizeRpcErrorPayload(
+    error: unknown
+): RpcErrorPayload & { code: string | number } {
     if (typeof error === 'string') {
         return {
             code: 'INTERNAL_SERVER_ERROR',
@@ -75,7 +92,9 @@ function normalizeRpcErrorPayload(error: unknown): RpcErrorPayload {
         }
 
         const code =
-            typeof payload.code === 'string' && payload.code.length > 0
+            typeof payload.code === 'number'
+                ? payload.code
+                : typeof payload.code === 'string' && payload.code.length > 0
                 ? payload.code
                 : 'INTERNAL_SERVER_ERROR';
         const message =
@@ -103,9 +122,17 @@ export function mapRpcErrorToHttpException(error: unknown): HttpException {
 
     const payload = normalizeRpcErrorPayload(error);
     const ExceptionCtor =
-        HTTP_EXCEPTION_BY_RPC_CODE[payload.code] ?? InternalServerErrorException;
+        typeof payload.code === 'number'
+            ? HTTP_EXCEPTION_BY_GRPC_STATUS[payload.code] ??
+              InternalServerErrorException
+            : HTTP_EXCEPTION_BY_RPC_CODE[payload.code] ??
+              InternalServerErrorException;
+    const code =
+        typeof payload.code === 'number'
+            ? `GRPC_${payload.code}`
+            : payload.code;
 
     return new ExceptionCtor(
-        createBody(payload.code, payload.message, payload.details)
+        createBody(code, payload.message, payload.details)
     );
 }

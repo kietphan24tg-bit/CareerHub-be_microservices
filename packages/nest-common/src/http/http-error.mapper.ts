@@ -8,14 +8,14 @@ import {
     NotFoundException,
     UnauthorizedException
 } from '@nestjs/common';
-import { DomainError } from '../../../shared-kernel/src/domain/errors/domain-error';
-import { ValidationError } from '../../../shared-kernel/src/domain/errors/validation-error';
+import { DomainError, ValidationError } from '@careerhub/shared-kernel';
 import { ApplicationError } from '../errors/application-error';
 import { InfrastructureError } from '../errors/infrastructure-error';
 
 type HttpExceptionCtor = new (objectOrError?: string | object, descriptionOrOptions?: string | object) => HttpException;
 
 const HTTP_EXCEPTION_BY_CODE: Record<string, HttpExceptionCtor> = {
+    CONFLICT: ConflictException,
     FORBIDDEN: ForbiddenException,
     NOT_FOUND: NotFoundException,
     UNAUTHORIZED: UnauthorizedException,

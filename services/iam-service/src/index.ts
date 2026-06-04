@@ -2,3 +2,4 @@ export * from './application';
 export * from './domain';
 export * from './infrastructure';
 export * from './iam.module';
+export * from './presentation';

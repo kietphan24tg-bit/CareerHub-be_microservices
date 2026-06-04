@@ -1,6 +1,9 @@
-export class IdentityAlreadyExistsError extends Error {
+import { ApplicationError } from '@careerhub/nest-common';
+
+export class IdentityAlreadyExistsError extends ApplicationError {
   constructor(email: string) {
-    super(`Identity already exists for email: ${email}`);
-    this.name = 'IdentityAlreadyExistsError';
+    super(`Identity already exists for email: ${email}`, {
+      code: 'CONFLICT'
+    });
   }
 }

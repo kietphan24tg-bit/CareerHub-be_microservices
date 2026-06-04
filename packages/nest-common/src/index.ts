@@ -1,6 +1,7 @@
 export * from './config/env.schema';
 export * from './bootstrap/configure-http-runtime';
 export * from './config/runtime-config';
+export * from './database';
 export * from './errors/application-error';
 export * from './errors/infrastructure-error';
 export * from './health/health.registry';

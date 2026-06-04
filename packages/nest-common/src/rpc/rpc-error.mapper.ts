@@ -1,6 +1,5 @@
 import { RpcException } from '@nestjs/microservices';
-import { DomainError } from '../../../shared-kernel/src/domain/errors/domain-error';
-import { ValidationError } from '../../../shared-kernel/src/domain/errors/validation-error';
+import { DomainError, ValidationError } from '@careerhub/shared-kernel';
 import { ApplicationError } from '../errors/application-error';
 import { InfrastructureError } from '../errors/infrastructure-error';
 

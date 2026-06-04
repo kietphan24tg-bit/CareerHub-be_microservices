@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package careerhub.iam.v1;
+
+service IamService {
+  rpc RegisterIdentity (RegisterIdentityRequest) returns (RegisterIdentityResponse);
+  rpc ValidateAccessToken (ValidateAccessTokenRequest) returns (ValidateAccessTokenResponse);
+}
+
+message RegisterIdentityRequest {
+  string email = 1;
+  string password = 2;
+  string role = 3;
+  bool accepted_terms = 4;
+  string request_id = 5;
+}
+
+message RegisterIdentityResponse {
+  string identity_id = 1;
+  string email = 2;
+  string role = 3;
+  string status = 4;
+  string created_at = 5;
+}
+
+message ValidateAccessTokenRequest {
+  string access_token = 1;
+  string request_id = 2;
+}
+
+message ValidateAccessTokenResponse {
+  bool valid = 1;
+  string user_id = 2;
+  string role = 3;
+}

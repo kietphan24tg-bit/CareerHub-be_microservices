@@ -29,6 +29,7 @@ export const runtimeNodeEnvSchema = z.enum([
 export const runtimeLogLevelSchema = z.enum(['debug', 'info', 'warn', 'error']);
 
 export const runtimeEnvironmentSchema = z.object({
+    DATABASE_URL: z.string().url().optional(),
     HTTP_LOG_ENABLED: booleanLikeSchema.optional(),
     LOG_LEVEL: runtimeLogLevelSchema.optional(),
     LOG_PRETTY: booleanLikeSchema.optional(),

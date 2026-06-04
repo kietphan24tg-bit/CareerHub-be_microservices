@@ -5,15 +5,11 @@ import {
 } from '@careerhub/nest-common';
 
 export const gatewayEnvironmentSchema = runtimeEnvironmentSchema.extend({
-  GRPC_IAM_URL: z.string().min(1).default('0.0.0.0:50051'),
-  RABBITMQ_EXCHANGE: z.string().min(1).default('careerhub.events'),
-  RABBITMQ_PREFETCH: z.coerce.number().int().positive().default(10)
+  GRPC_IAM_URL: z.string().min(1).default('0.0.0.0:50051')
 });
 
 export type GatewayEnvironmentVariables = BaseEnvironmentVariables & {
   GRPC_IAM_URL: string;
-  RABBITMQ_EXCHANGE: string;
-  RABBITMQ_PREFETCH: number;
 };
 
 export function validateGatewayEnvironment(
