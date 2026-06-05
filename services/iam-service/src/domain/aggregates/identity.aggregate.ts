@@ -51,7 +51,7 @@ export class Identity extends AggregateRoot<IdentityProps> {
                 email: props.email,
                 passwordHash: props.passwordHash,
                 role: props.role,
-                status: IdentityStatus.active()
+                status: IdentityStatus.pendingProfile()
             }
         });
 

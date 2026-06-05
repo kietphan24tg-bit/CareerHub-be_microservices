@@ -48,6 +48,32 @@ type ErrorBody = {
     message: string;
 };
 
+type NormalizedRpcErrorPayload = {
+    code: string | number;
+    details?: unknown;
+    message: string;
+};
+
+type ParsedGrpcMessage = {
+    code?: string;
+    message: string;
+};
+
+function looksLikeTokenAuthFailure(
+    code: string | number,
+    message: string,
+    details?: unknown
+): boolean {
+    if (code !== 'UNKNOWN' && code !== 2) {
+        return false;
+    }
+
+    const detailsText = typeof details === 'string' ? details : '';
+    const haystack = `${message} ${detailsText}`.toLowerCase();
+
+    return haystack.includes('invalid refresh token') || haystack.includes('invalid access token');
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null;
 }
@@ -60,26 +86,26 @@ function createBody(code: string, message: string, details?: unknown): ErrorBody
     };
 }
 
+function parseGrpcMessage(message: string): ParsedGrpcMessage {
+    const match = message.match(/^\d+\s+([A-Z_]+):\s+(.+)$/);
+
+    if (!match) {
+        return { message };
+    }
+
+    return {
+        code: match[1],
+        message: match[2]
+    };
+}
+
 function normalizeRpcErrorPayload(
     error: unknown
-): RpcErrorPayload & { code: string | number } {
+): NormalizedRpcErrorPayload {
     if (typeof error === 'string') {
         return {
             code: 'INTERNAL_SERVER_ERROR',
             message: error
-        };
-    }
-
-    if (error instanceof Error) {
-        const maybePayload = error as Error & { cause?: unknown };
-
-        if (isObject(maybePayload.cause)) {
-            return normalizeRpcErrorPayload(maybePayload.cause);
-        }
-
-        return {
-            code: 'INTERNAL_SERVER_ERROR',
-            message: error.message
         };
     }
 
@@ -109,6 +135,19 @@ function normalizeRpcErrorPayload(
         };
     }
 
+    if (error instanceof Error) {
+        const maybePayload = error as Error & { cause?: unknown };
+
+        if (isObject(maybePayload.cause)) {
+            return normalizeRpcErrorPayload(maybePayload.cause);
+        }
+
+        return {
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error.message
+        };
+    }
+
     return {
         code: 'INTERNAL_SERVER_ERROR',
         message: 'An unexpected error occurred'
@@ -121,18 +160,29 @@ export function mapRpcErrorToHttpException(error: unknown): HttpException {
     }
 
     const payload = normalizeRpcErrorPayload(error);
+    const parsedMessage = parseGrpcMessage(payload.message);
+    const normalizedMessage = parsedMessage.message;
+    const tokenAuthFailure = looksLikeTokenAuthFailure(
+        payload.code,
+        normalizedMessage,
+        payload.details
+    );
+    const normalizedCode =
+        tokenAuthFailure
+            ? 'UNAUTHORIZED'
+            : typeof payload.code === 'number'
+            ? parsedMessage.code ?? `GRPC_${payload.code}`
+            : payload.code;
     const ExceptionCtor =
-        typeof payload.code === 'number'
+        tokenAuthFailure
+            ? UnauthorizedException
+            : typeof payload.code === 'number'
             ? HTTP_EXCEPTION_BY_GRPC_STATUS[payload.code] ??
               InternalServerErrorException
-            : HTTP_EXCEPTION_BY_RPC_CODE[payload.code] ??
+            : HTTP_EXCEPTION_BY_RPC_CODE[normalizedCode] ??
               InternalServerErrorException;
-    const code =
-        typeof payload.code === 'number'
-            ? `GRPC_${payload.code}`
-            : payload.code;
 
     return new ExceptionCtor(
-        createBody(code, payload.message, payload.details)
+        createBody(normalizedCode, normalizedMessage, payload.details)
     );
 }

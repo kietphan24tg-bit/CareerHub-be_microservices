@@ -20,7 +20,7 @@ test('compiles the iam module and resolves RegisterIdentityUseCase', async () =>
       id: string;
       passwordHash: string;
       role: 'candidate' | 'employer';
-      status: 'active' | 'disabled';
+      status: 'active' | 'disabled' | 'pending_profile';
       updatedAt: Date;
     }
   >();
@@ -41,7 +41,7 @@ test('compiles the iam module and resolves RegisterIdentityUseCase', async () =>
             id: string;
             passwordHash: string;
             role: 'candidate' | 'employer';
-            status: 'active' | 'disabled';
+            status: 'active' | 'disabled' | 'pending_profile';
             updatedAt: Date;
           };
         }) => {
@@ -82,7 +82,7 @@ test('compiles the iam module and resolves RegisterIdentityUseCase', async () =>
   assert.ok(useCase instanceof RegisterIdentityUseCase);
   assert.equal(result.email, 'user@example.com');
   assert.equal(result.role, 'candidate');
-  assert.equal(result.status, 'active');
+  assert.equal(result.status, 'pending_profile');
   assert.match(
     identitiesByEmail.get('user@example.com')?.passwordHash ?? '',
     /^\$argon2id\$/

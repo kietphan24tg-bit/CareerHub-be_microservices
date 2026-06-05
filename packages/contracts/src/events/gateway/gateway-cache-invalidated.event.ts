@@ -8,3 +8,4 @@ export type GatewayCacheInvalidatedPayload = {
 export type GatewayCacheInvalidatedEvent = IntegrationEvent<GatewayCacheInvalidatedPayload> & {
   name: 'gateway.cache.invalidated.v1';
 };
+ 

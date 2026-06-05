@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ValidationError } from '@careerhub/shared-kernel';
-import { UserRegisteredEvent, type Email, type Identity } from '../../../domain';
+import {
+  InvalidRoleError,
+  UserRegisteredEvent,
+  type Email,
+  type Identity
+} from '../../../domain';
 import { IdentityAlreadyExistsError } from '../../errors';
 import type {
   IdGenerator,
@@ -31,10 +36,20 @@ class InMemoryIdentityRepository implements IdentityRepository {
     return this.existingEmails.has(email.value);
   }
 
+  async findByEmail(): Promise<Identity | null> {
+    return null;
+  }
+
+  async findById(): Promise<Identity | null> {
+    return null;
+  }
+
   async save(identity: Identity): Promise<void> {
     this.savedIdentities.push(identity);
     this.existingEmails.add(identity.email.value);
   }
+
+  async update(): Promise<void> {}
 }
 
 class FakePasswordHasher implements PasswordHasher {
@@ -43,6 +58,10 @@ class FakePasswordHasher implements PasswordHasher {
   async hash(password: string): Promise<string> {
     this.calls.push(password);
     return ARGON2ID_HASH;
+  }
+
+  async verify(): Promise<boolean> {
+    return true;
   }
 }
 
@@ -66,14 +85,13 @@ test('registers identity successfully and persists aggregate', async () => {
   assert.equal(result.identityId, 'identity-application-1');
   assert.equal(result.email, 'user@example.com');
   assert.equal(result.role, 'candidate');
-  assert.equal(result.status, 'active');
+  assert.equal(result.status, 'pending_profile');
   assert.ok(result.createdAt);
   assert.deepEqual(passwordHasher.calls, ['plain-password']);
   assert.equal(repository.existsByEmailCalls, 1);
   assert.equal(repository.savedIdentities.length, 1);
   assert.equal(repository.savedIdentities[0]?.passwordHash.value, ARGON2ID_HASH);
-  assert.equal(repository.savedIdentities[0]?.domainEvents.length, 1);
-  assert.ok(repository.savedIdentities[0]?.domainEvents[0] instanceof UserRegisteredEvent);
+  assert.equal(repository.savedIdentities[0]?.domainEvents.length, 0);
   assert.equal(result.domainEvents.length, 1);
   assert.ok(result.domainEvents[0] instanceof UserRegisteredEvent);
 });
@@ -171,7 +189,7 @@ test('fails when role is invalid', async () => {
         password: 'plain-password',
         role: 'admin'
       }),
-    ValidationError
+    InvalidRoleError
   );
 
   assert.deepEqual(passwordHasher.calls, []);
@@ -184,6 +202,9 @@ test('fails when password hash returned by hasher is invalid', async () => {
   const passwordHasher: PasswordHasher = {
     async hash(): Promise<string> {
       return 'short';
+    },
+    async verify(): Promise<boolean> {
+      return true;
     }
   };
   const useCase = new RegisterIdentityUseCase(

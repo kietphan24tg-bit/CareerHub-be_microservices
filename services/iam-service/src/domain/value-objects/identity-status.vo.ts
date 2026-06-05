@@ -1,6 +1,6 @@
 import { ValidationError, ValueObject } from '@careerhub/shared-kernel';
 
-export const IDENTITY_STATUSES = ['active', 'disabled'] as const;
+export const IDENTITY_STATUSES = ['pending_profile', 'active', 'disabled'] as const;
 export type IdentityStatusValue = (typeof IDENTITY_STATUSES)[number];
 
 export class IdentityStatus extends ValueObject<string> {
@@ -14,6 +14,10 @@ export class IdentityStatus extends ValueObject<string> {
     return new IdentityStatus('active');
   }
 
+  static pendingProfile(): IdentityStatus {
+    return new IdentityStatus('pending_profile');
+  }
+
   static disabled(): IdentityStatus {
     return new IdentityStatus('disabled');
   }
@@ -24,6 +28,10 @@ export class IdentityStatus extends ValueObject<string> {
 
   isActive(): boolean {
     return this.value === 'active';
+  }
+
+  isPendingProfile(): boolean {
+    return this.value === 'pending_profile';
   }
 
   isDisabled(): boolean {

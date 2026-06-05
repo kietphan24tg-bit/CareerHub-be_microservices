@@ -1,38 +1,39 @@
-import { z } from 'zod';
 import {
-  runtimeEnvironmentSchema,
+  validateEnvironment,
   type EnvironmentVariables as BaseEnvironmentVariables
 } from '@careerhub/nest-common';
 
-export const iamEnvironmentSchema = runtimeEnvironmentSchema.extend({
-  GRPC_IAM_URL: z.string().min(1).default('0.0.0.0:50051')
-});
-
 export type IamEnvironmentVariables = BaseEnvironmentVariables & {
   GRPC_IAM_URL: string;
+  JWT_EXPIRES_IN: string;
+  JWT_REFRESH_EXPIRES_IN: string;
+  JWT_SECRET: string;
 };
 
 export function validateIamEnvironment(
   config: Record<string, unknown>
 ): IamEnvironmentVariables {
-  const parsed = iamEnvironmentSchema.safeParse(config);
-
-  if (!parsed.success) {
-    const issues = parsed.error.issues.map((issue) => ({
-      message: issue.message,
-      path: issue.path.join('.') || 'env'
-    }));
-
-    throw new Error(`Invalid iam environment variables: ${JSON.stringify(issues)}`);
-  }
+  const baseEnvironment = validateEnvironment(config);
+  const grpcIamUrl =
+    typeof config.GRPC_IAM_URL === 'string' && config.GRPC_IAM_URL.trim().length > 0
+      ? config.GRPC_IAM_URL.trim()
+      : '0.0.0.0:50051';
 
   return {
-    ...parsed.data,
-    HTTP_LOG_ENABLED: parsed.data.HTTP_LOG_ENABLED ?? true,
-    LOG_LEVEL:
-      parsed.data.LOG_LEVEL ??
-      (parsed.data.NODE_ENV === 'production' ? 'info' : 'debug'),
-    LOG_PRETTY:
-      parsed.data.LOG_PRETTY ?? parsed.data.NODE_ENV !== 'production'
+    ...baseEnvironment,
+    GRPC_IAM_URL: grpcIamUrl,
+    JWT_EXPIRES_IN:
+      typeof config.JWT_EXPIRES_IN === 'string' && config.JWT_EXPIRES_IN.trim().length > 0
+        ? config.JWT_EXPIRES_IN.trim()
+        : '15m',
+    JWT_REFRESH_EXPIRES_IN:
+      typeof config.JWT_REFRESH_EXPIRES_IN === 'string' &&
+      config.JWT_REFRESH_EXPIRES_IN.trim().length > 0
+        ? config.JWT_REFRESH_EXPIRES_IN.trim()
+        : '7d',
+    JWT_SECRET:
+      typeof config.JWT_SECRET === 'string' && config.JWT_SECRET.trim().length > 0
+        ? config.JWT_SECRET.trim()
+        : 'careerhub-dev-secret'
   };
 }

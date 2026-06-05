@@ -7,7 +7,9 @@
     "services/*"
   ],
   "scripts": {
-    "install:all": "pnpm install"
+    "build:packages": "pnpm --filter @careerhub/shared-kernel build && pnpm --filter @careerhub/contracts build && pnpm --filter @careerhub/nest-common build",
+    "install:all": "pnpm install",
+    "test:auth:smoke": "powershell -File scripts/auth-smoke.ps1"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.13.4",

@@ -1,3 +1,9 @@
 packages:
   - 'packages/*'
   - 'services/*'
+allowBuilds:
+  '@nestjs/core': set this to true or false
+  '@prisma/engines': set this to true or false
+  argon2: set this to true or false
+  prisma: set this to true or false
+  protobufjs: set this to true or false

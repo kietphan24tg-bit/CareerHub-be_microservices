@@ -12,7 +12,7 @@ export class CandidateRegisterRequestDto {
   acceptTerms!: true;
 
   @IsString()
-  @MinLength(8)
+  @MinLength(6)
   confirmPassword!: string;
 
   @IsEmail()

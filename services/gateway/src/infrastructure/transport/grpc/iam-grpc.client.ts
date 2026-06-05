@@ -5,8 +5,20 @@ import {
   type ServiceError
 } from '@grpc/grpc-js';
 import type {
+  ActivateIdentityRequest,
+  ActivateIdentityResponse,
+  GetCurrentIdentityRequest,
+  GetCurrentIdentityResponse,
+  LoginIdentityRequest,
+  LoginIdentityResponse,
+  LogoutSessionRequest,
+  LogoutSessionResponse,
+  RefreshSessionRequest,
+  RefreshSessionResponse,
   RegisterIdentityRequest,
-  RegisterIdentityResponse
+  RegisterIdentityResponse,
+  ValidateAccessTokenRequest,
+  ValidateAccessTokenResponse
 } from '@careerhub/contracts';
 import {
   IAM_GRPC_PACKAGE_NAME,
@@ -17,12 +29,60 @@ import { Injectable } from '@nestjs/common';
 import { GatewayGrpcClient } from './gateway-grpc.client';
 
 type IamGrpcServiceClient = {
+  ActivateIdentity(
+    request: ActivateIdentityRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: ActivateIdentityResponse
+    ) => void
+  ): ClientUnaryCall;
+  GetCurrentIdentity(
+    request: GetCurrentIdentityRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: GetCurrentIdentityResponse
+    ) => void
+  ): ClientUnaryCall;
+  LoginIdentity(
+    request: LoginIdentityRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: LoginIdentityResponse
+    ) => void
+  ): ClientUnaryCall;
+  LogoutSession(
+    request: LogoutSessionRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: LogoutSessionResponse
+    ) => void
+  ): ClientUnaryCall;
+  RefreshSession(
+    request: RefreshSessionRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: RefreshSessionResponse
+    ) => void
+  ): ClientUnaryCall;
   RegisterIdentity(
     request: RegisterIdentityRequest,
     metadata: Metadata,
     callback: (
       error: ServiceError | null,
       response: RegisterIdentityResponse
+    ) => void
+  ): ClientUnaryCall;
+  ValidateAccessToken(
+    request: ValidateAccessTokenRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: ValidateAccessTokenResponse
     ) => void
   ): ClientUnaryCall;
 };
@@ -48,10 +108,10 @@ function resolveGrpcNamespace(
 export class IamGrpcClient {
   constructor(private readonly gatewayGrpcClient: GatewayGrpcClient) {}
 
-  async registerIdentity(
-    request: Omit<RegisterIdentityRequest, 'request_id'>,
-    requestId?: string
-  ): Promise<RegisterIdentityResponse> {
+  private createServiceClient(): {
+    client: IamGrpcServiceClient;
+    metadata: (requestId?: string) => Metadata;
+  } {
     const clientFactory = this.gatewayGrpcClient.createClient('iam');
     const packageNamespace = resolveGrpcNamespace(
       clientFactory.packageDefinition,
@@ -70,27 +130,195 @@ export class IamGrpcClient {
       );
     }
 
-    const client = new ServiceCtor(
-      clientFactory.target,
-      credentials.createInsecure()
-    );
+    return {
+      client: new ServiceCtor(
+        clientFactory.target,
+        credentials.createInsecure()
+      ),
+      metadata: clientFactory.metadata
+    };
+  }
 
-    return new Promise<RegisterIdentityResponse>((resolve, reject) => {
-      client.RegisterIdentity(
-        {
-          ...request,
-          request_id: requestId
-        },
-        clientFactory.metadata(requestId),
-        (error, response) => {
-          if (error) {
-            reject(mapRpcErrorToHttpException(error));
-            return;
-          }
+  private invokeUnary<TRequest, TResponse>(
+    operation: (
+      client: IamGrpcServiceClient,
+      request: TRequest,
+      metadata: Metadata,
+      callback: (error: ServiceError | null, response: TResponse) => void
+    ) => ClientUnaryCall,
+    request: TRequest,
+    requestId?: string
+  ): Promise<TResponse> {
+    const { client, metadata } = this.createServiceClient();
 
-          resolve(response);
+    return new Promise<TResponse>((resolve, reject) => {
+      operation(client, request, metadata(requestId), (error, response) => {
+        if (error) {
+          reject(mapRpcErrorToHttpException(error));
+          return;
         }
-      );
+
+        if (!response) {
+          reject(new Error('IAM gRPC returned an empty response'));
+          return;
+        }
+
+        resolve(response);
+      });
     });
+  }
+
+  async registerIdentity(
+    request: Omit<RegisterIdentityRequest, 'request_id'>,
+    requestId?: string
+  ): Promise<RegisterIdentityResponse> {
+    const grpcRequest = {
+      ...request,
+      acceptedTerms: request.accepted_terms,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as RegisterIdentityRequest & {
+      acceptedTerms: boolean;
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      (client, payload, metadata, callback) =>
+        client.RegisterIdentity(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async activateIdentity(
+    request: ActivateIdentityRequest,
+    requestId?: string
+  ): Promise<ActivateIdentityResponse> {
+    const grpcRequest = {
+      ...request,
+      identityId: request.identity_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as ActivateIdentityRequest & {
+      identityId: string;
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      (client, payload, metadata, callback) =>
+        client.ActivateIdentity(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async loginIdentity(
+    request: LoginIdentityRequest,
+    requestId?: string
+  ): Promise<LoginIdentityResponse> {
+    const grpcRequest = {
+      ...request,
+      rememberMe: request.remember_me ?? false,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as LoginIdentityRequest & {
+      rememberMe: boolean;
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      (client, payload, metadata, callback) =>
+        client.LoginIdentity(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async refreshSession(
+    request: RefreshSessionRequest,
+    requestId?: string
+  ): Promise<RefreshSessionResponse> {
+    const grpcRequest = {
+      ...request,
+      refreshToken: request.refresh_token,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as RefreshSessionRequest & {
+      refreshToken: string;
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      (client, payload, metadata, callback) =>
+        client.RefreshSession(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async logoutSession(
+    request: LogoutSessionRequest,
+    requestId?: string
+  ): Promise<LogoutSessionResponse> {
+    const grpcRequest = {
+      ...request,
+      refreshToken: request.refresh_token,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as LogoutSessionRequest & {
+      refreshToken: string;
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      (client, payload, metadata, callback) =>
+        client.LogoutSession(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async validateAccessToken(
+    request: ValidateAccessTokenRequest,
+    requestId?: string
+  ): Promise<ValidateAccessTokenResponse> {
+    const grpcRequest = {
+      ...request,
+      accessToken: request.access_token,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as ValidateAccessTokenRequest & {
+      accessToken: string;
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      (client, payload, metadata, callback) =>
+        client.ValidateAccessToken(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async getCurrentIdentity(
+    request: GetCurrentIdentityRequest,
+    requestId?: string
+  ): Promise<GetCurrentIdentityResponse> {
+    const grpcRequest = {
+      ...request,
+      identityId: request.identity_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as GetCurrentIdentityRequest & {
+      identityId: string;
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      (client, payload, metadata, callback) =>
+        client.GetCurrentIdentity(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
   }
 }

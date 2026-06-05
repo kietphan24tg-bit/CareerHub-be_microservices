@@ -32,7 +32,7 @@ test('fails when client does not support readiness checks', async () => {
     );
 
     await assert.rejects(
-        () => readinessCheck.check(),
+        async () => readinessCheck.check(),
         (error: unknown) =>
             error instanceof InfrastructureError &&
             error.code === 'DATABASE_READINESS_UNSUPPORTED'

@@ -4,7 +4,12 @@ package careerhub.iam.v1;
 
 service IamService {
   rpc RegisterIdentity (RegisterIdentityRequest) returns (RegisterIdentityResponse);
+  rpc ActivateIdentity (ActivateIdentityRequest) returns (ActivateIdentityResponse);
+  rpc LoginIdentity (LoginIdentityRequest) returns (LoginIdentityResponse);
+  rpc RefreshSession (RefreshSessionRequest) returns (RefreshSessionResponse);
+  rpc LogoutSession (LogoutSessionRequest) returns (LogoutSessionResponse);
   rpc ValidateAccessToken (ValidateAccessTokenRequest) returns (ValidateAccessTokenResponse);
+  rpc GetCurrentIdentity (GetCurrentIdentityRequest) returns (GetCurrentIdentityResponse);
 }
 
 message RegisterIdentityRequest {
@@ -23,6 +28,53 @@ message RegisterIdentityResponse {
   string created_at = 5;
 }
 
+message ActivateIdentityRequest {
+  string identity_id = 1;
+  string request_id = 2;
+}
+
+message ActivateIdentityResponse {
+  string identity_id = 1;
+  string status = 2;
+}
+
+message LoginIdentityRequest {
+  string email = 1;
+  string password = 2;
+  bool remember_me = 3;
+  string request_id = 4;
+}
+
+message LoginIdentityResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  string identity_id = 3;
+  string email = 4;
+  string role = 5;
+}
+
+message RefreshSessionRequest {
+  string refresh_token = 1;
+  string request_id = 2;
+}
+
+message RefreshSessionResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  string identity_id = 3;
+  string email = 4;
+  string role = 5;
+}
+
+message LogoutSessionRequest {
+  string refresh_token = 1;
+  string request_id = 2;
+}
+
+message LogoutSessionResponse {
+  bool logged_out = 1;
+}
+
 message ValidateAccessTokenRequest {
   string access_token = 1;
   string request_id = 2;
@@ -32,4 +84,17 @@ message ValidateAccessTokenResponse {
   bool valid = 1;
   string user_id = 2;
   string role = 3;
+  string email = 4;
+}
+
+message GetCurrentIdentityRequest {
+  string identity_id = 1;
+  string request_id = 2;
+}
+
+message GetCurrentIdentityResponse {
+  string identity_id = 1;
+  string email = 2;
+  string role = 3;
+  string status = 4;
 }

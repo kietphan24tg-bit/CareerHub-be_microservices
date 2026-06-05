@@ -1,6 +1,7 @@
-import type { LoggerService } from '@nestjs/common';
+import { ConsoleLogger, type LoggerService, type LogLevel } from '@nestjs/common';
+import { inspect } from 'node:util';
 import type { RuntimeLogLevel } from '../config/runtime-config';
-import { formatPrettyLog, redactLogData } from './logging.config';
+import { redactLogData } from './logging.config';
 
 export type LogContext = {
     context?: string;
@@ -102,6 +103,7 @@ function serializeError(error: unknown): SerializedError | undefined {
 
 export class RuntimeLogger implements LoggerService {
     private readonly minimumLevel: RuntimeLogLevel;
+    private readonly prettyLogger?: ConsoleLogger;
     private readonly pretty: boolean;
     private readonly serviceName: string;
 
@@ -109,6 +111,11 @@ export class RuntimeLogger implements LoggerService {
         this.minimumLevel = options.level ?? 'info';
         this.pretty = options.pretty ?? false;
         this.serviceName = options.serviceName;
+        this.prettyLogger = this.pretty
+            ? new ConsoleLogger(this.serviceName, {
+                  logLevels: this.resolveLogLevels(this.minimumLevel)
+              })
+            : undefined;
     }
 
     scoped(context: string): ScopedRuntimeLogger {
@@ -218,6 +225,47 @@ export class RuntimeLogger implements LoggerService {
             : undefined;
     }
 
+    private resolveLogLevels(minimumLevel: RuntimeLogLevel): LogLevel[] {
+        const orderedLevels: RuntimeLogLevel[] = ['debug', 'info', 'warn', 'error'];
+        const minimumWeight = LOG_LEVEL_WEIGHT[minimumLevel];
+
+        return orderedLevels
+            .filter((level) => LOG_LEVEL_WEIGHT[level] >= minimumWeight)
+            .flatMap<LogLevel>((level) =>
+                level === 'info' ? ['log'] : [level]
+            );
+    }
+
+    private formatMetadata(entry: LogEntry): string | undefined {
+        const metadata = Object.fromEntries(
+            Object.entries({
+                details: entry.details,
+                latencyMs: entry.latencyMs,
+                method: entry.method,
+                path: entry.path,
+                pattern: entry.pattern,
+                requestId: entry.requestId,
+                role: entry.role,
+                service: entry.service,
+                statusCode: entry.statusCode,
+                timestamp: entry.timestamp,
+                userAgent: entry.userAgent,
+                userId: entry.userId
+            }).filter(([, value]) => value !== undefined)
+        );
+
+        if (Object.keys(metadata).length === 0) {
+            return undefined;
+        }
+
+        return inspect(metadata, {
+            breakLength: 120,
+            colors: true,
+            compact: false,
+            depth: null
+        });
+    }
+
     private write(level: RuntimeLogLevel, message: string, context?: LogContext): void {
         if (!this.shouldLog(level)) {
             return;
@@ -242,12 +290,36 @@ export class RuntimeLogger implements LoggerService {
             userId: context?.userId
         };
 
-        const output = this.pretty
-            ? formatPrettyLog(message, {
-                  ...entry,
-                  message: undefined
-              })
-            : JSON.stringify(entry);
+        if (this.pretty && this.prettyLogger) {
+            const composedMessage = [message, this.formatMetadata(entry)]
+                .filter((part) => part !== undefined)
+                .join('\n');
+            const loggerContext = entry.context ?? this.serviceName;
+
+            if (level === 'error') {
+                this.prettyLogger.error(
+                    composedMessage,
+                    entry.error?.stack,
+                    loggerContext
+                );
+                return;
+            }
+
+            if (level === 'warn') {
+                this.prettyLogger.warn(composedMessage, loggerContext);
+                return;
+            }
+
+            if (level === 'debug') {
+                this.prettyLogger.debug(composedMessage, loggerContext);
+                return;
+            }
+
+            this.prettyLogger.log(composedMessage, loggerContext);
+            return;
+        }
+
+        const output = JSON.stringify(entry);
 
         if (level === 'error') {
             console.error(output);

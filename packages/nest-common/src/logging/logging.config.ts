@@ -1,4 +1,5 @@
 import { inspect } from 'node:util';
+import type { RuntimeLogLevel } from '../config/runtime-config';
 
 export const HEALTH_LOG_PATH_PREFIXES = ['/health', '/metrics'] as const;
 
@@ -57,7 +58,7 @@ function setNestedValue(
             return;
         }
 
-        const nextValue = current[segment];
+        const nextValue: unknown = current[segment];
 
         if (!isObject(nextValue)) {
             return;
@@ -92,16 +93,58 @@ export function shouldIgnoreHttpLog(path: string | undefined): boolean {
 }
 
 export function formatPrettyLog(
+    level: RuntimeLogLevel,
     message: string,
     payload: Record<string, unknown>
 ): string {
-    if (Object.keys(payload).length === 0) {
-        return message;
+    const colors = {
+        context: '\x1b[38;5;3m',
+        debug: '\x1b[38;5;8m',
+        error: '\x1b[31m',
+        info: '\x1b[32m',
+        reset: '\x1b[39m',
+        warn: '\x1b[33m'
+    } as const;
+    const pid = process.pid;
+    const timestamp =
+        typeof payload.timestamp === 'string'
+            ? new Date(payload.timestamp).toLocaleString('en-US')
+            : new Date().toLocaleString('en-US');
+    const context =
+        typeof payload.context === 'string' && payload.context.length > 0
+            ? payload.context
+            : 'RuntimeLogger';
+    const levelLabel = level.toUpperCase().padStart(5, ' ');
+    const levelColor =
+        level === 'error'
+            ? colors.error
+            : level === 'warn'
+              ? colors.warn
+              : level === 'debug'
+                ? colors.debug
+                : colors.info;
+
+    const metadata = Object.fromEntries(
+        Object.entries(payload).filter(
+            ([key, value]) =>
+                key !== 'context' &&
+                key !== 'timestamp' &&
+                value !== undefined
+        )
+    );
+    const header =
+        `${levelColor}[Nest] ${pid}  - ${colors.reset}` +
+        `${timestamp} ${levelColor}${levelLabel}${colors.reset} ` +
+        `${colors.context}[${context}] ${colors.reset}${message}`;
+
+    if (Object.keys(metadata).length === 0) {
+        return header;
     }
 
-    return `${message} ${inspect(payload, {
-        breakLength: Infinity,
-        compact: true,
+    return `${header}\n${inspect(metadata, {
+        breakLength: 120,
+        colors: true,
+        compact: false,
         depth: null
     })}`;
 }

@@ -31,7 +31,7 @@ test('registers a valid identity and emits UserRegisteredEvent', () => {
 
   assert.equal(identity.email.value, 'user@example.com');
   assert.equal(identity.role.value, 'candidate');
-  assert.equal(identity.status.value, 'active');
+  assert.equal(identity.status.value, 'pending_profile');
   assert.equal(identity.acceptedTerms, true);
 
   const events = identity.pullDomainEvents();

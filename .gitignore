@@ -1,10 +1,12 @@
 node_modules/
 
 dist/
+dist-test/
 build/
 coverage/
 .turbo/
 .cache/
+**/src/generated/
 
 .env
 .env.local

@@ -34,7 +34,7 @@ export class SuccessResponseInterceptor<TData = unknown>
 
     private wrapResponse(data: TData): HttpSuccessResponse<TData> {
         if (isObject(data) && data.success === true) {
-            return data as HttpSuccessResponse<TData>;
+            return data as unknown as HttpSuccessResponse<TData>;
         }
 
         if (isObject(data)) {

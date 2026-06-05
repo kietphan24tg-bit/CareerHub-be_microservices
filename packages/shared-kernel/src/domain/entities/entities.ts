@@ -46,10 +46,10 @@ export abstract class Entity<Props> {
 
     getProps(): Props & BaseEntityProps {
         const clone = {
+            ...this.#props,
             id: this.id,
             createdAt: this.#createdAt,
-            updatedAt: this.#updatedAt,
-            ...this.#props
+            updatedAt: this.#updatedAt
         };
         return Object.freeze(clone);
     }
@@ -63,10 +63,10 @@ export abstract class Entity<Props> {
         const clone = convertPropsToObject(this.getProps());
 
         const result = {
+            ...clone,
             id: this.id,
             createdAt: this.#createdAt,
-            updatedAt: this.#updatedAt,
-            ...clone
+            updatedAt: this.#updatedAt
         };
         return Object.freeze(result);
     }

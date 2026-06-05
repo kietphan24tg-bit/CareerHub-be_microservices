@@ -23,7 +23,7 @@ export class EmployerRegisterRequestDto {
   companyName!: string;
 
   @IsString()
-  @MinLength(8)
+  @MinLength(6)
   confirmPassword!: string;
 
   @IsString()

@@ -29,13 +29,14 @@ export const runtimeNodeEnvSchema = z.enum([
 export const runtimeLogLevelSchema = z.enum(['debug', 'info', 'warn', 'error']);
 
 export const runtimeEnvironmentSchema = z.object({
+    BROKER_URL: z.string().url().optional(),
     DATABASE_URL: z.string().url().optional(),
     HTTP_LOG_ENABLED: booleanLikeSchema.optional(),
     LOG_LEVEL: runtimeLogLevelSchema.optional(),
     LOG_PRETTY: booleanLikeSchema.optional(),
     NODE_ENV: runtimeNodeEnvSchema.default('development'),
     PORT: z.coerce.number().int().positive().max(65535).default(3000),
-
+    REDIS_URL: z.string().url().optional(),
     SERVICE_NAME: z.string().min(1, 'SERVICE_NAME is required.')
 });
 

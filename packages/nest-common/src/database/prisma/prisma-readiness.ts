@@ -13,7 +13,7 @@ function isPingable(
 
 function isQueryable(
     clientOrService: PrismaReadinessTarget
-): clientOrService is PrismaQueryable {
+): clientOrService is PrismaReadinessTarget & PrismaQueryable {
     return (
         typeof (clientOrService as PrismaQueryable).$queryRawUnsafe ===
             'function' ||

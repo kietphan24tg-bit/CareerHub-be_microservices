@@ -1,0 +1,22 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model EmployerProfile {
+  id           String   @id @db.VarChar(64)
+  identityId   String   @unique @map("identity_id") @db.VarChar(64)
+  companyName  String   @map("company_name")
+  contactName  String   @map("contact_name")
+  contactPhone String   @map("contact_phone")
+  industry     String
+  address      String
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("employer_profiles")
+}

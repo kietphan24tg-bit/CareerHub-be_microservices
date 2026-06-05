@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package careerhub.candidate.v1;
+
+service CandidateService {
+  rpc CreateCandidateProfile (CreateCandidateProfileRequest) returns (CreateCandidateProfileResponse);
+}
+
+message CreateCandidateProfileRequest {
+  string identity_id = 1;
+  string full_name = 2;
+  string phone = 3; 
+  string request_id = 4;
+}
+
+message CreateCandidateProfileResponse {
+  string profile_id = 1;
+  string identity_id = 2;
+}
