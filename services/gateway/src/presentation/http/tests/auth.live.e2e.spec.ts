@@ -46,6 +46,45 @@ type MeResponse = {
   };
 };
 
+type CandidateProfileResponse = {
+  profile: {
+    address: string | null;
+    avatarUrl: string | null;
+    bio: string | null;
+    createdAt: string;
+    fullName: string;
+    githubUrl: string | null;
+    headline: string | null;
+    id: string;
+    identityId: string;
+    linkedinUrl: string | null;
+    phone: string | null;
+    portfolioUrl: string | null;
+    updatedAt: string;
+    yearsExperience: number | null;
+  };
+};
+
+type CompanyProfileResponse = {
+  profile: {
+    address: string | null;
+    companyName: string;
+    companySize: string | null;
+    contactName: string | null;
+    contactPhone: string | null;
+    createdAt: string;
+    description: string | null;
+    foundedYear: number | null;
+    id: string;
+    identityId: string;
+    industry: string | null;
+    logoUrl: string | null;
+    taxCode: string | null;
+    updatedAt: string;
+    website: string | null;
+  };
+};
+
 const GATEWAY_BASE_URL = process.env.GATEWAY_BASE_URL ?? 'http://127.0.0.1:3000';
 
 function createUniqueEmail(prefix: string): string {
@@ -196,6 +235,95 @@ async function getMe(accessToken: string): Promise<SuccessEnvelope<MeResponse>> 
   return body;
 }
 
+async function getCandidateProfile(
+  accessToken: string
+): Promise<SuccessEnvelope<CandidateProfileResponse>> {
+  const { body, response } = await requestJson<
+    SuccessEnvelope<CandidateProfileResponse>
+  >('/candidate-profiles/me', {
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      'x-request-id': 'e2e-candidate-profile-get'
+    },
+    method: 'GET'
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(body.success, true);
+
+  return body;
+}
+
+async function updateCandidateProfile(
+  accessToken: string
+): Promise<SuccessEnvelope<CandidateProfileResponse>> {
+  const { body, response } = await requestJson<
+    SuccessEnvelope<CandidateProfileResponse>
+  >('/candidate-profiles/me', {
+    body: JSON.stringify({
+      bio: 'Candidate bio updated from live e2e',
+      githubUrl: 'https://github.com/candidate-live',
+      headline: 'Senior Candidate',
+      yearsExperience: 4
+    }),
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      'content-type': 'application/json',
+      'x-request-id': 'e2e-candidate-profile-update'
+    },
+    method: 'PATCH'
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(body.success, true);
+
+  return body;
+}
+
+async function getCompanyProfile(
+  accessToken: string
+): Promise<SuccessEnvelope<CompanyProfileResponse>> {
+  const { body, response } = await requestJson<
+    SuccessEnvelope<CompanyProfileResponse>
+  >('/company-profiles/me', {
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      'x-request-id': 'e2e-company-profile-get'
+    },
+    method: 'GET'
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(body.success, true);
+
+  return body;
+}
+
+async function updateCompanyProfile(
+  accessToken: string
+): Promise<SuccessEnvelope<CompanyProfileResponse>> {
+  const { body, response } = await requestJson<
+    SuccessEnvelope<CompanyProfileResponse>
+  >('/company-profiles/me', {
+    body: JSON.stringify({
+      companySize: '51-200',
+      description: 'Updated employer description from live e2e',
+      website: 'https://careerhub.dev'
+    }),
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      'content-type': 'application/json',
+      'x-request-id': 'e2e-company-profile-update'
+    },
+    method: 'PATCH'
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(body.success, true);
+
+  return body;
+}
+
 async function refresh(
   refreshToken: string
 ): Promise<{ accessToken: string; refreshToken: string; user: LoginResponse['user'] }> {
@@ -274,6 +402,54 @@ async function runAuthFlow(role: Role): Promise<void> {
   assert.equal(meResult.data.user.email, email);
   assert.equal(meResult.data.user.role, role);
   assert.equal(meResult.data.user.status, 'active');
+
+  if (role === 'candidate') {
+    const candidateProfile = await getCandidateProfile(loginResult.accessToken);
+    assert.equal(candidateProfile.data.profile.fullName, 'Candidate Phase 1');
+
+    const updatedCandidateProfile = await updateCandidateProfile(
+      loginResult.accessToken
+    );
+    assert.equal(updatedCandidateProfile.data.profile.headline, 'Senior Candidate');
+    assert.equal(
+      updatedCandidateProfile.data.profile.githubUrl,
+      'https://github.com/candidate-live'
+    );
+    assert.equal(updatedCandidateProfile.data.profile.yearsExperience, 4);
+
+    const employerPathResult = await requestJson<ErrorEnvelope>('/company-profiles/me', {
+      headers: {
+        authorization: `Bearer ${loginResult.accessToken}`,
+        'x-request-id': 'e2e-candidate-forbidden-company-profile'
+      },
+      method: 'GET'
+    });
+
+    assert.equal(employerPathResult.response.status, 403);
+  } else {
+    const companyProfile = await getCompanyProfile(loginResult.accessToken);
+    assert.equal(companyProfile.data.profile.companyName, 'CareerHub Co');
+
+    const updatedCompanyProfile = await updateCompanyProfile(
+      loginResult.accessToken
+    );
+    assert.equal(
+      updatedCompanyProfile.data.profile.description,
+      'Updated employer description from live e2e'
+    );
+    assert.equal(updatedCompanyProfile.data.profile.website, 'https://careerhub.dev');
+    assert.equal(updatedCompanyProfile.data.profile.companySize, '51-200');
+
+    const candidatePathResult = await requestJson<ErrorEnvelope>('/candidate-profiles/me', {
+      headers: {
+        authorization: `Bearer ${loginResult.accessToken}`,
+        'x-request-id': 'e2e-employer-forbidden-candidate-profile'
+      },
+      method: 'GET'
+    });
+
+    assert.equal(candidatePathResult.response.status, 403);
+  }
 
   const refreshResult = await refresh(loginResult.refreshToken);
   assert.equal(refreshResult.user.email, email);

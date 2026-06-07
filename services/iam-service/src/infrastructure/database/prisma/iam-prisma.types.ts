@@ -1,4 +1,4 @@
-import type { PrismaClientLike } from '@careerhub/nest-common';
+import type { PrismaClientLike } from '@careerhub/infrastructure';
 
 export type IdentityPersistenceRole = 'candidate' | 'employer';
 export type IdentityPersistenceStatus = 'active' | 'disabled' | 'pending_profile';

@@ -1,4 +1,5 @@
 packages:
+  - 'infrastructure'
   - 'packages/*'
   - 'services/*'
 allowBuilds:

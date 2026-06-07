@@ -8,12 +8,20 @@ datasource db {
 }
 
 model CandidateProfile {
-  id         String   @id @db.VarChar(64)
-  identityId String   @unique @map("identity_id") @db.VarChar(64)
-  fullName   String   @map("full_name")
-  phone      String
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id              String   @id @db.VarChar(64)
+  identityId      String   @unique @map("identity_id") @db.VarChar(64)
+  fullName        String   @map("full_name")
+  avatarUrl       String?  @map("avatar_url")
+  phone           String?
+  headline        String?
+  bio             String?
+  address         String?
+  githubUrl       String?  @map("github_url")
+  linkedinUrl     String?  @map("linkedin_url")
+  portfolioUrl    String?  @map("portfolio_url")
+  yearsExperience Int?     @map("years_experience")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   @@map("candidate_profiles")
 }

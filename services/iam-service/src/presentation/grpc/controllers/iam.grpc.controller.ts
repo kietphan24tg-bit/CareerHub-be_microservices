@@ -1,5 +1,5 @@
 import { Metadata } from '@grpc/grpc-js';
-import { getRequestIdFromGrpcMetadata } from '@careerhub/nest-common';
+import { getRequestIdFromGrpcMetadata } from '@careerhub/infrastructure';
 import {
   type ActivateIdentityRequest,
   type ActivateIdentityResponse,

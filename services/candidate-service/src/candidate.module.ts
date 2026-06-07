@@ -1,12 +1,14 @@
 import {
   createPrismaModule,
   createRuntimeConfigModule
-} from '@careerhub/nest-common';
+} from '@careerhub/infrastructure';
 import { Module } from '@nestjs/common';
 import { CandidateProfileAlreadyExistsError } from './application/errors/candidate-profile-already-exists.error';
 import {
   CANDIDATE_PORT_TOKENS,
-  CreateCandidateProfileUseCase
+  CreateCandidateProfileUseCase,
+  GetCandidateProfileByIdentityIdUseCase,
+  UpdateCandidateProfileUseCase
 } from './application';
 import { getCandidateRuntimeConfig, validateCandidateEnvironment } from './config';
 import {
@@ -55,6 +57,22 @@ import { CandidateGrpcController } from './presentation';
         idGenerator: UuidIdGenerator
       ) =>
         new CreateCandidateProfileUseCase(candidateProfileRepository, idGenerator)
+    },
+    {
+      provide: GetCandidateProfileByIdentityIdUseCase,
+      inject: [CANDIDATE_PORT_TOKENS.candidateProfileRepository],
+      useFactory: (
+        candidateProfileRepository: PrismaCandidateProfileRepository
+      ) =>
+        new GetCandidateProfileByIdentityIdUseCase(candidateProfileRepository)
+    },
+    {
+      provide: UpdateCandidateProfileUseCase,
+      inject: [CANDIDATE_PORT_TOKENS.candidateProfileRepository],
+      useFactory: (
+        candidateProfileRepository: PrismaCandidateProfileRepository
+      ) =>
+        new UpdateCandidateProfileUseCase(candidateProfileRepository)
     }
   ]
 })

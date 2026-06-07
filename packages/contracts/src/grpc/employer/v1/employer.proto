@@ -4,6 +4,8 @@ package careerhub.employer.v1;
 
 service EmployerService {
   rpc CreateEmployerProfile (CreateEmployerProfileRequest) returns (CreateEmployerProfileResponse);
+  rpc GetEmployerProfileByIdentityId (GetEmployerProfileByIdentityIdRequest) returns (GetEmployerProfileByIdentityIdResponse);
+  rpc UpdateEmployerProfile (UpdateEmployerProfileRequest) returns (UpdateEmployerProfileResponse);
 }
 
 message CreateEmployerProfileRequest {
@@ -19,4 +21,54 @@ message CreateEmployerProfileRequest {
 message CreateEmployerProfileResponse {
   string profile_id = 1;
   string identity_id = 2;
+}
+
+message GetEmployerProfileByIdentityIdRequest {
+  string identity_id = 1;
+  string request_id = 2;
+}
+
+message EmployerProfile {
+  string id = 1;
+  string identity_id = 2;
+  string company_name = 3;
+  string logo_url = 4;
+  string website = 5;
+  string industry = 6;
+  string company_size = 7;
+  int32 founded_year = 8;
+  string description = 9;
+  string address = 10;
+  string tax_code = 11;
+  string contact_name = 12;
+  string contact_phone = 13;
+  string created_at = 14;
+  string updated_at = 15;
+  repeated string null_fields = 16;
+}
+
+message GetEmployerProfileByIdentityIdResponse {
+  EmployerProfile profile = 1;
+}
+
+message UpdateEmployerProfileRequest {
+  string identity_id = 1;
+  string request_id = 2;
+  repeated string updated_fields = 3;
+  repeated string clear_fields = 4;
+  string company_name = 5;
+  string logo_url = 6;
+  string website = 7;
+  string industry = 8;
+  string company_size = 9;
+  int32 founded_year = 10;
+  string description = 11;
+  string address = 12;
+  string tax_code = 13;
+  string contact_name = 14;
+  string contact_phone = 15;
+}
+
+message UpdateEmployerProfileResponse {
+  EmployerProfile profile = 1;
 }

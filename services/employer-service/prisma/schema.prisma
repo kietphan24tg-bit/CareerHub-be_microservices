@@ -11,10 +11,16 @@ model EmployerProfile {
   id           String   @id @db.VarChar(64)
   identityId   String   @unique @map("identity_id") @db.VarChar(64)
   companyName  String   @map("company_name")
-  contactName  String   @map("contact_name")
-  contactPhone String   @map("contact_phone")
-  industry     String
-  address      String
+  logoUrl      String?  @map("logo_url")
+  website      String?
+  industry     String?
+  companySize  String?  @map("company_size")
+  foundedYear  Int?     @map("founded_year")
+  description  String?
+  address      String?
+  taxCode      String?  @map("tax_code")
+  contactName  String?  @map("contact_name")
+  contactPhone String?  @map("contact_phone")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

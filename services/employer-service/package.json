@@ -6,6 +6,7 @@
   "types": "src/index.ts",
   "dependencies": {
     "@careerhub/contracts": "workspace:*",
+    "@careerhub/infrastructure": "workspace:*",
     "@careerhub/nest-common": "workspace:*",
     "@careerhub/shared-kernel": "workspace:*",
     "@grpc/grpc-js": "^1.14.4",

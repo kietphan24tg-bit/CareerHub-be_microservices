@@ -32,9 +32,18 @@ export const runtimeEnvironmentSchema = z.object({
     BROKER_URL: z.string().url().optional(),
     DATABASE_URL: z.string().url().optional(),
     HTTP_LOG_ENABLED: booleanLikeSchema.optional(),
+    LOG_FILE_PATH: z.string().optional(),
     LOG_LEVEL: runtimeLogLevelSchema.optional(),
     LOG_PRETTY: booleanLikeSchema.optional(),
     NODE_ENV: runtimeNodeEnvSchema.default('development'),
+    OTEL_ENABLED: booleanLikeSchema.optional(),
+    OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().optional(),
+    OTEL_EXPORTER_OTLP_PROTOCOL: z.enum(['http/protobuf']).optional(),
+    OTEL_SERVICE_NAME: z.string().min(1).optional(),
+    OTEL_TRACES_SAMPLER: z
+        .enum(['always_off', 'always_on', 'parentbased_always_on', 'traceidratio'])
+        .optional(),
+    OTEL_TRACES_SAMPLER_ARG: z.string().optional(),
     PORT: z.coerce.number().int().positive().max(65535).default(3000),
     REDIS_URL: z.string().url().optional(),
     SERVICE_NAME: z.string().min(1, 'SERVICE_NAME is required.')
@@ -46,6 +55,7 @@ export type EnvironmentVariables = RuntimeEnvironmentSchema & {
     HTTP_LOG_ENABLED: boolean;
     LOG_LEVEL: z.infer<typeof runtimeLogLevelSchema>;
     LOG_PRETTY: boolean;
+    OTEL_ENABLED: boolean;
 };
 
 export function validateEnvironment(
@@ -60,6 +70,7 @@ export function validateEnvironment(
             LOG_LEVEL:
                 parsed.data.LOG_LEVEL ??
                 (parsed.data.NODE_ENV === 'production' ? 'info' : 'debug'),
+            OTEL_ENABLED: parsed.data.OTEL_ENABLED ?? true,
             LOG_PRETTY:
                 parsed.data.LOG_PRETTY ?? parsed.data.NODE_ENV !== 'production'
         };

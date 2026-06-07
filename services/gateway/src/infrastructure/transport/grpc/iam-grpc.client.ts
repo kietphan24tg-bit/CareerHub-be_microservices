@@ -24,8 +24,13 @@ import {
   IAM_GRPC_PACKAGE_NAME,
   IAM_GRPC_SERVICE_NAME
 } from '@careerhub/contracts';
-import { mapRpcErrorToHttpException } from '@careerhub/nest-common';
+import {
+  mapRpcErrorToHttpException,
+  runWithSpanContext,
+  startSpan
+} from '@careerhub/infrastructure';
 import { Injectable } from '@nestjs/common';
+import { SpanKind, SpanStatusCode, context } from '@opentelemetry/api';
 import { GatewayGrpcClient } from './gateway-grpc.client';
 
 type IamGrpcServiceClient = {
@@ -140,6 +145,7 @@ export class IamGrpcClient {
   }
 
   private invokeUnary<TRequest, TResponse>(
+    methodName: string,
     operation: (
       client: IamGrpcServiceClient,
       request: TRequest,
@@ -150,22 +156,54 @@ export class IamGrpcClient {
     requestId?: string
   ): Promise<TResponse> {
     const { client, metadata } = this.createServiceClient();
+    const parentContext = context.active();
+    const span = startSpan(
+      `iam.${methodName}`,
+      {
+        attributes: {
+          'rpc.method': methodName,
+          'rpc.service': IAM_GRPC_SERVICE_NAME,
+          'rpc.system': 'grpc'
+        },
+        kind: SpanKind.CLIENT
+      },
+      parentContext
+    );
 
-    return new Promise<TResponse>((resolve, reject) => {
-      operation(client, request, metadata(requestId), (error, response) => {
-        if (error) {
-          reject(mapRpcErrorToHttpException(error));
-          return;
-        }
+    return runWithSpanContext(span, parentContext, () =>
+      new Promise<TResponse>((resolve, reject) => {
+        operation(client, request, metadata(requestId), (error, response) => {
+          if (error) {
+            span.recordException(error);
+            span.setStatus({
+              code: SpanStatusCode.ERROR,
+              message: error.message
+            });
+            span.end();
+            reject(mapRpcErrorToHttpException(error));
+            return;
+          }
 
-        if (!response) {
-          reject(new Error('IAM gRPC returned an empty response'));
-          return;
-        }
+          if (!response) {
+            const emptyResponseError = new Error('IAM gRPC returned an empty response');
+            span.recordException(emptyResponseError);
+            span.setStatus({
+              code: SpanStatusCode.ERROR,
+              message: emptyResponseError.message
+            });
+            span.end();
+            reject(emptyResponseError);
+            return;
+          }
 
-        resolve(response);
-      });
-    });
+          span.setStatus({
+            code: SpanStatusCode.OK
+          });
+          span.end();
+          resolve(response);
+        });
+      })
+    );
   }
 
   async registerIdentity(
@@ -183,6 +221,7 @@ export class IamGrpcClient {
     };
 
     return this.invokeUnary(
+      'RegisterIdentity',
       (client, payload, metadata, callback) =>
         client.RegisterIdentity(payload, metadata, callback),
       grpcRequest,
@@ -205,6 +244,7 @@ export class IamGrpcClient {
     };
 
     return this.invokeUnary(
+      'ActivateIdentity',
       (client, payload, metadata, callback) =>
         client.ActivateIdentity(payload, metadata, callback),
       grpcRequest,
@@ -227,6 +267,7 @@ export class IamGrpcClient {
     };
 
     return this.invokeUnary(
+      'LoginIdentity',
       (client, payload, metadata, callback) =>
         client.LoginIdentity(payload, metadata, callback),
       grpcRequest,
@@ -249,6 +290,7 @@ export class IamGrpcClient {
     };
 
     return this.invokeUnary(
+      'RefreshSession',
       (client, payload, metadata, callback) =>
         client.RefreshSession(payload, metadata, callback),
       grpcRequest,
@@ -271,6 +313,7 @@ export class IamGrpcClient {
     };
 
     return this.invokeUnary(
+      'LogoutSession',
       (client, payload, metadata, callback) =>
         client.LogoutSession(payload, metadata, callback),
       grpcRequest,
@@ -293,6 +336,7 @@ export class IamGrpcClient {
     };
 
     return this.invokeUnary(
+      'ValidateAccessToken',
       (client, payload, metadata, callback) =>
         client.ValidateAccessToken(payload, metadata, callback),
       grpcRequest,
@@ -315,6 +359,7 @@ export class IamGrpcClient {
     };
 
     return this.invokeUnary(
+      'GetCurrentIdentity',
       (client, payload, metadata, callback) =>
         client.GetCurrentIdentity(payload, metadata, callback),
       grpcRequest,

@@ -1,15 +1,21 @@
-import type { PrismaClientLike } from '@careerhub/nest-common';
+import type { PrismaClientLike } from '@careerhub/infrastructure';
 
 export type EmployerProfilePersistenceRecord = {
-  address: string;
+  address: string | null;
   companyName: string;
-  contactName: string;
-  contactPhone: string;
+  companySize: string | null;
+  contactName: string | null;
+  contactPhone: string | null;
   createdAt: Date;
+  description: string | null;
+  foundedYear: number | null;
   id: string;
   identityId: string;
-  industry: string;
+  industry: string | null;
+  logoUrl: string | null;
+  taxCode: string | null;
   updatedAt: Date;
+  website: string | null;
 };
 
 export type EmployerProfileCreateInput = {
@@ -29,6 +35,10 @@ export type EmployerProfileModelDelegate = {
   findUnique(args: {
     where: { identityId: string };
   }): Promise<EmployerProfilePersistenceRecord | null>;
+  update(args: {
+    data: Partial<EmployerProfilePersistenceRecord>;
+    where: { id: string };
+  }): Promise<EmployerProfilePersistenceRecord>;
 };
 
 export type EmployerPrismaClient = PrismaClientLike & {

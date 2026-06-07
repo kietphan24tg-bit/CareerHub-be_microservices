@@ -11,8 +11,14 @@ test('creates an employer profile successfully', async () => {
       async existsByIdentityId() {
         return false;
       },
+      async findByIdentityId() {
+        return null;
+      },
       async save(profile) {
         savedProfiles.push(profile);
+      },
+      async updateByIdentityId() {
+        return null;
       }
     },
     {
@@ -44,7 +50,13 @@ test('fails when profile already exists for identity', async () => {
       async existsByIdentityId() {
         return true;
       },
-      async save() {}
+      async findByIdentityId() {
+        return null;
+      },
+      async save() {},
+      async updateByIdentityId() {
+        return null;
+      }
     },
     {
       generate() {
@@ -73,7 +85,13 @@ test('fails when required fields are blank', async () => {
       async existsByIdentityId() {
         return false;
       },
-      async save() {}
+      async findByIdentityId() {
+        return null;
+      },
+      async save() {},
+      async updateByIdentityId() {
+        return null;
+      }
     },
     {
       generate() {

@@ -1,12 +1,20 @@
-import type { PrismaClientLike } from '@careerhub/nest-common';
+import type { PrismaClientLike } from '@careerhub/infrastructure';
 
 export type CandidateProfilePersistenceRecord = {
+  address: string | null;
+  avatarUrl: string | null;
+  bio: string | null;
   createdAt: Date;
   fullName: string;
+  githubUrl: string | null;
+  headline: string | null;
   id: string;
   identityId: string;
-  phone: string;
+  linkedinUrl: string | null;
+  phone: string | null;
+  portfolioUrl: string | null;
   updatedAt: Date;
+  yearsExperience: number | null;
 };
 
 export type CandidateProfileCreateInput = {
@@ -23,6 +31,10 @@ export type CandidateProfileModelDelegate = {
   findUnique(args: {
     where: { identityId: string };
   }): Promise<CandidateProfilePersistenceRecord | null>;
+  update(args: {
+    data: Partial<CandidateProfilePersistenceRecord>;
+    where: { id: string };
+  }): Promise<CandidateProfilePersistenceRecord>;
 };
 
 export type CandidatePrismaClient = PrismaClientLike & {

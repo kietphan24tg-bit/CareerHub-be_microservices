@@ -2,7 +2,7 @@ import {
   type DatabaseRuntimeConfig,
   InfrastructureError,
   PrismaLifecycleService
-} from '@careerhub/nest-common';
+} from '@careerhub/infrastructure';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { CandidatePrismaClient } from './candidate-prisma.types';

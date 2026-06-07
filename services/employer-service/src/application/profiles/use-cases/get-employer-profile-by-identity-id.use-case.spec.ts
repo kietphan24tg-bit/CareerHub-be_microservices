@@ -1,0 +1,65 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { EmployerProfileNotFoundError } from '../../errors/employer-profile-not-found.error';
+import { GetEmployerProfileByIdentityIdUseCase } from './get-employer-profile-by-identity-id.use-case';
+
+test('loads employer profile by identity id', async () => {
+  const useCase = new GetEmployerProfileByIdentityIdUseCase({
+    async existsByIdentityId() {
+      return true;
+    },
+    async findByIdentityId(identityId) {
+      return {
+        address: 'Address',
+        companyName: 'CareerHub',
+        companySize: null,
+        contactName: 'Employer',
+        contactPhone: '0123456789',
+        createdAt: new Date('2026-06-06T00:00:00.000Z'),
+        description: null,
+        foundedYear: null,
+        id: 'employer-profile-1',
+        identityId,
+        industry: 'Technology',
+        logoUrl: null,
+        taxCode: null,
+        updatedAt: new Date('2026-06-06T00:00:00.000Z'),
+        website: null
+      };
+    },
+    async save() {},
+    async updateByIdentityId() {
+      return null;
+    }
+  });
+
+  const result = await useCase.execute({
+    identityId: 'identity-1'
+  });
+
+  assert.equal(result.id, 'employer-profile-1');
+  assert.equal(result.identityId, 'identity-1');
+});
+
+test('throws when employer profile does not exist', async () => {
+  const useCase = new GetEmployerProfileByIdentityIdUseCase({
+    async existsByIdentityId() {
+      return false;
+    },
+    async findByIdentityId() {
+      return null;
+    },
+    async save() {},
+    async updateByIdentityId() {
+      return null;
+    }
+  });
+
+  await assert.rejects(
+    () =>
+      useCase.execute({
+        identityId: 'identity-missing'
+      }),
+    EmployerProfileNotFoundError
+  );
+});

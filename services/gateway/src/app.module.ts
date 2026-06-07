@@ -7,15 +7,18 @@ import {
   EMPLOYER_GRPC_PACKAGE_NAME,
   IAM_GRPC_PACKAGE_NAME
 } from '@careerhub/contracts';
-import { createRuntimeConfigModule } from '@careerhub/nest-common';
+import { createRuntimeConfigModule } from '@careerhub/infrastructure';
 import { ConfigService } from '@nestjs/config';
 import { GatewayAuthService } from './application/gateway-auth.service';
+import { GatewayProfileService } from './application/gateway-profile.service';
 import { GatewayRolesGuard } from './auth/guards/gateway-roles.guard';
 import { GatewayJwtAuthGuard } from './auth/guards/gateway-jwt-auth.guard';
 import { CandidateGrpcClient } from './infrastructure/transport/grpc/candidate-grpc.client';
 import { EmployerGrpcClient } from './infrastructure/transport/grpc/employer-grpc.client';
-import { AuthController } from './presentation/http/controllers/auth.controller';
-import { GatewayController } from './presentation/http/controllers/gateway.controller';
+import { AuthController } from './presentation/http/auth/auth.controller';
+import { CandidateProfilesController } from './presentation/http/candidate-profiles/candidate-profiles.controller';
+import { CompanyProfilesController } from './presentation/http/company-profiles/company-profiles.controller';
+import { GatewayController } from './presentation/http/health/gateway.controller';
 import { GRPC_CLIENT_OPTIONS } from './infrastructure/transport/grpc/grpc.constants';
 import { GatewayGrpcClient } from './infrastructure/transport/grpc/gateway-grpc.client';
 import { IamGrpcClient } from './infrastructure/transport/grpc/iam-grpc.client';
@@ -67,10 +70,16 @@ function resolveGrpcProtoPath(serviceName: 'candidate' | 'employer' | 'iam'): st
 }
 
 @Module({
-  controllers: [AuthController, GatewayController],
+  controllers: [
+    AuthController,
+    CandidateProfilesController,
+    CompanyProfilesController,
+    GatewayController
+  ],
   imports: [createRuntimeConfigModule({ validate: validateGatewayEnvironment })],
   providers: [
     GatewayAuthService,
+    GatewayProfileService,
     GatewayJwtAuthGuard,
     GatewayRolesGuard,
     GatewayGrpcClient,

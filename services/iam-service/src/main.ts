@@ -4,10 +4,13 @@ import { join } from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import {
+  configureGrpcRuntime,
   configureHttpRuntime,
   getRuntimeConfig,
+  initializeOpenTelemetry,
+  type PrismaReadinessCheck,
   type EnvironmentVariables
-} from '@careerhub/nest-common';
+} from '@careerhub/infrastructure';
 import { IAM_GRPC_PACKAGE_NAME } from '@careerhub/contracts';
 import {
   type MicroserviceOptions,
@@ -15,6 +18,7 @@ import {
 } from '@nestjs/microservices';
 import { IamModule } from './iam.module';
 import { getIamRuntimeConfig, type IamEnvironmentVariables } from './config';
+import { IAM_PRISMA_TOKENS } from './infrastructure';
 
 function resolveIamProtoPath(): string {
   const distRelativePath = join(
@@ -62,8 +66,11 @@ async function bootstrap() {
   );
   const runtimeConfig = getRuntimeConfig(configService);
   const iamRuntimeConfig = getIamRuntimeConfig(configService);
+  const prismaReadinessCheck = app.get<PrismaReadinessCheck>(
+    IAM_PRISMA_TOKENS.readinessCheck
+  );
 
-  app.connectMicroservice<MicroserviceOptions>({
+  const microservice = app.connectMicroservice<MicroserviceOptions>({
     options: {
       loader: {
         defaults: true,
@@ -79,9 +86,12 @@ async function bootstrap() {
     transport: Transport.GRPC
   });
 
-  configureHttpRuntime(app, {
+  const runtime = configureHttpRuntime(app, {
+    readinessChecks: [prismaReadinessCheck],
     runtimeConfig
   });
+  initializeOpenTelemetry(runtimeConfig);
+  configureGrpcRuntime(microservice, runtime);
 
   await app.startAllMicroservices();
   await app.listen(runtimeConfig.port);

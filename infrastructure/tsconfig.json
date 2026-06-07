@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "outDir": "./dist",
+    "paths": {
+      "@careerhub/shared-kernel": ["packages/shared-kernel/dist/index.d.ts"],
+      "@careerhub/shared-kernel/*": ["packages/shared-kernel/dist/*"]
+    },
+    "rootDir": "."
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["**/*.spec.ts", "platform/**", "dist/**", "dist-test/**", "node_modules/**"]
+}

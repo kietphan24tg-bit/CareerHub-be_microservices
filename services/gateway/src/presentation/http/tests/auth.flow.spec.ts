@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { UnauthorizedException } from '@nestjs/common';
-import { AuthController } from '../controllers/auth.controller';
+import { AuthController } from '../auth/auth.controller';
 
 type CookieCall = {
   name: string;

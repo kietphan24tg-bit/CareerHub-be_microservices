@@ -1,0 +1,62 @@
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: careerhub-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    ports:
+      - '9090:9090'
+    restart: unless-stopped
+    volumes:
+      - ./infrastructure/observability/stack/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  loki:
+    image: grafana/loki:3.5.3
+    container_name: careerhub-loki
+    command:
+      - '-config.file=/etc/loki/config.yml'
+    ports:
+      - '3100:3100'
+    restart: unless-stopped
+    volumes:
+      - ./infrastructure/observability/stack/loki/loki-config.yml:/etc/loki/config.yml:ro
+
+  promtail:
+    image: grafana/promtail:3.5.3
+    container_name: careerhub-promtail
+    command:
+      - '-config.file=/etc/promtail/config.yml'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    restart: unless-stopped
+    volumes:
+      - ./infrastructure/observability/stack/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - ./tmp/logs:/var/log/careerhub:ro
+
+  tempo:
+    image: grafana/tempo:2.8.2
+    container_name: careerhub-tempo
+    command:
+      - '-config.file=/etc/tempo/config.yml'
+    ports:
+      - '3200:3200'
+      - '4318:4318'
+    restart: unless-stopped
+    volumes:
+      - ./infrastructure/observability/stack/tempo/tempo.yml:/etc/tempo/config.yml:ro
+
+  grafana:
+    image: grafana/grafana:12.0.2
+    container_name: careerhub-grafana
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    ports:
+      - '3300:3000'
+    restart: unless-stopped
+    volumes:
+      - ./infrastructure/observability/stack/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infrastructure/observability/stack/grafana/dashboards:/var/lib/grafana/dashboards:ro

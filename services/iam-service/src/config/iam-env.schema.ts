@@ -1,7 +1,7 @@
 import {
   validateEnvironment,
   type EnvironmentVariables as BaseEnvironmentVariables
-} from '@careerhub/nest-common';
+} from '@careerhub/infrastructure';
 
 export type IamEnvironmentVariables = BaseEnvironmentVariables & {
   GRPC_IAM_URL: string;

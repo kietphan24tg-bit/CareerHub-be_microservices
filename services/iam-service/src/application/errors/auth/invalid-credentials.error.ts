@@ -1,4 +1,4 @@
-import { ApplicationError } from '@careerhub/nest-common';
+import { ApplicationError } from '@careerhub/infrastructure';
 
 export class InvalidCredentialsError extends ApplicationError {
   constructor() {

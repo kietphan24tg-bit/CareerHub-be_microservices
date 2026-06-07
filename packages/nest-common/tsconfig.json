@@ -4,6 +4,8 @@
     "baseUrl": "../../",
     "outDir": "./dist",
     "paths": {
+      "@careerhub/infrastructure": ["infrastructure/dist/index.d.ts"],
+      "@careerhub/infrastructure/*": ["infrastructure/dist/*"],
       "@careerhub/shared-kernel": ["packages/shared-kernel/dist/index.d.ts"],
       "@careerhub/shared-kernel/*": ["packages/shared-kernel/dist/*"]
     },

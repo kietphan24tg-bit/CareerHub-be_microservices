@@ -1,4 +1,4 @@
-import type { ReadinessCheck } from '../health/health.types';
+import type { ReadinessCheck } from '@careerhub/infrastructure';
 
 export type DatabaseRuntimeConfig = {
     databaseUrl: string;

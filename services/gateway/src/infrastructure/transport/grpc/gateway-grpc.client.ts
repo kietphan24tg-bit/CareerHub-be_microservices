@@ -4,7 +4,7 @@ import { loadSync } from '@grpc/proto-loader';
 import {
   createGrpcMetadata,
   createGrpcPayloadWithRequestId
-} from '@careerhub/nest-common';
+} from '@careerhub/infrastructure';
 import { GRPC_CLIENT_OPTIONS } from './grpc.constants';
 import type {
   GatewayGrpcClientOptions,

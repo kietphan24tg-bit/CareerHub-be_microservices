@@ -11,6 +11,8 @@
     "paths": {
       "@careerhub/contracts": ["packages/contracts/src/index.ts"],
       "@careerhub/contracts/*": ["packages/contracts/src/*"],
+      "@careerhub/infrastructure": ["infrastructure/index.ts"],
+      "@careerhub/infrastructure/*": ["infrastructure/*"],
       "@careerhub/nest-common": ["packages/nest-common/src/index.ts"],
       "@careerhub/nest-common/*": ["packages/nest-common/src/*"],
       "@careerhub/shared-kernel": ["packages/shared-kernel/src/index.ts"],

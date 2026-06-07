@@ -7,8 +7,10 @@
     "services/*"
   ],
   "scripts": {
-    "build:packages": "pnpm --filter @careerhub/shared-kernel build && pnpm --filter @careerhub/contracts build && pnpm --filter @careerhub/nest-common build",
+    "build:packages": "pnpm --filter @careerhub/shared-kernel build && pnpm --filter @careerhub/contracts build && pnpm --filter @careerhub/infrastructure build && pnpm --filter @careerhub/nest-common build",
     "install:all": "pnpm install",
+    "observability:down": "docker compose -f docker-compose.observability.yml down",
+    "observability:up": "docker compose -f docker-compose.observability.yml up -d",
     "test:auth:smoke": "powershell -File scripts/auth-smoke.ps1"
   },
   "dependencies": {

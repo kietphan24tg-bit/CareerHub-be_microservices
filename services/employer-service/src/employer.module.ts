@@ -1,11 +1,13 @@
 import {
   createPrismaModule,
   createRuntimeConfigModule
-} from '@careerhub/nest-common';
+} from '@careerhub/infrastructure';
 import { Module } from '@nestjs/common';
 import {
   CreateEmployerProfileUseCase,
-  EMPLOYER_PORT_TOKENS
+  EMPLOYER_PORT_TOKENS,
+  GetEmployerProfileByIdentityIdUseCase,
+  UpdateEmployerProfileUseCase
 } from './application';
 import { validateEmployerEnvironment } from './config';
 import {
@@ -54,6 +56,22 @@ import { EmployerGrpcController } from './presentation';
         idGenerator: UuidIdGenerator
       ) =>
         new CreateEmployerProfileUseCase(employerProfileRepository, idGenerator)
+    },
+    {
+      provide: GetEmployerProfileByIdentityIdUseCase,
+      inject: [EMPLOYER_PORT_TOKENS.employerProfileRepository],
+      useFactory: (
+        employerProfileRepository: PrismaEmployerProfileRepository
+      ) =>
+        new GetEmployerProfileByIdentityIdUseCase(employerProfileRepository)
+    },
+    {
+      provide: UpdateEmployerProfileUseCase,
+      inject: [EMPLOYER_PORT_TOKENS.employerProfileRepository],
+      useFactory: (
+        employerProfileRepository: PrismaEmployerProfileRepository
+      ) =>
+        new UpdateEmployerProfileUseCase(employerProfileRepository)
     }
   ]
 })
