@@ -16,7 +16,7 @@ datasources:
     jsonData:
       derivedFields:
         - datasourceUid: tempo
-          matcherRegex: '"traceId":"([0-9a-f]{32})"'
+          matcherRegex: '"(?:traceId|trace_id)":"([A-Fa-f0-9]{32})"'
           name: traceId
           url: '$${__value.raw}'
 
@@ -37,3 +37,5 @@ datasources:
         filterByTraceID: true
         customQuery: true
         query: '{service=~".+"} |= "$${__trace.traceId}"'
+        spanEndTimeShift: '500ms'
+        spanStartTimeShift: '-500ms'

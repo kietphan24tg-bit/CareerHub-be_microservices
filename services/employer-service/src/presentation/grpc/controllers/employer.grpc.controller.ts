@@ -55,7 +55,7 @@ function toGrpcEmployerProfile(profile: EmployerProfileRecord): EmployerProfile 
     tax_code: profile.taxCode ?? '',
     updated_at: profile.updatedAt.toISOString(),
     website: profile.website ?? ''
-  };
+  } as unknown as EmployerProfile;
 }
 
 @Controller()
@@ -83,7 +83,7 @@ export class EmployerGrpcController {
       return {
         identity_id: result.identityId,
         profile_id: result.profileId
-      };
+      } as unknown as CreateEmployerProfileResponse;
     } catch (error) {
       throw mapErrorToEmployerGrpcException(error);
     }

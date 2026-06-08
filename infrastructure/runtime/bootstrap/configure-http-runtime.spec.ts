@@ -35,10 +35,16 @@ const runtimeConfig: RuntimeConfig = {
     brokerQueuePrefix: '',
     brokerUrl: undefined,
     databaseUrl: undefined,
+    healthEnabled: true,
+    healthLivenessPath: '/health/live',
+    healthPath: '/health',
+    healthReadinessPath: '/health/ready',
     httpLogEnabled: true,
     logFilePath: undefined,
     logLevel: 'info',
     logPretty: false,
+    metricsEnabled: true,
+    metricsPath: '/metrics',
     nodeEnv: 'test',
     otelEnabled: false,
     otelExporterOtlpEndpoint: undefined,
@@ -51,14 +57,19 @@ const runtimeConfig: RuntimeConfig = {
     serviceName: 'test-service'
 };
 
-async function createApp(): Promise<INestApplication> {
+async function createApp(
+    overrides: Partial<RuntimeConfig> = {}
+): Promise<INestApplication> {
     const moduleRef = await Test.createTestingModule({
         imports: [TestModule]
     }).compile();
     const app = moduleRef.createNestApplication();
 
     configureHttpRuntime(app, {
-        runtimeConfig
+        runtimeConfig: {
+            ...runtimeConfig,
+            ...overrides
+        }
     });
 
     await app.listen(0);
@@ -140,6 +151,52 @@ test('health and metrics endpoints are lightweight and HTTP metrics exclude heal
         );
         assert.doesNotMatch(metricsResponse.body, /route="\/health"/);
         assert.doesNotMatch(metricsResponse.body, /route="\/metrics"/);
+    } finally {
+        await app.close();
+    }
+});
+
+test('metrics and health endpoints can be disabled from runtime config', async () => {
+    const app = await createApp({
+        healthEnabled: false,
+        metricsEnabled: false
+    });
+
+    try {
+        const baseUrl = getBaseUrl(app);
+        const healthResponse = await performRequest(`${baseUrl}/health`);
+        const metricsResponse = await performRequest(`${baseUrl}/metrics`);
+
+        assert.equal(healthResponse.statusCode, 404);
+        assert.equal(metricsResponse.statusCode, 404);
+    } finally {
+        await app.close();
+    }
+});
+
+test('custom metrics and health paths come from runtime config', async () => {
+    const app = await createApp({
+        healthLivenessPath: '/livez',
+        healthPath: '/status',
+        healthReadinessPath: '/readyz',
+        metricsPath: '/internal/metrics'
+    });
+
+    try {
+        const baseUrl = getBaseUrl(app);
+        const healthResponse = await performRequest(`${baseUrl}/status`);
+        const livenessResponse = await performRequest(`${baseUrl}/livez`);
+        const readinessResponse = await performRequest(`${baseUrl}/readyz`);
+        const metricsResponse = await performRequest(`${baseUrl}/internal/metrics`);
+        const oldHealthResponse = await performRequest(`${baseUrl}/health`);
+        const oldMetricsResponse = await performRequest(`${baseUrl}/metrics`);
+
+        assert.equal(healthResponse.statusCode, 200);
+        assert.equal(livenessResponse.statusCode, 200);
+        assert.equal(readinessResponse.statusCode, 200);
+        assert.equal(metricsResponse.statusCode, 200);
+        assert.equal(oldHealthResponse.statusCode, 404);
+        assert.equal(oldMetricsResponse.statusCode, 404);
     } finally {
         await app.close();
     }

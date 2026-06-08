@@ -16,10 +16,16 @@ export type RuntimeConfig = {
     brokerQueuePrefix: string;
     brokerUrl?: string;
     databaseUrl?: string;
+    healthEnabled: boolean;
+    healthLivenessPath: string;
+    healthPath: string;
+    healthReadinessPath: string;
     httpLogEnabled: boolean;
     logFilePath?: string;
     logLevel: RuntimeLogLevel;
     logPretty: boolean;
+    metricsEnabled: boolean;
+    metricsPath: string;
     nodeEnv: RuntimeNodeEnv;
     otelEnabled: boolean;
     otelExporterOtlpEndpoint?: string;
@@ -48,10 +54,16 @@ function mapEnvironmentToRuntimeConfig(
         brokerQueuePrefix: environment.BROKER_QUEUE_PREFIX,
         brokerUrl: environment.BROKER_URL,
         databaseUrl: environment.DATABASE_URL,
+        healthEnabled: environment.HEALTH_ENABLED,
+        healthLivenessPath: environment.HEALTH_LIVENESS_PATH,
+        healthPath: environment.HEALTH_PATH,
+        healthReadinessPath: environment.HEALTH_READINESS_PATH,
         httpLogEnabled: environment.HTTP_LOG_ENABLED,
         logFilePath: environment.LOG_FILE_PATH,
         logLevel: environment.LOG_LEVEL,
         logPretty: environment.LOG_PRETTY,
+        metricsEnabled: environment.METRICS_ENABLED,
+        metricsPath: environment.METRICS_PATH,
         nodeEnv: environment.NODE_ENV,
         otelEnabled: environment.OTEL_ENABLED,
         otelExporterOtlpEndpoint: environment.OTEL_EXPORTER_OTLP_ENDPOINT,
@@ -98,10 +110,16 @@ export function getRuntimeConfig(
         brokerQueuePrefix: configService.getOrThrow('BROKER_QUEUE_PREFIX'),
         brokerUrl: configService.get('BROKER_URL'),
         databaseUrl: configService.get('DATABASE_URL'),
+        healthEnabled: configService.getOrThrow('HEALTH_ENABLED'),
+        healthLivenessPath: configService.getOrThrow('HEALTH_LIVENESS_PATH'),
+        healthPath: configService.getOrThrow('HEALTH_PATH'),
+        healthReadinessPath: configService.getOrThrow('HEALTH_READINESS_PATH'),
         httpLogEnabled: configService.getOrThrow('HTTP_LOG_ENABLED'),
         logFilePath: configService.get('LOG_FILE_PATH'),
         logLevel: configService.getOrThrow('LOG_LEVEL'),
         logPretty: configService.getOrThrow('LOG_PRETTY'),
+        metricsEnabled: configService.getOrThrow('METRICS_ENABLED'),
+        metricsPath: configService.getOrThrow('METRICS_PATH'),
         nodeEnv: configService.getOrThrow('NODE_ENV'),
         otelEnabled: configService.getOrThrow('OTEL_ENABLED'),
         otelExporterOtlpEndpoint: configService.get('OTEL_EXPORTER_OTLP_ENDPOINT'),

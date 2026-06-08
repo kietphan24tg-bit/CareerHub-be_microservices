@@ -53,7 +53,7 @@ function toGrpcCandidateProfile(profile: CandidateProfileRecord): CandidateProfi
     portfolio_url: profile.portfolioUrl ?? '',
     updated_at: profile.updatedAt.toISOString(),
     years_experience: profile.yearsExperience ?? 0
-  };
+  } as unknown as CandidateProfile;
 }
 
 @Controller()
@@ -78,7 +78,7 @@ export class CandidateGrpcController {
       return {
         identity_id: result.identityId,
         profile_id: result.profileId
-      };
+      } as unknown as CreateCandidateProfileResponse;
     } catch (error) {
       throw mapErrorToCandidateGrpcException(error);
     }

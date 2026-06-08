@@ -42,6 +42,18 @@ export function configureHttpRuntime(
     options: ConfigureHttpRuntimeOptions
 ): HttpRuntimeFoundation {
     const runtimeConfig = options.runtimeConfig;
+    const endpointPaths = {
+        healthPath:
+            options.endpointPaths?.healthPath ?? runtimeConfig.healthPath,
+        livenessPath:
+            options.endpointPaths?.livenessPath ??
+            runtimeConfig.healthLivenessPath,
+        metricsPath:
+            options.endpointPaths?.metricsPath ?? runtimeConfig.metricsPath,
+        readinessPath:
+            options.endpointPaths?.readinessPath ??
+            runtimeConfig.healthReadinessPath
+    };
     const logger =
         options.logger ??
         new RuntimeLogger({
@@ -70,20 +82,30 @@ export function configureHttpRuntime(
         new SuccessResponseInterceptor()
     );
 
-    registerHealthEndpoints(app, healthRegistry, {
-        healthPath: options.endpointPaths?.healthPath,
-        livenessPath: options.endpointPaths?.livenessPath,
-        readinessPath: options.endpointPaths?.readinessPath
-    });
-    registerMetricsEndpoint(app, metricsRegistry, {
-        metricsPath: options.endpointPaths?.metricsPath
-    });
+    if (runtimeConfig.healthEnabled) {
+        registerHealthEndpoints(app, healthRegistry, {
+            healthPath: endpointPaths.healthPath,
+            livenessPath: endpointPaths.livenessPath,
+            readinessPath: endpointPaths.readinessPath
+        });
+    }
+
+    if (runtimeConfig.metricsEnabled) {
+        registerMetricsEndpoint(app, metricsRegistry, {
+            metricsPath: endpointPaths.metricsPath
+        });
+    }
 
     healthRegistry.markReady();
     logger.info('HTTP runtime configured', {
         context: 'configureHttpRuntime',
         details: {
-            metricsPath: options.endpointPaths?.metricsPath ?? '/metrics',
+            healthEnabled: runtimeConfig.healthEnabled,
+            healthPath: endpointPaths.healthPath,
+            livenessPath: endpointPaths.livenessPath,
+            metricsEnabled: runtimeConfig.metricsEnabled,
+            metricsPath: endpointPaths.metricsPath,
+            readinessPath: endpointPaths.readinessPath,
             serviceName: runtimeConfig.serviceName
         }
     });

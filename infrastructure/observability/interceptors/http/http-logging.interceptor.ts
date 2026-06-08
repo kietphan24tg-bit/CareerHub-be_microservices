@@ -17,7 +17,14 @@ export class HttpLoggingInterceptor implements NestInterceptor {
     constructor(
         private readonly logger: RuntimeLogger,
         private readonly metrics?: MetricsRegistry,
-        private readonly runtimeConfig?: Pick<RuntimeConfig, 'httpLogEnabled'>
+        private readonly runtimeConfig?: Pick<
+            RuntimeConfig,
+            | 'healthLivenessPath'
+            | 'healthPath'
+            | 'healthReadinessPath'
+            | 'httpLogEnabled'
+            | 'metricsPath'
+        >
     ) {}
 
     intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
@@ -33,7 +40,14 @@ export class HttpLoggingInterceptor implements NestInterceptor {
         const method = request.method;
         const path = request.originalUrl ?? request.url;
         const route = request.route?.path ?? request.path ?? path;
-        const shouldLog = this.runtimeConfig?.httpLogEnabled !== false && !shouldIgnoreHttpLog(path);
+        const shouldLog =
+            this.runtimeConfig?.httpLogEnabled !== false &&
+            !shouldIgnoreHttpLog(path, {
+                healthPath: this.runtimeConfig?.healthPath,
+                livenessPath: this.runtimeConfig?.healthLivenessPath,
+                metricsPath: this.runtimeConfig?.metricsPath,
+                readinessPath: this.runtimeConfig?.healthReadinessPath
+            });
         const baseLogContext = {
             context: 'HttpLoggingInterceptor',
             method,

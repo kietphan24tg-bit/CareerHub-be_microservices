@@ -39,7 +39,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum by (service) (rate(careerhub_http_requests_total[5m]))",
+          "expr": "sum by (service) (rate(careerhub_http_requests_total{service=~\"$service\"}[5m]))",
           "legendFormat": "{{service}}",
           "range": true,
           "refId": "A"
@@ -77,7 +77,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum by (service) (rate(careerhub_http_errors_total[5m]))",
+          "expr": "sum by (service) (rate(careerhub_http_errors_total{service=~\"$service\"}[5m]))",
           "legendFormat": "{{service}}",
           "range": true,
           "refId": "A"
@@ -116,7 +116,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum by (service) (rate(careerhub_http_request_duration_ms_sum[5m])) / sum by (service) (rate(careerhub_http_request_duration_ms_count[5m]))",
+          "expr": "sum by (service) (rate(careerhub_http_request_duration_ms_sum{service=~\"$service\"}[5m])) / sum by (service) (rate(careerhub_http_request_duration_ms_count{service=~\"$service\"}[5m]))",
           "legendFormat": "{{service}}",
           "range": true,
           "refId": "A"
@@ -154,7 +154,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum by (service) (rate(careerhub_rpc_requests_total[5m]))",
+          "expr": "sum by (service) (rate(careerhub_rpc_requests_total{service=~\"$service\"}[5m]))",
           "legendFormat": "{{service}}",
           "range": true,
           "refId": "A"
@@ -192,7 +192,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum by (service) (rate(careerhub_rpc_errors_total[5m]))",
+          "expr": "sum by (service) (rate(careerhub_rpc_errors_total{service=~\"$service\"}[5m]))",
           "legendFormat": "{{service}}",
           "range": true,
           "refId": "A"
@@ -231,7 +231,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum by (service) (rate(careerhub_rpc_request_duration_ms_sum[5m])) / sum by (service) (rate(careerhub_rpc_request_duration_ms_count[5m]))",
+          "expr": "sum by (service) (rate(careerhub_rpc_request_duration_ms_sum{service=~\"$service\"}[5m])) / sum by (service) (rate(careerhub_rpc_request_duration_ms_count{service=~\"$service\"}[5m]))",
           "legendFormat": "{{service}}",
           "range": true,
           "refId": "A"
@@ -239,6 +239,293 @@
       ],
       "title": "gRPC Average Latency",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (service) (rate(careerhub_rmq_messages_total{service=~\"$service\"}[5m]))",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "RabbitMQ Messages Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (service) (rate(careerhub_rmq_errors_total{service=~\"$service\"}[5m]))",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "RabbitMQ Errors Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (service) (rate(careerhub_rmq_message_duration_ms_sum{service=~\"$service\"}[5m])) / sum by (service) (rate(careerhub_rmq_message_duration_ms_count{service=~\"$service\"}[5m]))",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "RabbitMQ Average Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "Down"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Up"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "min by (group) (up{group=\"infrastructure\"})",
+          "legendFormat": "{{group}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Infrastructure Stack Health",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "max by (service) (careerhub_http_request_duration_ms{service=~\"$service\", quantile=\"0.95\"})",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP P95 Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "id": 12,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "{service=~\"$service\"}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Recent Logs",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 48
+      },
+      "id": 13,
+      "options": {
+        "content": "## Drilldown Quick Start\n- Current service filter: `${service}`\n- Open **Explore -> Loki** and run: `{service=~\"$service\"}`\n- To find one request, append a request id filter such as `|= \"req-candidate-register-001\"`\n- Open **Explore -> Tempo** and inspect traces around the same timestamp\n- From Loki logs, use `traceId` to jump into Tempo",
+        "mode": "markdown"
+      },
+      "title": "Trace & Log Drilldown",
+      "type": "text"
     }
   ],
   "refresh": "15s",
@@ -249,7 +536,35 @@
     "observability"
   ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(up{group=\"application\"}, service)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Service",
+        "multi": false,
+        "name": "service",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(up{group=\"application\"}, service)",
+          "refId": "PrometheusVariableQueryEditor-Service"
+        },
+        "refresh": 1,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-30m",
@@ -259,5 +574,5 @@
   "timezone": "",
   "title": "CareerHub Observability",
   "uid": "careerhub-observability",
-  "version": 1
+  "version": 2
 }

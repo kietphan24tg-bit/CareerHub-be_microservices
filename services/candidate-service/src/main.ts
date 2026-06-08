@@ -73,28 +73,30 @@ async function bootstrap() {
     CANDIDATE_PRISMA_TOKENS.readinessCheck
   );
 
-  const microservice = app.connectMicroservice<MicroserviceOptions>({
-    options: {
-      loader: {
-        defaults: true,
-        enums: String,
-        keepCase: true,
-        longs: String,
-        oneofs: true
-      },
-      package: CANDIDATE_GRPC_PACKAGE_NAME,
-      protoPath: resolveCandidateProtoPath(),
-      url: candidateRuntimeConfig.grpcCandidateUrl
-    },
-    transport: Transport.GRPC
-  });
-
   const runtime = configureHttpRuntime(app, {
     readinessChecks: [prismaReadinessCheck],
     runtimeConfig
   });
   initializeOpenTelemetry(runtimeConfig);
-  configureGrpcRuntime(microservice, runtime);
+
+  const grpcMicroservice = app.connectMicroservice<MicroserviceOptions>(
+    {
+      options: {
+        loader: {
+          defaults: true,
+          enums: String,
+          keepCase: true,
+          longs: String,
+          oneofs: true
+        },
+        package: CANDIDATE_GRPC_PACKAGE_NAME,
+        protoPath: resolveCandidateProtoPath(),
+        url: candidateRuntimeConfig.grpcCandidateUrl
+      },
+      transport: Transport.GRPC
+    }
+  );
+  configureGrpcRuntime(grpcMicroservice, runtime);
 
   await app.startAllMicroservices();
   await app.listen(runtimeConfig.port);

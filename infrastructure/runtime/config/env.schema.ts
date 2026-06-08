@@ -37,10 +37,16 @@ export const runtimeEnvironmentSchema = z.object({
     BROKER_DEAD_LETTER_ENABLED: booleanLikeSchema.optional(),
     BROKER_DEAD_LETTER_PREFIX: z.string().optional(),
     DATABASE_URL: z.string().url().optional(),
+    HEALTH_ENABLED: booleanLikeSchema.optional(),
+    HEALTH_LIVENESS_PATH: z.string().min(1).optional(),
+    HEALTH_PATH: z.string().min(1).optional(),
+    HEALTH_READINESS_PATH: z.string().min(1).optional(),
     HTTP_LOG_ENABLED: booleanLikeSchema.optional(),
     LOG_FILE_PATH: z.string().optional(),
     LOG_LEVEL: runtimeLogLevelSchema.optional(),
     LOG_PRETTY: booleanLikeSchema.optional(),
+    METRICS_ENABLED: booleanLikeSchema.optional(),
+    METRICS_PATH: z.string().min(1).optional(),
     NODE_ENV: runtimeNodeEnvSchema.default('development'),
     OTEL_ENABLED: booleanLikeSchema.optional(),
     OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().optional(),
@@ -64,9 +70,15 @@ export type EnvironmentVariables = RuntimeEnvironmentSchema & {
     BROKER_EXCHANGE_PREFIX: string;
     BROKER_QUEUE_PREFIX: string;
     BROKER_DEAD_LETTER_PREFIX: string;
+    HEALTH_ENABLED: boolean;
+    HEALTH_LIVENESS_PATH: string;
+    HEALTH_PATH: string;
+    HEALTH_READINESS_PATH: string;
     HTTP_LOG_ENABLED: boolean;
     LOG_LEVEL: z.infer<typeof runtimeLogLevelSchema>;
     LOG_PRETTY: boolean;
+    METRICS_ENABLED: boolean;
+    METRICS_PATH: string;
     OTEL_ENABLED: boolean;
 };
 
@@ -87,13 +99,21 @@ export function validateEnvironment(
                 parsed.data.BROKER_EXCHANGE_PREFIX?.trim() || '',
             BROKER_PREFETCH_COUNT: parsed.data.BROKER_PREFETCH_COUNT ?? 10,
             BROKER_QUEUE_PREFIX: parsed.data.BROKER_QUEUE_PREFIX?.trim() || '',
+            HEALTH_ENABLED: parsed.data.HEALTH_ENABLED ?? true,
+            HEALTH_LIVENESS_PATH:
+                parsed.data.HEALTH_LIVENESS_PATH?.trim() || '/health/live',
+            HEALTH_PATH: parsed.data.HEALTH_PATH?.trim() || '/health',
+            HEALTH_READINESS_PATH:
+                parsed.data.HEALTH_READINESS_PATH?.trim() || '/health/ready',
             HTTP_LOG_ENABLED: parsed.data.HTTP_LOG_ENABLED ?? true,
             LOG_LEVEL:
                 parsed.data.LOG_LEVEL ??
                 (parsed.data.NODE_ENV === 'production' ? 'info' : 'debug'),
             OTEL_ENABLED: parsed.data.OTEL_ENABLED ?? true,
             LOG_PRETTY:
-                parsed.data.LOG_PRETTY ?? parsed.data.NODE_ENV !== 'production'
+                parsed.data.LOG_PRETTY ?? parsed.data.NODE_ENV !== 'production',
+            METRICS_ENABLED: parsed.data.METRICS_ENABLED ?? true,
+            METRICS_PATH: parsed.data.METRICS_PATH?.trim() || '/metrics'
         };
     }
 

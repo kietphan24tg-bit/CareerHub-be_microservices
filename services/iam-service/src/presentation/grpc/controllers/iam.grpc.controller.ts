@@ -70,7 +70,7 @@ export class IamGrpcController {
         identity_id: result.identityId,
         role: result.role,
         status: result.status
-      };
+      } as unknown as RegisterIdentityResponse;
     } catch (error) {
       throw mapErrorToIamGrpcException(error);
     }
@@ -88,7 +88,7 @@ export class IamGrpcController {
       return {
         identity_id: result.identityId,
         status: result.status ?? 'unknown'
-      };
+      } as unknown as ActivateIdentityResponse;
     } catch (error) {
       throw mapErrorToIamGrpcException(error);
     }
@@ -111,7 +111,7 @@ export class IamGrpcController {
         identity_id: result.identityId,
         refresh_token: result.refreshToken,
         role: result.role
-      };
+      } as unknown as LoginIdentityResponse;
     } catch (error) {
       throw mapErrorToIamGrpcException(error);
     }
@@ -132,7 +132,7 @@ export class IamGrpcController {
         identity_id: result.identityId,
         refresh_token: result.refreshToken,
         role: result.role
-      };
+      } as unknown as RefreshSessionResponse;
     } catch (error) {
       throw mapErrorToIamGrpcException(error);
     }
@@ -143,13 +143,15 @@ export class IamGrpcController {
     request: LogoutSessionRequest
   ): Promise<LogoutSessionResponse> {
     try {
+      const loggedOut = (
+        await this.logoutSessionUseCase.execute({
+          refreshToken: request.refresh_token
+        })
+      ).loggedOut;
+
       return {
-        logged_out: (
-          await this.logoutSessionUseCase.execute({
-            refreshToken: request.refresh_token
-          })
-        ).loggedOut
-      };
+        logged_out: loggedOut
+      } as unknown as LogoutSessionResponse;
     } catch (error) {
       throw mapErrorToIamGrpcException(error);
     }
@@ -169,7 +171,7 @@ export class IamGrpcController {
         role: result.role,
         user_id: result.identityId,
         valid: true
-      };
+      } as unknown as ValidateAccessTokenResponse;
     } catch (error) {
       throw mapErrorToIamGrpcException(error);
     }
@@ -189,7 +191,7 @@ export class IamGrpcController {
         identity_id: result.identityId,
         role: result.role,
         status: result.status ?? 'unknown'
-      };
+      } as unknown as GetCurrentIdentityResponse;
     } catch (error) {
       throw mapErrorToIamGrpcException(error);
     }

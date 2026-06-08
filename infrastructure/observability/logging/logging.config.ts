@@ -1,8 +1,6 @@
 import { inspect } from 'node:util';
 import type { RuntimeLogLevel } from '../../runtime/config/runtime-config';
 
-export const HEALTH_LOG_PATH_PREFIXES = ['/health', '/metrics'] as const;
-
 export const LOG_REDACT_PATHS = [
     'details.authorization',
     'details.cookie',
@@ -82,14 +80,37 @@ export function redactLogData<TValue>(value: TValue): TValue {
     return clone as TValue;
 }
 
-export function shouldIgnoreHttpLog(path: string | undefined): boolean {
+type IgnoredHttpPaths = {
+    healthPath?: string;
+    livenessPath?: string;
+    metricsPath?: string;
+    readinessPath?: string;
+};
+
+function matchesPathPrefix(path: string, candidate: string | undefined): boolean {
+    if (!candidate) {
+        return false;
+    }
+
+    return path === candidate || path.startsWith(`${candidate}?`);
+}
+
+export function shouldIgnoreHttpLog(
+    path: string | undefined,
+    ignoredPaths?: IgnoredHttpPaths
+): boolean {
     if (!path) {
         return false;
     }
 
-    return HEALTH_LOG_PATH_PREFIXES.some(
-        (prefix) => path === prefix || path.startsWith(`${prefix}?`)
-    );
+    const candidates = [
+        ignoredPaths?.healthPath ?? '/health',
+        ignoredPaths?.livenessPath ?? '/health/live',
+        ignoredPaths?.metricsPath ?? '/metrics',
+        ignoredPaths?.readinessPath ?? '/health/ready'
+    ];
+
+    return candidates.some(candidate => matchesPathPrefix(path, candidate));
 }
 
 export function formatPrettyLog(

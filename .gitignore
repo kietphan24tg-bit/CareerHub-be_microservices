@@ -22,3 +22,5 @@ yarn-error.log*
 Thumbs.db
 
 *.tsbuildinfo
+
+tmp/logs/*.jsonl

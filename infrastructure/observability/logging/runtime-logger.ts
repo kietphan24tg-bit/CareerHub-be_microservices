@@ -308,6 +308,9 @@ export class RuntimeLogger implements LoggerService {
             userId: context?.userId
         };
 
+        const output = JSON.stringify(entry);
+        this.writeToFile(output);
+
         if (this.pretty && this.prettyLogger) {
             const composedMessage = [message, this.formatMetadata(entry)]
                 .filter((part) => part !== undefined)
@@ -336,9 +339,6 @@ export class RuntimeLogger implements LoggerService {
             this.prettyLogger.log(composedMessage, loggerContext);
             return;
         }
-
-        const output = JSON.stringify(entry);
-        this.writeToFile(output);
 
         if (level === 'error') {
             console.error(output);
