@@ -11,9 +11,9 @@ import {
 import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import {
-  CreateEmployerProfileUseCase,
-  GetEmployerProfileByIdentityIdUseCase,
-  UpdateEmployerProfileUseCase,
+  CreateEmployerProfileCommandHandler,
+  GetEmployerProfileByIdentityIdQueryHandler,
+  UpdateEmployerProfileCommandHandler,
   type EmployerProfileRecord
 } from '../../../application';
 import { mapErrorToEmployerGrpcException } from '../mappers/grpc-error.mapper';
@@ -61,9 +61,9 @@ function toGrpcEmployerProfile(profile: EmployerProfileRecord): EmployerProfile 
 @Controller()
 export class EmployerGrpcController {
   constructor(
-    private readonly createEmployerProfileUseCase: CreateEmployerProfileUseCase,
-    private readonly getEmployerProfileByIdentityIdUseCase: GetEmployerProfileByIdentityIdUseCase,
-    private readonly updateEmployerProfileUseCase: UpdateEmployerProfileUseCase
+    private readonly createEmployerProfileCommandHandler: CreateEmployerProfileCommandHandler,
+    private readonly getEmployerProfileByIdentityIdQueryHandler: GetEmployerProfileByIdentityIdQueryHandler,
+    private readonly updateEmployerProfileCommandHandler: UpdateEmployerProfileCommandHandler
   ) {}
 
   @GrpcMethod(EMPLOYER_GRPC_SERVICE_NAME, 'CreateEmployerProfile')
@@ -71,7 +71,7 @@ export class EmployerGrpcController {
     request: CreateEmployerProfileRequest
   ): Promise<CreateEmployerProfileResponse> {
     try {
-      const result = await this.createEmployerProfileUseCase.execute({
+      const result = await this.createEmployerProfileCommandHandler.execute({
         address: request.address,
         companyName: request.company_name,
         contactName: request.contact_name,
@@ -94,7 +94,7 @@ export class EmployerGrpcController {
     request: GetEmployerProfileByIdentityIdRequest
   ): Promise<GetEmployerProfileByIdentityIdResponse> {
     try {
-      const profile = await this.getEmployerProfileByIdentityIdUseCase.execute({
+      const profile = await this.getEmployerProfileByIdentityIdQueryHandler.execute({
         identityId: request.identity_id
       });
 
@@ -113,7 +113,7 @@ export class EmployerGrpcController {
     try {
       const updatedFields = new Set(request.updated_fields ?? []);
       const clearFields = new Set(request.clear_fields ?? []);
-      const profile = await this.updateEmployerProfileUseCase.execute({
+      const profile = await this.updateEmployerProfileCommandHandler.execute({
         address: updatedFields.has('address')
           ? request.address
           : clearFields.has('address')

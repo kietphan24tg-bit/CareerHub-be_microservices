@@ -22,6 +22,9 @@ test('registerCandidate orchestrates IAM, candidate profile creation, and activa
       async logoutSession() {
         throw new Error('unused');
       },
+      async requestPasswordReset() {
+        throw new Error('unused');
+      },
       async refreshSession() {
         throw new Error('unused');
       },
@@ -36,6 +39,9 @@ test('registerCandidate orchestrates IAM, candidate profile creation, and activa
         };
       },
       async validateAccessToken() {
+        throw new Error('unused');
+      },
+      async resetPassword() {
         throw new Error('unused');
       }
     } as never,
@@ -96,6 +102,9 @@ test('registerEmployer stops when employer profile creation fails', async () => 
       async logoutSession() {
         throw new Error('unused');
       },
+      async requestPasswordReset() {
+        throw new Error('unused');
+      },
       async refreshSession() {
         throw new Error('unused');
       },
@@ -110,6 +119,9 @@ test('registerEmployer stops when employer profile creation fails', async () => 
         };
       },
       async validateAccessToken() {
+        throw new Error('unused');
+      },
+      async resetPassword() {
         throw new Error('unused');
       }
     } as never,
@@ -143,4 +155,54 @@ test('registerEmployer stops when employer profile creation fails', async () => 
   );
 
   assert.deepEqual(calls, ['iam.register', 'employer.createProfile']);
+});
+
+test('requestPasswordReset forwards the email and returns a generic accepted response', async () => {
+  let capturedRequest: unknown;
+  const service = new GatewayAuthService(
+    {
+      async activateIdentity() {
+        throw new Error('unused');
+      },
+      async getCurrentIdentity() {
+        throw new Error('unused');
+      },
+      async loginIdentity() {
+        throw new Error('unused');
+      },
+      async logoutSession() {
+        throw new Error('unused');
+      },
+      async refreshSession() {
+        throw new Error('unused');
+      },
+      async registerIdentity() {
+        throw new Error('unused');
+      },
+      async requestPasswordReset(request: unknown) {
+        capturedRequest = request;
+        return { accepted: true };
+      },
+      async resetPassword() {
+        throw new Error('unused');
+      },
+      async validateAccessToken() {
+        throw new Error('unused');
+      }
+    } as never,
+    {} as never,
+    {} as never
+  );
+
+  const result = await service.requestPasswordReset({
+    email: 'candidate@example.com',
+    requestId: 'req-reset-1'
+  });
+
+  assert.deepEqual(capturedRequest, {
+    email: 'candidate@example.com'
+  });
+  assert.deepEqual(result, {
+    accepted: true
+  });
 });

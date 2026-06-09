@@ -17,6 +17,16 @@ const gatewayAuthService = {
       role: 'employer',
       userId: 'identity-2'
     };
+  },
+  async requestPasswordReset() {
+    return {
+      accepted: true
+    };
+  },
+  async resetPassword() {
+    return {
+      passwordReset: true
+    };
   }
 };
 
@@ -71,4 +81,31 @@ test('registerCandidate forwards payload when password confirmation matches', as
 
   assert.equal(response.message, 'Candidate registered successfully');
   assert.equal(response.data.role, 'candidate');
+});
+
+test('requestPasswordReset returns a generic success payload', async () => {
+  const controller = new AuthController(
+    gatewayAuthService as never,
+    gatewayRuntimeConfig
+  );
+
+  const response = await controller.requestPasswordReset({
+    email: 'user@example.com'
+  });
+
+  assert.equal(response.data.accepted, true);
+});
+
+test('resetPassword returns a success payload', async () => {
+  const controller = new AuthController(
+    gatewayAuthService as never,
+    gatewayRuntimeConfig
+  );
+
+  const response = await controller.resetPassword({
+    newPassword: 'new-password-1',
+    token: 'reset-token-raw'
+  });
+
+  assert.equal(response.data.passwordReset, true);
 });

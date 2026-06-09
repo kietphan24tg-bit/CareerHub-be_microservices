@@ -22,6 +22,8 @@ import type { GatewayRuntimeConfig } from '../../../config/gateway-runtime-confi
 import { CandidateRegisterRequestDto } from './dto/candidate-register.request.dto';
 import { EmployerRegisterRequestDto } from './dto/employer-register.request.dto';
 import { LoginRequestDto } from './dto/login.request.dto';
+import { RequestPasswordResetRequestDto } from './dto/request-password-reset.request.dto';
+import { ResetPasswordRequestDto } from './dto/reset-password.request.dto';
 
 type CookieRequest = {
   headers: {
@@ -185,6 +187,40 @@ export class AuthController {
         loggedOut: true
       },
       message: 'Logout successful'
+    };
+  }
+
+  @Post('forgot-password')
+  @Public()
+  @HttpCode(200)
+  async requestPasswordReset(
+    @Body() dto: RequestPasswordResetRequestDto,
+    @Headers('x-request-id') requestId?: string
+  ) {
+    return {
+      data: await this.gatewayAuthService.requestPasswordReset({
+        email: dto.email,
+        requestId
+      }),
+      message:
+        'If the email exists, a password reset instruction has been accepted'
+    };
+  }
+
+  @Post('reset-password')
+  @Public()
+  @HttpCode(200)
+  async resetPassword(
+    @Body() dto: ResetPasswordRequestDto,
+    @Headers('x-request-id') requestId?: string
+  ) {
+    return {
+      data: await this.gatewayAuthService.resetPassword({
+        newPassword: dto.newPassword,
+        requestId,
+        token: dto.token
+      }),
+      message: 'Password reset successful'
     };
   }
 

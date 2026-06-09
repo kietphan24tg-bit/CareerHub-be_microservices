@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CandidateProfileAlreadyExistsError } from '../../../application/errors/candidate-profile-already-exists.error';
 import { CandidateProfileNotFoundError } from '../../../application/errors/candidate-profile-not-found.error';
-import { CreateCandidateProfileUseCase } from '../../../application/profiles/use-cases/create-candidate-profile.use-case';
-import { GetCandidateProfileByIdentityIdUseCase } from '../../../application/profiles/use-cases/get-candidate-profile-by-identity-id.use-case';
-import { UpdateCandidateProfileUseCase } from '../../../application/profiles/use-cases/update-candidate-profile.use-case';
+import { CreateCandidateProfileCommandHandler } from '../../../application/commands/create-candidate-profile/create-candidate-profile.command-handler';
+import { GetCandidateProfileByIdentityIdQueryHandler } from '../../../application/queries/get-candidate-profile-by-identity-id/get-candidate-profile-by-identity-id.query-handler';
+import { UpdateCandidateProfileCommandHandler } from '../../../application/commands/update-candidate-profile/update-candidate-profile.command-handler';
 import { CandidateGrpcController } from './candidate.grpc.controller';
 
 test('maps create-candidate-profile request and response', async () => {
@@ -13,11 +13,11 @@ test('maps create-candidate-profile request and response', async () => {
       identityId: 'identity-1',
       profileId: 'candidate-profile-1'
     })
-  } as unknown as CreateCandidateProfileUseCase;
+  } as unknown as CreateCandidateProfileCommandHandler;
   const controller = new CandidateGrpcController(
     useCase,
-    { execute: async () => { throw new Error('unused'); } } as unknown as GetCandidateProfileByIdentityIdUseCase,
-    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileUseCase
+    { execute: async () => { throw new Error('unused'); } } as unknown as GetCandidateProfileByIdentityIdQueryHandler,
+    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileCommandHandler
   );
 
   const response = await controller.createCandidateProfile({
@@ -38,11 +38,11 @@ test('converts conflict errors into ALREADY_EXISTS gRPC payloads', async () => {
     execute: async () => {
       throw new CandidateProfileAlreadyExistsError('identity-1');
     }
-  } as unknown as CreateCandidateProfileUseCase;
+  } as unknown as CreateCandidateProfileCommandHandler;
   const controller = new CandidateGrpcController(
     useCase,
-    { execute: async () => { throw new Error('unused'); } } as unknown as GetCandidateProfileByIdentityIdUseCase,
-    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileUseCase
+    { execute: async () => { throw new Error('unused'); } } as unknown as GetCandidateProfileByIdentityIdQueryHandler,
+    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileCommandHandler
   );
 
   await assert.rejects(
@@ -79,7 +79,7 @@ test('converts conflict errors into ALREADY_EXISTS gRPC payloads', async () => {
 
 test('maps get-candidate-profile request and response', async () => {
   const controller = new CandidateGrpcController(
-    { execute: async () => ({ identityId: 'identity-1', profileId: 'candidate-profile-1' }) } as unknown as CreateCandidateProfileUseCase,
+    { execute: async () => ({ identityId: 'identity-1', profileId: 'candidate-profile-1' }) } as unknown as CreateCandidateProfileCommandHandler,
     {
       execute: async () => ({
         address: null,
@@ -97,8 +97,8 @@ test('maps get-candidate-profile request and response', async () => {
         updatedAt: new Date('2026-06-06T01:00:00.000Z'),
         yearsExperience: 3
       })
-    } as unknown as GetCandidateProfileByIdentityIdUseCase,
-    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileUseCase
+    } as unknown as GetCandidateProfileByIdentityIdQueryHandler,
+    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileCommandHandler
   );
 
   const response = await controller.getCandidateProfileByIdentityId({
@@ -113,13 +113,13 @@ test('maps get-candidate-profile request and response', async () => {
 
 test('converts not found candidate profile errors into NOT_FOUND gRPC payloads', async () => {
   const controller = new CandidateGrpcController(
-    { execute: async () => ({ identityId: 'identity-1', profileId: 'candidate-profile-1' }) } as unknown as CreateCandidateProfileUseCase,
+    { execute: async () => ({ identityId: 'identity-1', profileId: 'candidate-profile-1' }) } as unknown as CreateCandidateProfileCommandHandler,
     {
       execute: async () => {
         throw new CandidateProfileNotFoundError('identity-404');
       }
-    } as unknown as GetCandidateProfileByIdentityIdUseCase,
-    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileUseCase
+    } as unknown as GetCandidateProfileByIdentityIdQueryHandler,
+    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileCommandHandler
   );
 
   await assert.rejects(

@@ -9,16 +9,18 @@ import {
 import { IamGrpcController } from './iam.grpc.controller';
 
 function createController(overrides?: Partial<{
-  activateIdentityUseCase: { execute: (input: unknown) => Promise<unknown> };
-  getCurrentIdentityUseCase: { execute: (input: unknown) => Promise<unknown> };
-  loginIdentityUseCase: { execute: (input: unknown) => Promise<unknown> };
-  logoutSessionUseCase: { execute: (input: unknown) => Promise<unknown> };
-  refreshSessionUseCase: { execute: (input: unknown) => Promise<unknown> };
-  registerIdentityUseCase: { execute: (input: unknown) => Promise<unknown> };
-  validateAccessTokenUseCase: { execute: (input: unknown) => Promise<unknown> };
+  activateIdentityCommandHandler: { execute: (input: unknown) => Promise<unknown> };
+  getCurrentIdentityQueryHandler: { execute: (input: unknown) => Promise<unknown> };
+  loginIdentityCommandHandler: { execute: (input: unknown) => Promise<unknown> };
+  logoutSessionCommandHandler: { execute: (input: unknown) => Promise<unknown> };
+  requestPasswordResetCommandHandler: { execute: (input: unknown) => Promise<unknown> };
+  refreshSessionCommandHandler: { execute: (input: unknown) => Promise<unknown> };
+  registerIdentityCommandHandler: { execute: (input: unknown) => Promise<unknown> };
+  resetPasswordCommandHandler: { execute: (input: unknown) => Promise<unknown> };
+  validateAccessTokenQueryHandler: { execute: (input: unknown) => Promise<unknown> };
 }>): IamGrpcController {
   return new IamGrpcController(
-    (overrides?.registerIdentityUseCase ??
+    (overrides?.registerIdentityCommandHandler ??
       ({
         async execute() {
           return {
@@ -30,7 +32,7 @@ function createController(overrides?: Partial<{
           };
         }
       } as never)) as never,
-    (overrides?.loginIdentityUseCase ??
+    (overrides?.loginIdentityCommandHandler ??
       ({
         async execute() {
           return {
@@ -42,7 +44,7 @@ function createController(overrides?: Partial<{
           };
         }
       } as never)) as never,
-    (overrides?.refreshSessionUseCase ??
+    (overrides?.refreshSessionCommandHandler ??
       ({
         async execute() {
           return {
@@ -54,13 +56,25 @@ function createController(overrides?: Partial<{
           };
         }
       } as never)) as never,
-    (overrides?.logoutSessionUseCase ??
+    (overrides?.logoutSessionCommandHandler ??
       ({
         async execute() {
           return { loggedOut: true };
         }
       } as never)) as never,
-    (overrides?.validateAccessTokenUseCase ??
+    (overrides?.requestPasswordResetCommandHandler ??
+      ({
+        async execute() {
+          return { accepted: true };
+        }
+      } as never)) as never,
+    (overrides?.resetPasswordCommandHandler ??
+      ({
+        async execute() {
+          return { passwordReset: true };
+        }
+      } as never)) as never,
+    (overrides?.validateAccessTokenQueryHandler ??
       ({
         async execute() {
           return {
@@ -70,7 +84,7 @@ function createController(overrides?: Partial<{
           };
         }
       } as never)) as never,
-    (overrides?.getCurrentIdentityUseCase ??
+    (overrides?.getCurrentIdentityQueryHandler ??
       ({
         async execute() {
           return {
@@ -81,7 +95,7 @@ function createController(overrides?: Partial<{
           };
         }
       } as never)) as never,
-    (overrides?.activateIdentityUseCase ??
+    (overrides?.activateIdentityCommandHandler ??
       ({
         async execute() {
           return {
@@ -98,7 +112,7 @@ function createController(overrides?: Partial<{
 test('maps register request fields and resolves request id from metadata', async () => {
   let capturedInput: unknown;
   const controller = createController({
-    registerIdentityUseCase: {
+    registerIdentityCommandHandler: {
       async execute(input: unknown) {
         capturedInput = input;
         return {
@@ -143,7 +157,7 @@ test('maps register request fields and resolves request id from metadata', async
 test('maps login request and response fields', async () => {
   let capturedInput: unknown;
   const controller = createController({
-    loginIdentityUseCase: {
+    loginIdentityCommandHandler: {
       async execute(input: unknown) {
         capturedInput = input;
         return {
@@ -220,9 +234,64 @@ test('maps get-current-identity response shape', async () => {
   });
 });
 
+test('maps request-password-reset response shape', async () => {
+  let capturedInput: unknown;
+  const controller = createController({
+    requestPasswordResetCommandHandler: {
+      async execute(input: unknown) {
+        capturedInput = input;
+        return { accepted: true };
+      }
+    }
+  });
+  const metadata = new Metadata();
+  metadata.set('x-request-id', 'req-grpc-reset-1');
+
+  const result = await controller.requestPasswordReset(
+    {
+      email: 'user@example.com'
+    },
+    metadata
+  );
+
+  assert.deepEqual(capturedInput, {
+    email: 'user@example.com',
+    requestId: 'req-grpc-reset-1'
+  });
+  assert.deepEqual(result, {
+    accepted: true
+  });
+});
+
+test('maps reset-password response shape', async () => {
+  let capturedInput: unknown;
+  const controller = createController({
+    resetPasswordCommandHandler: {
+      async execute(input: unknown) {
+        capturedInput = input;
+        return { passwordReset: true };
+      }
+    }
+  });
+
+  const result = await controller.resetPassword({
+    new_password: 'new-password-1',
+    token: 'reset-token-raw'
+  });
+
+  assert.deepEqual(capturedInput, {
+    newPassword: 'new-password-1',
+    requestId: undefined,
+    token: 'reset-token-raw'
+  });
+  assert.deepEqual(result, {
+    password_reset: true
+  });
+});
+
 test('converts application errors into RpcException payloads', async () => {
   const controller = createController({
-    validateAccessTokenUseCase: {
+    validateAccessTokenQueryHandler: {
       async execute() {
         throw new InvalidTokenError();
       }
@@ -259,7 +328,7 @@ test('converts application errors into RpcException payloads', async () => {
 
 test('converts conflict application errors into ALREADY_EXISTS gRPC payloads', async () => {
   const controller = createController({
-    registerIdentityUseCase: {
+    registerIdentityCommandHandler: {
       async execute() {
         throw new IdentityAlreadyExistsError('user@example.com');
       }
@@ -299,7 +368,7 @@ test('converts conflict application errors into ALREADY_EXISTS gRPC payloads', a
 
 test('converts not-found application errors into NOT_FOUND gRPC payloads', async () => {
   const controller = createController({
-    getCurrentIdentityUseCase: {
+    getCurrentIdentityQueryHandler: {
       async execute() {
         throw new IdentityNotFoundError('missing-identity');
       }

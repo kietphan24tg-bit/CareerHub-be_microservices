@@ -19,7 +19,7 @@ export type CreateCandidateProfileRecord = {
   fullName: string;
   id: string;
   identityId: string;
-  phone: string;
+  phone: string | null;
 };
 
 export type UpdateCandidateProfilePatch = {

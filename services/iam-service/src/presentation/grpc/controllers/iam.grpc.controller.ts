@@ -12,21 +12,27 @@ import {
   type LogoutSessionResponse,
   type RefreshSessionRequest,
   type RefreshSessionResponse,
+  type RequestPasswordResetRequest,
+  type RequestPasswordResetResponse,
   type RegisterIdentityRequest,
   type RegisterIdentityResponse,
+  type ResetPasswordRequest,
+  type ResetPasswordResponse,
   type ValidateAccessTokenRequest,
   type ValidateAccessTokenResponse
 } from '@careerhub/contracts';
 import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import {
-  ActivateIdentityUseCase,
-  GetCurrentIdentityUseCase,
-  LoginIdentityUseCase,
-  LogoutSessionUseCase,
-  RefreshSessionUseCase,
-  RegisterIdentityUseCase,
-  ValidateAccessTokenUseCase
+  ActivateIdentityCommandHandler,
+  GetCurrentIdentityQueryHandler,
+  LoginIdentityCommandHandler,
+  LogoutSessionCommandHandler,
+  RequestPasswordResetCommandHandler,
+  RefreshSessionCommandHandler,
+  RegisterIdentityCommandHandler,
+  ResetPasswordCommandHandler,
+  ValidateAccessTokenQueryHandler
 } from '../../../application';
 import { mapErrorToIamGrpcException } from '../mappers/grpc-error.mapper';
 
@@ -38,13 +44,15 @@ type RegisterIdentityGrpcRequest = RegisterIdentityRequest & {
 @Controller()
 export class IamGrpcController {
   constructor(
-    private readonly registerIdentityUseCase: RegisterIdentityUseCase,
-    private readonly loginIdentityUseCase: LoginIdentityUseCase,
-    private readonly refreshSessionUseCase: RefreshSessionUseCase,
-    private readonly logoutSessionUseCase: LogoutSessionUseCase,
-    private readonly validateAccessTokenUseCase: ValidateAccessTokenUseCase,
-    private readonly getCurrentIdentityUseCase: GetCurrentIdentityUseCase,
-    private readonly activateIdentityUseCase: ActivateIdentityUseCase
+    private readonly registerIdentityCommandHandler: RegisterIdentityCommandHandler,
+    private readonly loginIdentityCommandHandler: LoginIdentityCommandHandler,
+    private readonly refreshSessionCommandHandler: RefreshSessionCommandHandler,
+    private readonly logoutSessionCommandHandler: LogoutSessionCommandHandler,
+    private readonly requestPasswordResetCommandHandler: RequestPasswordResetCommandHandler,
+    private readonly resetPasswordCommandHandler: ResetPasswordCommandHandler,
+    private readonly validateAccessTokenQueryHandler: ValidateAccessTokenQueryHandler,
+    private readonly getCurrentIdentityQueryHandler: GetCurrentIdentityQueryHandler,
+    private readonly activateIdentityCommandHandler: ActivateIdentityCommandHandler
   ) {}
 
   @GrpcMethod(IAM_GRPC_SERVICE_NAME, 'RegisterIdentity')
@@ -53,7 +61,7 @@ export class IamGrpcController {
     metadata?: Metadata
   ): Promise<RegisterIdentityResponse> {
     try {
-      const result = await this.registerIdentityUseCase.execute({
+      const result = await this.registerIdentityCommandHandler.execute({
         acceptedTerms: request.accepted_terms ?? request.acceptedTerms,
         email: request.email,
         password: request.password,
@@ -81,7 +89,7 @@ export class IamGrpcController {
     request: ActivateIdentityRequest
   ): Promise<ActivateIdentityResponse> {
     try {
-      const result = await this.activateIdentityUseCase.execute({
+      const result = await this.activateIdentityCommandHandler.execute({
         identityId: request.identity_id
       });
 
@@ -99,7 +107,7 @@ export class IamGrpcController {
     request: LoginIdentityRequest
   ): Promise<LoginIdentityResponse> {
     try {
-      const result = await this.loginIdentityUseCase.execute({
+      const result = await this.loginIdentityCommandHandler.execute({
         email: request.email,
         password: request.password,
         rememberMe: request.remember_me
@@ -122,7 +130,7 @@ export class IamGrpcController {
     request: RefreshSessionRequest
   ): Promise<RefreshSessionResponse> {
     try {
-      const result = await this.refreshSessionUseCase.execute({
+      const result = await this.refreshSessionCommandHandler.execute({
         refreshToken: request.refresh_token
       });
 
@@ -144,7 +152,7 @@ export class IamGrpcController {
   ): Promise<LogoutSessionResponse> {
     try {
       const loggedOut = (
-        await this.logoutSessionUseCase.execute({
+        await this.logoutSessionCommandHandler.execute({
           refreshToken: request.refresh_token
         })
       ).loggedOut;
@@ -157,12 +165,51 @@ export class IamGrpcController {
     }
   }
 
+  @GrpcMethod(IAM_GRPC_SERVICE_NAME, 'RequestPasswordReset')
+  async requestPasswordReset(
+    request: RequestPasswordResetRequest,
+    metadata?: Metadata
+  ): Promise<RequestPasswordResetResponse> {
+    try {
+      const result = await this.requestPasswordResetCommandHandler.execute({
+        email: request.email,
+        requestId: request.request_id ?? getRequestIdFromGrpcMetadata(metadata)
+      });
+
+      return {
+        accepted: result.accepted
+      } as unknown as RequestPasswordResetResponse;
+    } catch (error) {
+      throw mapErrorToIamGrpcException(error);
+    }
+  }
+
+  @GrpcMethod(IAM_GRPC_SERVICE_NAME, 'ResetPassword')
+  async resetPassword(
+    request: ResetPasswordRequest,
+    metadata?: Metadata
+  ): Promise<ResetPasswordResponse> {
+    try {
+      const result = await this.resetPasswordCommandHandler.execute({
+        newPassword: request.new_password,
+        requestId: request.request_id ?? getRequestIdFromGrpcMetadata(metadata),
+        token: request.token
+      });
+
+      return {
+        password_reset: result.passwordReset
+      } as unknown as ResetPasswordResponse;
+    } catch (error) {
+      throw mapErrorToIamGrpcException(error);
+    }
+  }
+
   @GrpcMethod(IAM_GRPC_SERVICE_NAME, 'ValidateAccessToken')
   async validateAccessToken(
     request: ValidateAccessTokenRequest
   ): Promise<ValidateAccessTokenResponse> {
     try {
-      const result = await this.validateAccessTokenUseCase.execute({
+      const result = await this.validateAccessTokenQueryHandler.execute({
         accessToken: request.access_token
       });
 
@@ -182,7 +229,7 @@ export class IamGrpcController {
     request: GetCurrentIdentityRequest
   ): Promise<GetCurrentIdentityResponse> {
     try {
-      const result = await this.getCurrentIdentityUseCase.execute({
+      const result = await this.getCurrentIdentityQueryHandler.execute({
         identityId: request.identity_id
       });
 

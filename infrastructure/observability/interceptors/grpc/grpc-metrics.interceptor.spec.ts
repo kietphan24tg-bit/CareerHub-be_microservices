@@ -38,6 +38,10 @@ test('records RPC success metrics', async () => {
     const metrics: MetricsRegistry = {
         recordHttpError() {},
         recordHttpRequest() {},
+        recordIntegrationConsumer() {},
+        recordOutboxBacklog() {},
+        recordOutboxCleanup() {},
+        recordOutboxPublish() {},
         recordRmqError() {},
         recordRmqRequest() {},
         recordRpcError() {},
@@ -69,6 +73,10 @@ test('records RPC error metrics', async () => {
     const metrics: MetricsRegistry = {
         recordHttpError() {},
         recordHttpRequest() {},
+        recordIntegrationConsumer() {},
+        recordOutboxBacklog() {},
+        recordOutboxCleanup() {},
+        recordOutboxPublish() {},
         recordRmqError() {},
         recordRmqRequest() {},
         recordRpcError(record) {

@@ -20,6 +20,7 @@ export interface AuthSessionRepository {
   create(input: CreateAuthSessionInput): Promise<void>;
   findByTokenHash(tokenHash: string): Promise<AuthSessionRecord | null>;
   revoke(sessionId: string): Promise<void>;
+  revokeByIdentityId(identityId: string, revokedAt: Date): Promise<number>;
   rotate(
     sessionId: string,
     input: Pick<CreateAuthSessionInput, 'expiresAt' | 'tokenHash'>

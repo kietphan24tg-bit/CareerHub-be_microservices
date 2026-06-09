@@ -8,6 +8,7 @@ import {
   configureHttpRuntime,
   getRuntimeConfig,
   initializeOpenTelemetry,
+  type MetricsRegistry,
   type PrismaReadinessCheck,
   type EnvironmentVariables
 } from '@careerhub/infrastructure';
@@ -18,7 +19,7 @@ import {
 } from '@nestjs/microservices';
 import { IamModule } from './iam.module';
 import { getIamRuntimeConfig, type IamEnvironmentVariables } from './config';
-import { IAM_PRISMA_TOKENS } from './infrastructure';
+import { IAM_METRICS_TOKENS, IAM_PRISMA_TOKENS } from './infrastructure';
 
 function resolveIamProtoPath(): string {
   const distRelativePath = join(
@@ -66,11 +67,13 @@ async function bootstrap() {
   );
   const runtimeConfig = getRuntimeConfig(configService);
   const iamRuntimeConfig = getIamRuntimeConfig(configService);
+  const metricsRegistry = app.get<MetricsRegistry>(IAM_METRICS_TOKENS.registry);
   const prismaReadinessCheck = app.get<PrismaReadinessCheck>(
     IAM_PRISMA_TOKENS.readinessCheck
   );
 
   const runtime = configureHttpRuntime(app, {
+    metricsRegistry,
     readinessChecks: [prismaReadinessCheck],
     runtimeConfig
   });

@@ -526,6 +526,197 @@
       },
       "title": "Trace & Log Drilldown",
       "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 56
+      },
+      "id": 14,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (service, status) (rate(careerhub_outbox_publish_total{service=~\"$service\"}[5m]))",
+          "legendFormat": "{{service}} {{status}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Outbox Publish Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 56
+      },
+      "id": 15,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "max by (service, status) (careerhub_outbox_backlog{service=~\"$service\"})",
+          "legendFormat": "{{service}} {{status}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Outbox Backlog",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 64
+      },
+      "id": 16,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "max by (service) (careerhub_outbox_oldest_pending_age_seconds{service=~\"$service\"})",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Outbox Oldest Pending Age",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 64
+      },
+      "id": 17,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (service) (rate(careerhub_outbox_cleanup_deleted_total{service=~\"$service\"}[5m]))",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Outbox Cleanup Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 72
+      },
+      "id": 18,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (service, consumer, status) (increase(careerhub_integration_consumer_total{service=~\"$service\"}[10m]))",
+          "legendFormat": "{{service}} {{consumer}} {{status}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Integration Consumer Outcomes",
+      "type": "timeseries"
     }
   ],
   "refresh": "15s",
@@ -574,5 +765,5 @@
   "timezone": "",
   "title": "CareerHub Observability",
   "uid": "careerhub-observability",
-  "version": 2
+  "version": 3
 }

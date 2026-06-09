@@ -3,13 +3,15 @@ import type {
   CandidateProfileRepository,
   UpdateCandidateProfilePatch
 } from '../../../application';
-import type { CandidateProfilePersistenceRecord } from '../prisma/candidate-prisma.types';
-import { CandidatePrismaService } from '../prisma/candidate-prisma.service';
+import type {
+  CandidateProfilePersistenceRecord,
+  CandidatePrismaRepositoryClient
+} from '../prisma/candidate-prisma.types';
 
 export class PrismaCandidateProfileRepository
   implements CandidateProfileRepository
 {
-  constructor(private readonly prismaService: CandidatePrismaService) {}
+  constructor(private readonly prismaClient: CandidatePrismaRepositoryClient) {}
 
   private mapRecord(record: CandidateProfilePersistenceRecord): CandidateProfileRecord {
     return {
@@ -32,7 +34,7 @@ export class PrismaCandidateProfileRepository
 
   async existsByIdentityId(identityId: string): Promise<boolean> {
     return (
-      await this.prismaService.prisma.candidateProfile.findUnique({
+      await this.prismaClient.candidateProfile.findUnique({
         where: {
           identityId
         }
@@ -43,7 +45,7 @@ export class PrismaCandidateProfileRepository
   async findByIdentityId(
     identityId: string
   ): Promise<CandidateProfileRecord | null> {
-    const record = await this.prismaService.prisma.candidateProfile.findUnique({
+    const record = await this.prismaClient.candidateProfile.findUnique({
       where: {
         identityId
       }
@@ -56,9 +58,9 @@ export class PrismaCandidateProfileRepository
     fullName: string;
     id: string;
     identityId: string;
-    phone: string;
+    phone: string | null;
   }): Promise<void> {
-    await this.prismaService.prisma.candidateProfile.create({
+    await this.prismaClient.candidateProfile.create({
       data: profile
     });
   }
@@ -67,7 +69,7 @@ export class PrismaCandidateProfileRepository
     identityId: string,
     patch: UpdateCandidateProfilePatch
   ): Promise<CandidateProfileRecord | null> {
-    const existing = await this.prismaService.prisma.candidateProfile.findUnique({
+    const existing = await this.prismaClient.candidateProfile.findUnique({
       where: {
         identityId
       }
@@ -77,7 +79,7 @@ export class PrismaCandidateProfileRepository
       return null;
     }
 
-    const updated = await this.prismaService.prisma.candidateProfile.update({
+    const updated = await this.prismaClient.candidateProfile.update({
       data: patch,
       where: {
         id: existing.id

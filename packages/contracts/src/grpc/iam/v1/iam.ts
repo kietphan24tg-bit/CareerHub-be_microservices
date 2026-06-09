@@ -58,6 +58,25 @@ export type LogoutSessionResponse = {
   logged_out: boolean;
 };
 
+export type RequestPasswordResetRequest = {
+  email: string;
+  request_id?: string;
+};
+
+export type RequestPasswordResetResponse = {
+  accepted: boolean;
+};
+
+export type ResetPasswordRequest = {
+  new_password: string;
+  request_id?: string;
+  token: string;
+};
+
+export type ResetPasswordResponse = {
+  password_reset: boolean;
+};
+
 export type ValidateAccessTokenRequest = {
   access_token: string;
   request_id?: string;

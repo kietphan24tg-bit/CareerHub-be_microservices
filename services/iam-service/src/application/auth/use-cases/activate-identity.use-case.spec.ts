@@ -9,7 +9,7 @@ import {
   Role
 } from '../../../domain';
 import { IdentityNotFoundError } from '../../errors';
-import { ActivateIdentityUseCase } from './activate-identity.use-case';
+import { ActivateIdentityCommandHandler } from '../../commands/activate-identity/activate-identity.command-handler';
 
 const ARGON2ID_HASH =
   '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$ZmFrZWhhc2gxMjM0NTY3ODkw';
@@ -32,7 +32,7 @@ function createPendingIdentity(): Identity {
 test('activates a pending identity and persists it', async () => {
   const identity = createPendingIdentity();
   const savedStatuses: string[] = [];
-  const useCase = new ActivateIdentityUseCase({
+  const useCase = new ActivateIdentityCommandHandler({
     async existsByEmail() {
       return true;
     },
@@ -57,7 +57,7 @@ test('activates a pending identity and persists it', async () => {
 });
 
 test('fails when identity does not exist', async () => {
-  const useCase = new ActivateIdentityUseCase({
+  const useCase = new ActivateIdentityCommandHandler({
     async existsByEmail() {
       return false;
     },

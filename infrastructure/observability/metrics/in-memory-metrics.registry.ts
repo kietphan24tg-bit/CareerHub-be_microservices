@@ -1,7 +1,11 @@
 import type {
     HttpErrorMetricRecord,
     HttpMetricRecord,
+    IntegrationConsumerMetricRecord,
     MetricsRegistry,
+    OutboxBacklogMetricRecord,
+    OutboxCleanupMetricRecord,
+    OutboxPublishMetricRecord,
     RmqMetricRecord,
     RpcMetricRecord
 } from './metrics.types';
@@ -19,6 +23,13 @@ type SummaryMetric = {
     name: string;
     sum: Map<string, number>;
     type: 'summary';
+};
+
+type GaugeMetric = {
+    help: string;
+    name: string;
+    type: 'gauge';
+    values: Map<string, number>;
 };
 
 function createLabelKey(labels: Record<string, string | number>): string {
@@ -104,6 +115,41 @@ export class InMemoryMetricsRegistry implements MetricsRegistry {
         type: 'summary'
     };
 
+    private readonly outboxPublishTotal: CounterMetric = {
+        help: 'Total number of outbox publish attempts',
+        name: 'careerhub_outbox_publish_total',
+        type: 'counter',
+        values: new Map()
+    };
+
+    private readonly outboxCleanupDeletedTotal: CounterMetric = {
+        help: 'Total number of processed outbox records deleted by cleanup',
+        name: 'careerhub_outbox_cleanup_deleted_total',
+        type: 'counter',
+        values: new Map()
+    };
+
+    private readonly outboxBacklogGauge: GaugeMetric = {
+        help: 'Current outbox backlog by status',
+        name: 'careerhub_outbox_backlog',
+        type: 'gauge',
+        values: new Map()
+    };
+
+    private readonly outboxOldestPendingAgeGauge: GaugeMetric = {
+        help: 'Age of the oldest pending outbox record in seconds',
+        name: 'careerhub_outbox_oldest_pending_age_seconds',
+        type: 'gauge',
+        values: new Map()
+    };
+
+    private readonly integrationConsumerTotal: CounterMetric = {
+        help: 'Total number of integration consumer outcomes',
+        name: 'careerhub_integration_consumer_total',
+        type: 'counter',
+        values: new Map()
+    };
+
     recordHttpRequest(record: HttpMetricRecord): void {
         const labels = {
             method: record.method,
@@ -120,6 +166,48 @@ export class InMemoryMetricsRegistry implements MetricsRegistry {
             method: record.method,
             route: record.route,
             status: record.statusCode
+        });
+    }
+
+    recordIntegrationConsumer(record: IntegrationConsumerMetricRecord): void {
+        this.incrementCounter(this.integrationConsumerTotal, {
+            consumer: record.consumer,
+            event_name: record.eventName,
+            service: record.service,
+            status: record.status
+        });
+    }
+
+    recordOutboxBacklog(record: OutboxBacklogMetricRecord): void {
+        this.setGauge(this.outboxBacklogGauge, {
+            service: record.service,
+            status: 'pending'
+        }, record.pending);
+        this.setGauge(this.outboxBacklogGauge, {
+            service: record.service,
+            status: 'processing'
+        }, record.processing);
+        this.setGauge(this.outboxBacklogGauge, {
+            service: record.service,
+            status: 'failed'
+        }, record.failed);
+
+        this.setGauge(this.outboxOldestPendingAgeGauge, {
+            service: record.service
+        }, record.oldestPendingAgeSeconds ?? 0);
+    }
+
+    recordOutboxCleanup(record: OutboxCleanupMetricRecord): void {
+        this.incrementCounter(this.outboxCleanupDeletedTotal, {
+            service: record.service
+        }, record.deletedCount);
+    }
+
+    recordOutboxPublish(record: OutboxPublishMetricRecord): void {
+        this.incrementCounter(this.outboxPublishTotal, {
+            event_name: record.eventName ?? 'unknown',
+            service: record.service,
+            status: record.status
         });
     }
 
@@ -161,7 +249,12 @@ export class InMemoryMetricsRegistry implements MetricsRegistry {
             this.renderCounterMetric(this.rpcErrorsTotal),
             this.renderCounterMetric(this.rmqMessagesTotal),
             this.renderSummaryMetric(this.rmqMessagesDuration),
-            this.renderCounterMetric(this.rmqErrorsTotal)
+            this.renderCounterMetric(this.rmqErrorsTotal),
+            this.renderCounterMetric(this.outboxPublishTotal),
+            this.renderCounterMetric(this.outboxCleanupDeletedTotal),
+            this.renderGaugeMetric(this.outboxBacklogGauge),
+            this.renderGaugeMetric(this.outboxOldestPendingAgeGauge),
+            this.renderCounterMetric(this.integrationConsumerTotal)
         ].join('\n');
     }
 
@@ -182,11 +275,12 @@ export class InMemoryMetricsRegistry implements MetricsRegistry {
 
     private incrementCounter(
         metric: CounterMetric,
-        labels: Record<string, string | number>
+        labels: Record<string, string | number>,
+        incrementBy = 1
     ): void {
         const key = createLabelKey(labels);
         const current = metric.values.get(key) ?? 0;
-        metric.values.set(key, current + 1);
+        metric.values.set(key, current + incrementBy);
     }
 
     private observeSummary(
@@ -231,6 +325,29 @@ export class InMemoryMetricsRegistry implements MetricsRegistry {
         }
 
         return lines.join('\n');
+    }
+
+    private renderGaugeMetric(metric: GaugeMetric): string {
+        const lines = [
+            `# HELP ${metric.name} ${metric.help}`,
+            `# TYPE ${metric.name} ${metric.type}`
+        ];
+
+        for (const [key, value] of metric.values.entries()) {
+            const labels = this.parseLabelKey(key);
+            lines.push(`${metric.name}${renderLabels(labels)} ${value}`);
+        }
+
+        return lines.join('\n');
+    }
+
+    private setGauge(
+        metric: GaugeMetric,
+        labels: Record<string, string | number>,
+        value: number
+    ): void {
+        const key = createLabelKey(labels);
+        metric.values.set(key, value);
     }
 
     private parseLabelKey(key: string): Record<string, string> {

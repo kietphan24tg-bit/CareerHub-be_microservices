@@ -1,4 +1,6 @@
 import {
+  InMemoryMetricsRegistry,
+  type MetricsRegistry,
   createPrismaModule,
   createRuntimeConfigModule
 } from '@careerhub/infrastructure';
@@ -6,15 +8,20 @@ import { Module } from '@nestjs/common';
 import { CandidateProfileAlreadyExistsError } from './application/errors/candidate-profile-already-exists.error';
 import {
   CANDIDATE_PORT_TOKENS,
-  CreateCandidateProfileUseCase,
-  GetCandidateProfileByIdentityIdUseCase,
-  UpdateCandidateProfileUseCase
+  CreateCandidateProfileCommandHandler,
+  GetCandidateProfileByIdentityIdQueryHandler,
+  UpdateCandidateProfileCommandHandler
 } from './application';
 import { getCandidateRuntimeConfig, validateCandidateEnvironment } from './config';
 import {
   CandidatePrismaService,
+  CANDIDATE_METRICS_TOKENS,
+  CandidateOutboxProcessor,
+  CandidateOutboxPublisher,
   CANDIDATE_PRISMA_TOKENS,
   createCandidatePrismaClient,
+  PrismaCandidateOutboxRepository,
+  PrismaCandidateWriteTransaction,
   PrismaCandidateProfileRepository
 } from './infrastructure';
 import { UuidIdGenerator } from './infrastructure/id/uuid-id-generator';
@@ -37,17 +44,33 @@ import { CandidateGrpcController } from './presentation';
   ],
   providers: [
     {
+      provide: CANDIDATE_METRICS_TOKENS.registry,
+      useFactory: (): MetricsRegistry => new InMemoryMetricsRegistry()
+    },
+    {
       provide: CANDIDATE_PORT_TOKENS.candidateProfileRepository,
       inject: [CANDIDATE_PRISMA_TOKENS.service],
       useFactory: (prismaService: CandidatePrismaService) =>
-        new PrismaCandidateProfileRepository(prismaService)
+        new PrismaCandidateProfileRepository(prismaService.prisma)
+    },
+    {
+      provide: CANDIDATE_PORT_TOKENS.outboxRepository,
+      inject: [CANDIDATE_PRISMA_TOKENS.service],
+      useFactory: (prismaService: CandidatePrismaService) =>
+        new PrismaCandidateOutboxRepository(prismaService.prisma)
+    },
+    {
+      provide: CANDIDATE_PORT_TOKENS.writeTransaction,
+      inject: [CANDIDATE_PRISMA_TOKENS.service],
+      useFactory: (prismaService: CandidatePrismaService) =>
+        new PrismaCandidateWriteTransaction(prismaService)
     },
     {
       provide: CANDIDATE_PORT_TOKENS.idGenerator,
       useClass: UuidIdGenerator
     },
     {
-      provide: CreateCandidateProfileUseCase,
+      provide: CreateCandidateProfileCommandHandler,
       inject: [
         CANDIDATE_PORT_TOKENS.candidateProfileRepository,
         CANDIDATE_PORT_TOKENS.idGenerator
@@ -56,24 +79,33 @@ import { CandidateGrpcController } from './presentation';
         candidateProfileRepository: PrismaCandidateProfileRepository,
         idGenerator: UuidIdGenerator
       ) =>
-        new CreateCandidateProfileUseCase(candidateProfileRepository, idGenerator)
+        new CreateCandidateProfileCommandHandler(
+          candidateProfileRepository,
+          idGenerator
+        )
     },
     {
-      provide: GetCandidateProfileByIdentityIdUseCase,
+      provide: GetCandidateProfileByIdentityIdQueryHandler,
       inject: [CANDIDATE_PORT_TOKENS.candidateProfileRepository],
       useFactory: (
         candidateProfileRepository: PrismaCandidateProfileRepository
       ) =>
-        new GetCandidateProfileByIdentityIdUseCase(candidateProfileRepository)
+        new GetCandidateProfileByIdentityIdQueryHandler(candidateProfileRepository)
     },
     {
-      provide: UpdateCandidateProfileUseCase,
-      inject: [CANDIDATE_PORT_TOKENS.candidateProfileRepository],
+      provide: UpdateCandidateProfileCommandHandler,
+      inject: [
+        CANDIDATE_PORT_TOKENS.writeTransaction,
+        CANDIDATE_PORT_TOKENS.idGenerator
+      ],
       useFactory: (
-        candidateProfileRepository: PrismaCandidateProfileRepository
+        writeTransaction: PrismaCandidateWriteTransaction,
+        idGenerator: UuidIdGenerator
       ) =>
-        new UpdateCandidateProfileUseCase(candidateProfileRepository)
-    }
+        new UpdateCandidateProfileCommandHandler(writeTransaction, idGenerator)
+    },
+    CandidateOutboxPublisher,
+    CandidateOutboxProcessor
   ]
 })
 export class CandidateModule {}

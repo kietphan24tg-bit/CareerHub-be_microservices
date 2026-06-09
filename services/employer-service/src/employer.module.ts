@@ -4,10 +4,10 @@ import {
 } from '@careerhub/infrastructure';
 import { Module } from '@nestjs/common';
 import {
-  CreateEmployerProfileUseCase,
+  CreateEmployerProfileCommandHandler,
   EMPLOYER_PORT_TOKENS,
-  GetEmployerProfileByIdentityIdUseCase,
-  UpdateEmployerProfileUseCase
+  GetEmployerProfileByIdentityIdQueryHandler,
+  UpdateEmployerProfileCommandHandler
 } from './application';
 import { validateEmployerEnvironment } from './config';
 import {
@@ -46,7 +46,7 @@ import { EmployerGrpcController } from './presentation';
       useClass: UuidIdGenerator
     },
     {
-      provide: CreateEmployerProfileUseCase,
+      provide: CreateEmployerProfileCommandHandler,
       inject: [
         EMPLOYER_PORT_TOKENS.employerProfileRepository,
         EMPLOYER_PORT_TOKENS.idGenerator
@@ -55,23 +55,28 @@ import { EmployerGrpcController } from './presentation';
         employerProfileRepository: PrismaEmployerProfileRepository,
         idGenerator: UuidIdGenerator
       ) =>
-        new CreateEmployerProfileUseCase(employerProfileRepository, idGenerator)
+        new CreateEmployerProfileCommandHandler(
+          employerProfileRepository,
+          idGenerator
+        )
     },
     {
-      provide: GetEmployerProfileByIdentityIdUseCase,
+      provide: GetEmployerProfileByIdentityIdQueryHandler,
       inject: [EMPLOYER_PORT_TOKENS.employerProfileRepository],
       useFactory: (
         employerProfileRepository: PrismaEmployerProfileRepository
       ) =>
-        new GetEmployerProfileByIdentityIdUseCase(employerProfileRepository)
+        new GetEmployerProfileByIdentityIdQueryHandler(
+          employerProfileRepository
+        )
     },
     {
-      provide: UpdateEmployerProfileUseCase,
+      provide: UpdateEmployerProfileCommandHandler,
       inject: [EMPLOYER_PORT_TOKENS.employerProfileRepository],
       useFactory: (
         employerProfileRepository: PrismaEmployerProfileRepository
       ) =>
-        new UpdateEmployerProfileUseCase(employerProfileRepository)
+        new UpdateEmployerProfileCommandHandler(employerProfileRepository)
     }
   ]
 })

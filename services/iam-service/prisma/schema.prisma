@@ -44,3 +44,32 @@ model AuthSession {
   @@index([identityId])
   @@map("auth_sessions")
 }
+
+model PasswordResetToken {
+  id         String    @id @db.VarChar(64)
+  identityId String    @map("identity_id") @db.VarChar(64)
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  usedAt     DateTime? @map("used_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([identityId, usedAt, expiresAt])
+  @@map("password_reset_tokens")
+}
+
+model Outbox {
+  id          String   @id @db.VarChar(64)
+  eventName   String   @map("event_name") @db.VarChar(255)
+  payload     Json
+  status      String   @db.VarChar(32)
+  retryCount  Int      @default(0) @map("retry_count")
+  lastError   String?  @map("last_error") @db.Text
+  nextRetryAt DateTime? @map("next_retry_at")
+  occurredAt  DateTime @map("occurred_at")
+  processingAt DateTime? @map("processing_at")
+  processedAt DateTime? @map("processed_at")
+
+  @@index([status, occurredAt])
+  @@index([status, nextRetryAt])
+  @@map("outbox")
+}

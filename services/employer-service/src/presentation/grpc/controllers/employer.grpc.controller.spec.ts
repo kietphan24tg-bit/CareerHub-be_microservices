@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { EmployerProfileAlreadyExistsError } from '../../../application/errors/employer-profile-already-exists.error';
 import { EmployerProfileNotFoundError } from '../../../application/errors/employer-profile-not-found.error';
-import { CreateEmployerProfileUseCase } from '../../../application/profiles/use-cases/create-employer-profile.use-case';
-import { GetEmployerProfileByIdentityIdUseCase } from '../../../application/profiles/use-cases/get-employer-profile-by-identity-id.use-case';
-import { UpdateEmployerProfileUseCase } from '../../../application/profiles/use-cases/update-employer-profile.use-case';
+import { CreateEmployerProfileCommandHandler } from '../../../application/commands/create-employer-profile/create-employer-profile.command-handler';
+import { GetEmployerProfileByIdentityIdQueryHandler } from '../../../application/queries/get-employer-profile-by-identity-id/get-employer-profile-by-identity-id.query-handler';
+import { UpdateEmployerProfileCommandHandler } from '../../../application/commands/update-employer-profile/update-employer-profile.command-handler';
 import { EmployerGrpcController } from './employer.grpc.controller';
 
 test('maps create-employer-profile request and response', async () => {
@@ -13,11 +13,11 @@ test('maps create-employer-profile request and response', async () => {
       identityId: 'identity-1',
       profileId: 'employer-profile-1'
     })
-  } as unknown as CreateEmployerProfileUseCase;
+  } as unknown as CreateEmployerProfileCommandHandler;
   const controller = new EmployerGrpcController(
     useCase,
-    { execute: async () => { throw new Error('unused'); } } as unknown as GetEmployerProfileByIdentityIdUseCase,
-    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateEmployerProfileUseCase
+    { execute: async () => { throw new Error('unused'); } } as unknown as GetEmployerProfileByIdentityIdQueryHandler,
+    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateEmployerProfileCommandHandler
   );
 
   const response = await controller.createEmployerProfile({
@@ -41,11 +41,11 @@ test('converts conflict errors into ALREADY_EXISTS gRPC payloads', async () => {
     execute: async () => {
       throw new EmployerProfileAlreadyExistsError('identity-1');
     }
-  } as unknown as CreateEmployerProfileUseCase;
+  } as unknown as CreateEmployerProfileCommandHandler;
   const controller = new EmployerGrpcController(
     useCase,
-    { execute: async () => { throw new Error('unused'); } } as unknown as GetEmployerProfileByIdentityIdUseCase,
-    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateEmployerProfileUseCase
+    { execute: async () => { throw new Error('unused'); } } as unknown as GetEmployerProfileByIdentityIdQueryHandler,
+    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateEmployerProfileCommandHandler
   );
 
   await assert.rejects(
@@ -85,7 +85,7 @@ test('converts conflict errors into ALREADY_EXISTS gRPC payloads', async () => {
 
 test('maps get-employer-profile request and response', async () => {
   const controller = new EmployerGrpcController(
-    { execute: async () => ({ identityId: 'identity-1', profileId: 'employer-profile-1' }) } as unknown as CreateEmployerProfileUseCase,
+    { execute: async () => ({ identityId: 'identity-1', profileId: 'employer-profile-1' }) } as unknown as CreateEmployerProfileCommandHandler,
     {
       execute: async () => ({
         address: 'Address',
@@ -104,8 +104,8 @@ test('maps get-employer-profile request and response', async () => {
         updatedAt: new Date('2026-06-06T01:00:00.000Z'),
         website: 'https://careerhub.dev'
       })
-    } as unknown as GetEmployerProfileByIdentityIdUseCase,
-    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateEmployerProfileUseCase
+    } as unknown as GetEmployerProfileByIdentityIdQueryHandler,
+    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateEmployerProfileCommandHandler
   );
 
   const response = await controller.getEmployerProfileByIdentityId({
@@ -120,13 +120,13 @@ test('maps get-employer-profile request and response', async () => {
 
 test('converts not found employer profile errors into NOT_FOUND gRPC payloads', async () => {
   const controller = new EmployerGrpcController(
-    { execute: async () => ({ identityId: 'identity-1', profileId: 'employer-profile-1' }) } as unknown as CreateEmployerProfileUseCase,
+    { execute: async () => ({ identityId: 'identity-1', profileId: 'employer-profile-1' }) } as unknown as CreateEmployerProfileCommandHandler,
     {
       execute: async () => {
         throw new EmployerProfileNotFoundError('identity-404');
       }
-    } as unknown as GetEmployerProfileByIdentityIdUseCase,
-    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateEmployerProfileUseCase
+    } as unknown as GetEmployerProfileByIdentityIdQueryHandler,
+    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateEmployerProfileCommandHandler
   );
 
   await assert.rejects(

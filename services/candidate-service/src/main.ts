@@ -8,6 +8,7 @@ import {
   configureHttpRuntime,
   getRuntimeConfig,
   initializeOpenTelemetry,
+  type MetricsRegistry,
   type PrismaReadinessCheck,
   type EnvironmentVariables
 } from '@careerhub/infrastructure';
@@ -21,7 +22,10 @@ import {
   getCandidateRuntimeConfig,
   type CandidateEnvironmentVariables
 } from './config';
-import { CANDIDATE_PRISMA_TOKENS } from './infrastructure';
+import {
+  CANDIDATE_METRICS_TOKENS,
+  CANDIDATE_PRISMA_TOKENS
+} from './infrastructure';
 
 function resolveCandidateProtoPath(): string {
   const distRelativePath = join(
@@ -69,11 +73,13 @@ async function bootstrap() {
   );
   const runtimeConfig = getRuntimeConfig(configService);
   const candidateRuntimeConfig = getCandidateRuntimeConfig(configService);
+  const metricsRegistry = app.get<MetricsRegistry>(CANDIDATE_METRICS_TOKENS.registry);
   const prismaReadinessCheck = app.get<PrismaReadinessCheck>(
     CANDIDATE_PRISMA_TOKENS.readinessCheck
   );
 
   const runtime = configureHttpRuntime(app, {
+    metricsRegistry,
     readinessChecks: [prismaReadinessCheck],
     runtimeConfig
   });

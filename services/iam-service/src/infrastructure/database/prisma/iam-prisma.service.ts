@@ -5,9 +5,18 @@ import {
 } from '@careerhub/infrastructure';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import type { IamPrismaClient } from './iam-prisma.types';
+import type {
+  IamPrismaClient,
+  IamTransactionalPrismaClient
+} from './iam-prisma.types';
 
-export class IamPrismaService extends PrismaLifecycleService<IamPrismaClient> {}
+export class IamPrismaService extends PrismaLifecycleService<IamPrismaClient> {
+  async transaction<T>(
+    work: (client: IamTransactionalPrismaClient) => Promise<T>
+  ): Promise<T> {
+    return this.prisma.$transaction(work);
+  }
+}
 
 function resolveGeneratedPrismaModulePath(): string {
   const distRelativePath = join(

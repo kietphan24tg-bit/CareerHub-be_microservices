@@ -1,35 +1,75 @@
 # Outbox Pattern
 
-## Mục đích
+## Purpose
 
-Tài liệu này chốt contract và luồng chuẩn cho các service có database khi triển khai outbox pattern trong CareerHub microservices.
+This document defines the standard outbox flow for CareerHub services that own a database and need to publish integration events safely.
 
-## Khi nào dùng
+## Standard Flow
 
-- Service có transaction với database
-- Service cần publish integration event ra RabbitMQ
-- Cần tránh lệch trạng thái giữa `DB commit` và `message publish`
+1. A command handler changes domain or application state.
+2. In the same database transaction, the service inserts an `outbox` record.
+3. An embedded worker polls `pending` outbox records.
+4. The worker claims a record as `processing`.
+5. The publisher sends the integration event to RabbitMQ.
+6. On success, the record is marked `processed`.
+7. On failure, the record is marked `failed`, `retry_count` is incremented, and `next_retry_at` is scheduled when retry is still allowed.
 
-## Luồng chuẩn
-
-1. Command handler thay đổi aggregate/domain state
-2. Cùng transaction, service ghi thêm một bản ghi vào bảng `outbox`
-3. Worker hoặc poller đọc các bản ghi `pending`
-4. Worker publish integration event ra broker
-5. Nếu publish thành công, bản ghi outbox được đánh dấu `processed`
-6. Nếu publish thất bại, tăng `retry_count` và giữ `pending` hoặc đổi `failed`
-
-## Cấu trúc outbox record
+## Outbox Record Shape
 
 - `id`
 - `event_name`
 - `payload`
 - `status`
 - `retry_count`
+- `last_error`
 - `occurred_at`
+- `processing_at`
 - `processed_at`
+- `next_retry_at`
 
-## Ghi chú
+## Retention Policy
 
-- `gateway` không phải nơi triển khai outbox runtime thật trong phase đầu
-- `gateway` chỉ định nghĩa interface và contract để các service có DB triển khai đúng pattern sau này
+- Services do not delete records immediately after successful publish.
+- Successful records stay in `processed` state for short-term audit and debugging.
+- The default retention window is `7 days`.
+- A cleanup loop deletes old `processed` records in small batches.
+- `failed` records are kept for investigation in the current phase.
+
+## Current Runtime Decision
+
+- The worker stays embedded in the service process for now.
+- PostgreSQL `LISTEN/NOTIFY` is not used in the current implementation.
+- Cleanup and publish loops rely on database state transitions, not in-memory locks, for cross-instance safety.
+
+## IAM Event Flows
+
+### `iam.user.registered.v1`
+
+- Producer: `iam-service`
+- Exchange: `events`
+- Routing key: `iam.user.registered.v1`
+
+Current runtime behavior:
+
+1. `iam-service` writes identity state and an outbox record in one transaction.
+2. The IAM outbox worker publishes the event to RabbitMQ with `messageId = outbox.id`.
+3. `gateway` still completes candidate and employer registration synchronously through gRPC profile creation and activation.
+4. There is currently no active downstream consumer for `iam.user.registered.v1`.
+5. This event is kept as an integration contract for future async side effects that are not part of the synchronous register path.
+
+### `iam.password-reset-requested.v1`
+
+- Producer: `iam-service`
+- Consumer: embedded IAM mail consumer in `iam-service`
+- Exchange: `events`
+- Routing key: `iam.password-reset-requested.v1`
+- Queue: `iam.password-reset-mail`
+
+Current runtime behavior:
+
+1. `RequestPasswordResetCommandHandler` stores a hashed reset token and an outbox record in one transaction.
+2. The IAM outbox worker publishes the event to RabbitMQ.
+3. The embedded mail consumer receives the event, derives the raw token from `resetTokenId`, `identityId`, `expiresAt`, and IAM secret in memory, then calls `MailService.sendPasswordResetMail(...)`.
+4. The raw reset token is not stored in the outbox payload or returned in HTTP/gRPC responses.
+
+See [password-reset.md](./password-reset.md) for SMTP and local verification details.

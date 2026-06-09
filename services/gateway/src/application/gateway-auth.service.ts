@@ -41,6 +41,14 @@ type GatewayCurrentIdentityResponse = GatewayAuthenticatedUser & {
   status: string;
 };
 
+type GatewayPasswordResetRequestResponse = {
+  accepted: true;
+};
+
+type GatewayPasswordResetResponse = {
+  passwordReset: true;
+};
+
 @Injectable()
 export class GatewayAuthService {
   constructor(
@@ -191,6 +199,44 @@ export class GatewayAuthService {
 
     return {
       loggedOut: response.logged_out
+    };
+  }
+
+  async requestPasswordReset(input: {
+    email: string;
+    requestId?: string;
+  }): Promise<GatewayPasswordResetRequestResponse> {
+    const response = await this.iamGrpcClient.requestPasswordReset(
+      {
+        email: input.email
+      },
+      input.requestId
+    );
+
+    void response;
+
+    return {
+      accepted: true
+    };
+  }
+
+  async resetPassword(input: {
+    newPassword: string;
+    requestId?: string;
+    token: string;
+  }): Promise<GatewayPasswordResetResponse> {
+    const response = await this.iamGrpcClient.resetPassword(
+      {
+        new_password: input.newPassword,
+        token: input.token
+      },
+      input.requestId
+    );
+
+    void response;
+
+    return {
+      passwordReset: true
     };
   }
 

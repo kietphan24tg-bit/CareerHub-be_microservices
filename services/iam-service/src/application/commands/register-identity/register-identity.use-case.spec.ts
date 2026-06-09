@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import type { OutboxRecord } from '@careerhub/contracts';
 import { ValidationError } from '@careerhub/shared-kernel';
 import {
   InvalidRoleError,
@@ -10,10 +11,14 @@ import {
 import { IdentityAlreadyExistsError } from '../../errors';
 import type {
   IdGenerator,
+  IamWriteTransaction,
   IdentityRepository,
+  OutboxRepository,
+  PasswordResetTokenRecord,
+  PasswordResetTokenRepository,
   PasswordHasher
 } from '../../ports';
-import { RegisterIdentityUseCase } from './register-identity.use-case';
+import { RegisterIdentityCommandHandler } from './register-identity.command-handler';
 
 const ARGON2ID_HASH =
   '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$ZmFrZWhhc2gxMjM0NTY3ODkw';
@@ -52,6 +57,83 @@ class InMemoryIdentityRepository implements IdentityRepository {
   async update(): Promise<void> {}
 }
 
+class InMemoryOutboxRepository implements OutboxRepository {
+  records: OutboxRecord[] = [];
+
+  async claimPending(): Promise<OutboxRecord | null> {
+    return null;
+  }
+
+  async create(record: OutboxRecord): Promise<void> {
+    this.records.push(record);
+  }
+
+  async deleteProcessedBatch(): Promise<number> {
+    return 0;
+  }
+
+  async findPendingBatch(): Promise<OutboxRecord[]> {
+    return [];
+  }
+
+  async markFailed(): Promise<void> {}
+
+  async markProcessed(): Promise<void> {}
+
+  async requeueRetryableFailed(): Promise<number> {
+    return 0;
+  }
+
+  async requeueStaleProcessing(): Promise<number> {
+    return 0;
+  }
+
+  async summarizeBacklog() {
+    return {
+      failed: 0,
+      pending: 0,
+      processing: 0
+    };
+  }
+}
+
+class FakeIamWriteTransaction implements IamWriteTransaction {
+  constructor(
+    private readonly identityRepository: IdentityRepository,
+    private readonly outboxRepository: OutboxRepository
+  ) {}
+
+  async execute<T>(
+    work: Parameters<IamWriteTransaction['execute']>[0]
+  ): Promise<T> {
+    return (await work({
+      authSessionRepository: {
+        async create() {},
+        async findByTokenHash() {
+          return null;
+        },
+        async revoke() {},
+        async revokeByIdentityId() {
+          return 0;
+        },
+        async rotate() {}
+      },
+      identityRepository: this.identityRepository,
+      outboxRepository: this.outboxRepository,
+      passwordResetTokenRepository: {
+        async create() {},
+        async findByTokenHash(): Promise<PasswordResetTokenRecord | null> {
+          return null;
+        },
+        async invalidateActiveForIdentity() {
+          return 0;
+        },
+        async markUsed() {}
+      } satisfies PasswordResetTokenRepository
+    })) as T;
+  }
+}
+
 class FakePasswordHasher implements PasswordHasher {
   calls: string[] = [];
 
@@ -67,9 +149,11 @@ class FakePasswordHasher implements PasswordHasher {
 
 test('registers identity successfully and persists aggregate', async () => {
   const repository = new InMemoryIdentityRepository();
+  const outboxRepository = new InMemoryOutboxRepository();
   const passwordHasher = new FakePasswordHasher();
-  const useCase = new RegisterIdentityUseCase(
+  const useCase = new RegisterIdentityCommandHandler(
     repository,
+    new FakeIamWriteTransaction(repository, outboxRepository),
     new FakeIdGenerator('identity-application-1'),
     passwordHasher
   );
@@ -94,14 +178,18 @@ test('registers identity successfully and persists aggregate', async () => {
   assert.equal(repository.savedIdentities[0]?.domainEvents.length, 0);
   assert.equal(result.domainEvents.length, 1);
   assert.ok(result.domainEvents[0] instanceof UserRegisteredEvent);
+  assert.equal(outboxRepository.records.length, 1);
+  assert.equal(outboxRepository.records[0]?.eventName, 'iam.user.registered.v1');
 });
 
 test('fails when identity already exists', async () => {
   const repository = new InMemoryIdentityRepository();
+  const outboxRepository = new InMemoryOutboxRepository();
   const passwordHasher = new FakePasswordHasher();
   repository.existingEmails.add('user@example.com');
-  const useCase = new RegisterIdentityUseCase(
+  const useCase = new RegisterIdentityCommandHandler(
     repository,
+    new FakeIamWriteTransaction(repository, outboxRepository),
     new FakeIdGenerator('identity-application-2'),
     passwordHasher
   );
@@ -120,13 +208,16 @@ test('fails when identity already exists', async () => {
   assert.deepEqual(passwordHasher.calls, []);
   assert.equal(repository.existsByEmailCalls, 1);
   assert.equal(repository.savedIdentities.length, 0);
+  assert.equal(outboxRepository.records.length, 0);
 });
 
 test('fails when email is invalid', async () => {
   const repository = new InMemoryIdentityRepository();
+  const outboxRepository = new InMemoryOutboxRepository();
   const passwordHasher = new FakePasswordHasher();
-  const useCase = new RegisterIdentityUseCase(
+  const useCase = new RegisterIdentityCommandHandler(
     repository,
+    new FakeIamWriteTransaction(repository, outboxRepository),
     new FakeIdGenerator('identity-application-3'),
     passwordHasher
   );
@@ -145,13 +236,16 @@ test('fails when email is invalid', async () => {
   assert.deepEqual(passwordHasher.calls, []);
   assert.equal(repository.existsByEmailCalls, 0);
   assert.equal(repository.savedIdentities.length, 0);
+  assert.equal(outboxRepository.records.length, 0);
 });
 
 test('fails when accepted terms is false', async () => {
   const repository = new InMemoryIdentityRepository();
+  const outboxRepository = new InMemoryOutboxRepository();
   const passwordHasher = new FakePasswordHasher();
-  const useCase = new RegisterIdentityUseCase(
+  const useCase = new RegisterIdentityCommandHandler(
     repository,
+    new FakeIamWriteTransaction(repository, outboxRepository),
     new FakeIdGenerator('identity-application-4'),
     passwordHasher
   );
@@ -170,13 +264,16 @@ test('fails when accepted terms is false', async () => {
   assert.deepEqual(passwordHasher.calls, []);
   assert.equal(repository.existsByEmailCalls, 0);
   assert.equal(repository.savedIdentities.length, 0);
+  assert.equal(outboxRepository.records.length, 0);
 });
 
 test('fails when role is invalid', async () => {
   const repository = new InMemoryIdentityRepository();
+  const outboxRepository = new InMemoryOutboxRepository();
   const passwordHasher = new FakePasswordHasher();
-  const useCase = new RegisterIdentityUseCase(
+  const useCase = new RegisterIdentityCommandHandler(
     repository,
+    new FakeIamWriteTransaction(repository, outboxRepository),
     new FakeIdGenerator('identity-application-5'),
     passwordHasher
   );
@@ -195,10 +292,12 @@ test('fails when role is invalid', async () => {
   assert.deepEqual(passwordHasher.calls, []);
   assert.equal(repository.existsByEmailCalls, 0);
   assert.equal(repository.savedIdentities.length, 0);
+  assert.equal(outboxRepository.records.length, 0);
 });
 
 test('fails when password hash returned by hasher is invalid', async () => {
   const repository = new InMemoryIdentityRepository();
+  const outboxRepository = new InMemoryOutboxRepository();
   const passwordHasher: PasswordHasher = {
     async hash(): Promise<string> {
       return 'short';
@@ -207,8 +306,9 @@ test('fails when password hash returned by hasher is invalid', async () => {
       return true;
     }
   };
-  const useCase = new RegisterIdentityUseCase(
+  const useCase = new RegisterIdentityCommandHandler(
     repository,
+    new FakeIamWriteTransaction(repository, outboxRepository),
     new FakeIdGenerator('identity-application-6'),
     passwordHasher
   );
@@ -226,4 +326,5 @@ test('fails when password hash returned by hasher is invalid', async () => {
 
   assert.equal(repository.existsByEmailCalls, 1);
   assert.equal(repository.savedIdentities.length, 0);
+  assert.equal(outboxRepository.records.length, 0);
 });

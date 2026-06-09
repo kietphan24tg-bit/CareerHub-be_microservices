@@ -3,19 +3,19 @@ import type {
   AuthSessionRepository,
   CreateAuthSessionInput
 } from '../../../application';
-import { IamPrismaService } from '../prisma/iam-prisma.service';
+import type { IamPrismaRepositoryClient } from '../prisma/iam-prisma.types';
 
 export class PrismaAuthSessionRepository implements AuthSessionRepository {
-  constructor(private readonly prismaService: IamPrismaService) {}
+  constructor(private readonly prismaClient: IamPrismaRepositoryClient) {}
 
   async create(input: CreateAuthSessionInput): Promise<void> {
-    await this.prismaService.prisma.authSession.create({
+    await this.prismaClient.authSession.create({
       data: input
     });
   }
 
   async findByTokenHash(tokenHash: string): Promise<AuthSessionRecord | null> {
-    const session = await this.prismaService.prisma.authSession.findUnique({
+    const session = await this.prismaClient.authSession.findUnique({
       where: {
         tokenHash
       }
@@ -37,7 +37,7 @@ export class PrismaAuthSessionRepository implements AuthSessionRepository {
   }
 
   async revoke(sessionId: string): Promise<void> {
-    await this.prismaService.prisma.authSession.update({
+    await this.prismaClient.authSession.update({
       data: {
         revokedAt: new Date()
       },
@@ -47,11 +47,25 @@ export class PrismaAuthSessionRepository implements AuthSessionRepository {
     });
   }
 
+  async revokeByIdentityId(identityId: string, revokedAt: Date): Promise<number> {
+    const result = await this.prismaClient.authSession.updateMany({
+      data: {
+        revokedAt
+      },
+      where: {
+        identityId,
+        revokedAt: null
+      }
+    });
+
+    return result.count;
+  }
+
   async rotate(
     sessionId: string,
     input: Pick<CreateAuthSessionInput, 'expiresAt' | 'tokenHash'>
   ): Promise<void> {
-    await this.prismaService.prisma.authSession.update({
+    await this.prismaClient.authSession.update({
       data: {
         expiresAt: input.expiresAt,
         revokedAt: null,

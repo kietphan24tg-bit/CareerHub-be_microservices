@@ -11,7 +11,7 @@ import {
   type IdentityRepository,
   type TokenService
 } from '../../index';
-import { RefreshSessionUseCase } from './refresh-session.use-case';
+import { RefreshSessionCommandHandler } from '../../commands/refresh-session/refresh-session.command-handler';
 
 const ARGON2ID_HASH =
   '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$ZmFrZWhhc2gxMjM0NTY3ODkw';
@@ -53,6 +53,10 @@ class FakeAuthSessionRepository implements AuthSessionRepository {
   }
 
   async revoke(): Promise<void> {}
+
+  async revokeByIdentityId(): Promise<number> {
+    return 0;
+  }
 
   async rotate(
     sessionId: string,
@@ -126,7 +130,7 @@ test('refreshes a session successfully and rotates the stored token hash', async
     tokenHash: 'hash:current-refresh-token',
     updatedAt: new Date()
   };
-  const useCase = new RefreshSessionUseCase(
+  const useCase = new RefreshSessionCommandHandler(
     authSessionRepository,
     new FakeIdentityRepository(),
     new FakeTokenService()
@@ -157,7 +161,7 @@ test('fails when session is revoked', async () => {
     tokenHash: 'hash:revoked-token',
     updatedAt: new Date()
   };
-  const useCase = new RefreshSessionUseCase(
+  const useCase = new RefreshSessionCommandHandler(
     authSessionRepository,
     new FakeIdentityRepository(),
     new FakeTokenService()
@@ -182,7 +186,7 @@ test('fails when session is expired', async () => {
     tokenHash: 'hash:expired-token',
     updatedAt: new Date()
   };
-  const useCase = new RefreshSessionUseCase(
+  const useCase = new RefreshSessionCommandHandler(
     authSessionRepository,
     new FakeIdentityRepository(),
     new FakeTokenService()
@@ -209,7 +213,7 @@ test('fails when identity is missing or disabled', async () => {
   };
   const identityRepository = new FakeIdentityRepository();
   identityRepository.identity = createIdentity('disabled');
-  const useCase = new RefreshSessionUseCase(
+  const useCase = new RefreshSessionCommandHandler(
     authSessionRepository,
     identityRepository,
     new FakeTokenService()
@@ -236,7 +240,7 @@ test('fails when identity is pending profile activation', async () => {
   };
   const identityRepository = new FakeIdentityRepository();
   identityRepository.identity = createIdentity('pending_profile');
-  const useCase = new RefreshSessionUseCase(
+  const useCase = new RefreshSessionCommandHandler(
     authSessionRepository,
     identityRepository,
     new FakeTokenService()

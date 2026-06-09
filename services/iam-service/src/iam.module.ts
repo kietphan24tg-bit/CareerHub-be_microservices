@@ -1,27 +1,40 @@
 import {
+  InMemoryMetricsRegistry,
+  type MetricsRegistry,
   createPrismaModule,
   createRuntimeConfigModule
 } from '@careerhub/infrastructure';
 import { Module } from '@nestjs/common';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import {
-  ActivateIdentityUseCase,
-  GetCurrentIdentityUseCase,
+  ActivateIdentityCommandHandler,
+  GetCurrentIdentityQueryHandler,
   IAM_PORT_TOKENS,
-  LoginIdentityUseCase,
-  LogoutSessionUseCase,
-  RefreshSessionUseCase,
-  RegisterIdentityUseCase
+  LoginIdentityCommandHandler,
+  LogoutSessionCommandHandler,
+  RequestPasswordResetCommandHandler,
+  RefreshSessionCommandHandler,
+  RegisterIdentityCommandHandler,
+  ResetPasswordCommandHandler,
+  ValidateAccessTokenQueryHandler
 } from './application';
-import { ValidateAccessTokenUseCase } from './application/auth';
 import { Argon2PasswordHasher } from './infrastructure/crypto/argon2-password-hasher';
 import {
   createIamPrismaClient,
+  IAM_METRICS_TOKENS,
   IAM_PRISMA_TOKENS,
   IamPrismaService,
+  IamOutboxProcessor,
+  IamOutboxPublisher,
+  IamPasswordResetMailConsumer,
   JwtTokenService,
+  MailService,
+  PasswordResetTokenFactory,
   PrismaAuthSessionRepository,
-  PrismaIdentityRepository
+  PrismaIamWriteTransaction,
+  PrismaIdentityRepository,
+  PrismaOutboxRepository,
+  PrismaPasswordResetTokenRepository
 } from './infrastructure';
 import { UuidIdGenerator } from './infrastructure/id/uuid-id-generator';
 import { getIamRuntimeConfig, validateIamEnvironment } from './config';
@@ -31,7 +44,7 @@ import type { IamEnvironmentVariables } from './config';
 
 @Module({
   controllers: [IamGrpcController],
-  exports: [RegisterIdentityUseCase],
+  exports: [RegisterIdentityCommandHandler],
   imports: [
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -55,10 +68,14 @@ import type { IamEnvironmentVariables } from './config';
   ],
   providers: [
     {
+      provide: IAM_METRICS_TOKENS.registry,
+      useFactory: (): MetricsRegistry => new InMemoryMetricsRegistry()
+    },
+    {
       provide: IAM_PORT_TOKENS.authSessionRepository,
       inject: [IAM_PRISMA_TOKENS.service],
       useFactory: (prismaService: IamPrismaService) =>
-        new PrismaAuthSessionRepository(prismaService)
+        new PrismaAuthSessionRepository(prismaService.prisma)
     },
     {
       provide: IAM_PORT_TOKENS.idGenerator,
@@ -68,7 +85,19 @@ import type { IamEnvironmentVariables } from './config';
       provide: IAM_PORT_TOKENS.identityRepository,
       inject: [IAM_PRISMA_TOKENS.service],
       useFactory: (prismaService: IamPrismaService) =>
-        new PrismaIdentityRepository(prismaService)
+        new PrismaIdentityRepository(prismaService.prisma)
+    },
+    {
+      provide: IAM_PORT_TOKENS.outboxRepository,
+      inject: [IAM_PRISMA_TOKENS.service],
+      useFactory: (prismaService: IamPrismaService) =>
+        new PrismaOutboxRepository(prismaService.prisma)
+    },
+    {
+      provide: IAM_PORT_TOKENS.passwordResetTokenRepository,
+      inject: [IAM_PRISMA_TOKENS.service],
+      useFactory: (prismaService: IamPrismaService) =>
+        new PrismaPasswordResetTokenRepository(prismaService.prisma)
     },
     {
       provide: IAM_PORT_TOKENS.passwordHasher,
@@ -88,25 +117,68 @@ import type { IamEnvironmentVariables } from './config';
         })
     },
     {
-      provide: RegisterIdentityUseCase,
+      provide: IAM_PORT_TOKENS.writeTransaction,
+      inject: [IAM_PRISMA_TOKENS.service],
+      useFactory: (prismaService: IamPrismaService) =>
+        new PrismaIamWriteTransaction(prismaService)
+    },
+    {
+      provide: RegisterIdentityCommandHandler,
       useFactory: (
         identityRepository: PrismaIdentityRepository,
+        writeTransaction: PrismaIamWriteTransaction,
         idGenerator: UuidIdGenerator,
         passwordHasher: Argon2PasswordHasher
       ) =>
-        new RegisterIdentityUseCase(
+        new RegisterIdentityCommandHandler(
           identityRepository,
+          writeTransaction,
           idGenerator,
           passwordHasher
         ),
       inject: [
         IAM_PORT_TOKENS.identityRepository,
+        IAM_PORT_TOKENS.writeTransaction,
         IAM_PORT_TOKENS.idGenerator,
         IAM_PORT_TOKENS.passwordHasher
       ]
     },
     {
-      provide: LoginIdentityUseCase,
+      provide: RequestPasswordResetCommandHandler,
+      inject: [
+        IAM_PORT_TOKENS.identityRepository,
+        IAM_PORT_TOKENS.writeTransaction,
+        IAM_PORT_TOKENS.idGenerator,
+        IAM_PORT_TOKENS.tokenService,
+        PasswordResetTokenFactory,
+        ConfigService
+      ],
+      useFactory: (
+        identityRepository: PrismaIdentityRepository,
+        writeTransaction: PrismaIamWriteTransaction,
+        idGenerator: UuidIdGenerator,
+        tokenService: JwtTokenService,
+        passwordResetTokenFactory: PasswordResetTokenFactory,
+        configService: ConfigService<IamEnvironmentVariables, true>
+      ) =>
+        new RequestPasswordResetCommandHandler(
+          identityRepository,
+          writeTransaction,
+          idGenerator,
+          tokenService,
+          passwordResetTokenFactory,
+          getIamRuntimeConfig(configService).passwordResetTokenTtlMs
+        )
+    },
+    {
+      provide: PasswordResetTokenFactory,
+      inject: [ConfigService],
+      useFactory: (
+        configService: ConfigService<IamEnvironmentVariables, true>
+      ) => new PasswordResetTokenFactory(getIamRuntimeConfig(configService).jwtSecret)
+    },
+    {
+      provide: LoginIdentityCommandHandler,
       inject: [
         IAM_PORT_TOKENS.identityRepository,
         IAM_PORT_TOKENS.passwordHasher,
@@ -121,7 +193,7 @@ import type { IamEnvironmentVariables } from './config';
         tokenService: JwtTokenService,
         idGenerator: UuidIdGenerator
       ) =>
-        new LoginIdentityUseCase(
+        new LoginIdentityCommandHandler(
           identityRepository,
           passwordHasher,
           authSessionRepository,
@@ -130,7 +202,31 @@ import type { IamEnvironmentVariables } from './config';
         )
     },
     {
-      provide: RefreshSessionUseCase,
+      provide: ResetPasswordCommandHandler,
+      inject: [
+        IAM_PORT_TOKENS.passwordResetTokenRepository,
+        IAM_PORT_TOKENS.identityRepository,
+        IAM_PORT_TOKENS.writeTransaction,
+        IAM_PORT_TOKENS.passwordHasher,
+        IAM_PORT_TOKENS.tokenService
+      ],
+      useFactory: (
+        passwordResetTokenRepository: PrismaPasswordResetTokenRepository,
+        identityRepository: PrismaIdentityRepository,
+        writeTransaction: PrismaIamWriteTransaction,
+        passwordHasher: Argon2PasswordHasher,
+        tokenService: JwtTokenService
+      ) =>
+        new ResetPasswordCommandHandler(
+          passwordResetTokenRepository,
+          identityRepository,
+          writeTransaction,
+          passwordHasher,
+          tokenService
+        )
+    },
+    {
+      provide: RefreshSessionCommandHandler,
       inject: [
         IAM_PORT_TOKENS.authSessionRepository,
         IAM_PORT_TOKENS.identityRepository,
@@ -141,14 +237,14 @@ import type { IamEnvironmentVariables } from './config';
         identityRepository: PrismaIdentityRepository,
         tokenService: JwtTokenService
       ) =>
-        new RefreshSessionUseCase(
+        new RefreshSessionCommandHandler(
           authSessionRepository,
           identityRepository,
           tokenService
         )
     },
     {
-      provide: LogoutSessionUseCase,
+      provide: LogoutSessionCommandHandler,
       inject: [
         IAM_PORT_TOKENS.authSessionRepository,
         IAM_PORT_TOKENS.tokenService
@@ -156,26 +252,30 @@ import type { IamEnvironmentVariables } from './config';
       useFactory: (
         authSessionRepository: PrismaAuthSessionRepository,
         tokenService: JwtTokenService
-      ) => new LogoutSessionUseCase(authSessionRepository, tokenService)
+      ) => new LogoutSessionCommandHandler(authSessionRepository, tokenService)
     },
     {
-      provide: ValidateAccessTokenUseCase,
+      provide: ValidateAccessTokenQueryHandler,
       inject: [IAM_PORT_TOKENS.tokenService],
       useFactory: (tokenService: JwtTokenService) =>
-        new ValidateAccessTokenUseCase(tokenService)
+        new ValidateAccessTokenQueryHandler(tokenService)
     },
     {
-      provide: GetCurrentIdentityUseCase,
+      provide: GetCurrentIdentityQueryHandler,
       inject: [IAM_PORT_TOKENS.identityRepository],
       useFactory: (identityRepository: PrismaIdentityRepository) =>
-        new GetCurrentIdentityUseCase(identityRepository)
+        new GetCurrentIdentityQueryHandler(identityRepository)
     },
     {
-      provide: ActivateIdentityUseCase,
+      provide: ActivateIdentityCommandHandler,
       inject: [IAM_PORT_TOKENS.identityRepository],
       useFactory: (identityRepository: PrismaIdentityRepository) =>
-        new ActivateIdentityUseCase(identityRepository)
-    }
+        new ActivateIdentityCommandHandler(identityRepository)
+    },
+    MailService,
+    IamPasswordResetMailConsumer,
+    IamOutboxPublisher,
+    IamOutboxProcessor
   ]
 })
 export class IamModule {}

@@ -15,8 +15,12 @@ import type {
   LogoutSessionResponse,
   RefreshSessionRequest,
   RefreshSessionResponse,
+  RequestPasswordResetRequest,
+  RequestPasswordResetResponse,
   RegisterIdentityRequest,
   RegisterIdentityResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
   ValidateAccessTokenRequest,
   ValidateAccessTokenResponse
 } from '@careerhub/contracts';
@@ -88,6 +92,22 @@ type IamGrpcServiceClient = {
     callback: (
       error: ServiceError | null,
       response: ValidateAccessTokenResponse
+    ) => void
+  ): ClientUnaryCall;
+  RequestPasswordReset(
+    request: RequestPasswordResetRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: RequestPasswordResetResponse
+    ) => void
+  ): ClientUnaryCall;
+  ResetPassword(
+    request: ResetPasswordRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: ResetPasswordResponse
     ) => void
   ): ClientUnaryCall;
 };
@@ -316,6 +336,50 @@ export class IamGrpcClient {
       'LogoutSession',
       (client, payload, metadata, callback) =>
         client.LogoutSession(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async requestPasswordReset(
+    request: RequestPasswordResetRequest,
+    requestId?: string
+  ): Promise<RequestPasswordResetResponse> {
+    const grpcRequest = {
+      ...request,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as RequestPasswordResetRequest & {
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      'RequestPasswordReset',
+      (client, payload, metadata, callback) =>
+        client.RequestPasswordReset(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async resetPassword(
+    request: ResetPasswordRequest,
+    requestId?: string
+  ): Promise<ResetPasswordResponse> {
+    const grpcRequest = {
+      ...request,
+      newPassword: request.new_password,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as ResetPasswordRequest & {
+      newPassword: string;
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      'ResetPassword',
+      (client, payload, metadata, callback) =>
+        client.ResetPassword(payload, metadata, callback),
       grpcRequest,
       requestId
     );

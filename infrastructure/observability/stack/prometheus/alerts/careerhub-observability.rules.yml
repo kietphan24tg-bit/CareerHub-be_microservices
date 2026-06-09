@@ -1,0 +1,40 @@
+groups:
+  - name: careerhub-outbox
+    rules:
+      - alert: CareerHubOutboxFailedBacklog
+        expr: max by (service) (careerhub_outbox_backlog{status="failed"}) > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Outbox failed backlog detected for {{ $labels.service }}"
+          description: "The service has failed outbox records waiting for operator attention."
+
+      - alert: CareerHubOutboxOldestPendingAgeHigh
+        expr: max by (service) (careerhub_outbox_oldest_pending_age_seconds) > 60
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Outbox pending age is high for {{ $labels.service }}"
+          description: "The oldest pending outbox record is older than 60 seconds."
+
+  - name: careerhub-integration-consumers
+    rules:
+      - alert: CareerHubRabbitMqConsumerErrors
+        expr: sum by (service, queue) (increase(careerhub_rmq_errors_total[5m])) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RabbitMQ consumer errors detected for {{ $labels.service }}"
+          description: "The service reported RabbitMQ consumer errors in the last five minutes."
+
+      - alert: CareerHubIntegrationConsumerDuplicateSpike
+        expr: sum by (service, consumer, event_name) (increase(careerhub_integration_consumer_total{status="duplicate"}[10m])) > 5
+        for: 5m
+        labels:
+          severity: info
+        annotations:
+          summary: "Duplicate integration deliveries increased for {{ $labels.service }}"
+          description: "The consumer is skipping more than five duplicate deliveries in ten minutes."

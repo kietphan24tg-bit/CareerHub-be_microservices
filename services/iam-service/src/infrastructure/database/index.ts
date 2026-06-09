@@ -4,3 +4,6 @@ export * from './prisma/iam-prisma.types';
 export * from './repositories/prisma-identity.mapper';
 export * from './repositories/prisma-identity.repository';
 export * from './repositories/prisma-auth-session.repository';
+export * from './repositories/prisma-outbox.repository';
+export * from './repositories/prisma-password-reset-token.repository';
+export * from './transactions/prisma-iam-write-transaction';

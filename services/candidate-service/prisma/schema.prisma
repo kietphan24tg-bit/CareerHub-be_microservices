@@ -25,3 +25,20 @@ model CandidateProfile {
 
   @@map("candidate_profiles")
 }
+
+model Outbox {
+  id          String   @id @db.VarChar(64)
+  eventName   String   @map("event_name") @db.VarChar(255)
+  payload     Json
+  status      String   @db.VarChar(32)
+  retryCount  Int      @default(0) @map("retry_count")
+  lastError   String?  @map("last_error") @db.Text
+  nextRetryAt DateTime? @map("next_retry_at")
+  occurredAt  DateTime @map("occurred_at")
+  processingAt DateTime? @map("processing_at")
+  processedAt DateTime? @map("processed_at")
+
+  @@index([status, occurredAt])
+  @@index([status, nextRetryAt])
+  @@map("outbox")
+}

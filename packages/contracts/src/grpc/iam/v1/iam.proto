@@ -8,6 +8,8 @@ service IamService {
   rpc LoginIdentity (LoginIdentityRequest) returns (LoginIdentityResponse);
   rpc RefreshSession (RefreshSessionRequest) returns (RefreshSessionResponse);
   rpc LogoutSession (LogoutSessionRequest) returns (LogoutSessionResponse);
+  rpc RequestPasswordReset (RequestPasswordResetRequest) returns (RequestPasswordResetResponse);
+  rpc ResetPassword (ResetPasswordRequest) returns (ResetPasswordResponse);
   rpc ValidateAccessToken (ValidateAccessTokenRequest) returns (ValidateAccessTokenResponse);
   rpc GetCurrentIdentity (GetCurrentIdentityRequest) returns (GetCurrentIdentityResponse);
 }
@@ -73,6 +75,25 @@ message LogoutSessionRequest {
 
 message LogoutSessionResponse {
   bool logged_out = 1;
+}
+
+message RequestPasswordResetRequest {
+  string email = 1;
+  string request_id = 2;
+}
+
+message RequestPasswordResetResponse {
+  bool accepted = 1;
+}
+
+message ResetPasswordRequest {
+  string token = 1;
+  string new_password = 2;
+  string request_id = 3;
+}
+
+message ResetPasswordResponse {
+  bool password_reset = 1;
 }
 
 message ValidateAccessTokenRequest {

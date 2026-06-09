@@ -7,7 +7,7 @@ import {
   type CreateAuthSessionInput,
   type TokenService
 } from '../../index';
-import { LogoutSessionUseCase } from './logout-session.use-case';
+import { LogoutSessionCommandHandler } from '../../commands/logout-session/logout-session.command-handler';
 
 class FakeAuthSessionRepository implements AuthSessionRepository {
   session: AuthSessionRecord | null = null;
@@ -21,6 +21,10 @@ class FakeAuthSessionRepository implements AuthSessionRepository {
 
   async revoke(sessionId: string): Promise<void> {
     this.revokedSessionIds.push(sessionId);
+  }
+
+  async revokeByIdentityId(): Promise<number> {
+    return 0;
   }
 
   async rotate(): Promise<void> {}
@@ -66,7 +70,7 @@ test('revokes the matching refresh session', async () => {
     tokenHash: 'hash:refresh-token',
     updatedAt: new Date()
   };
-  const useCase = new LogoutSessionUseCase(
+  const useCase = new LogoutSessionCommandHandler(
     authSessionRepository,
     new FakeTokenService()
   );
@@ -80,7 +84,7 @@ test('revokes the matching refresh session', async () => {
 });
 
 test('fails when refresh session does not exist', async () => {
-  const useCase = new LogoutSessionUseCase(
+  const useCase = new LogoutSessionCommandHandler(
     new FakeAuthSessionRepository(),
     new FakeTokenService()
   );

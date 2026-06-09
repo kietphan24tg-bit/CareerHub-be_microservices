@@ -42,6 +42,10 @@ test('records RabbitMQ success metrics', async () => {
     const metrics: MetricsRegistry = {
         recordHttpError() {},
         recordHttpRequest() {},
+        recordIntegrationConsumer() {},
+        recordOutboxBacklog() {},
+        recordOutboxCleanup() {},
+        recordOutboxPublish() {},
         recordRmqError() {},
         recordRmqRequest(record) {
             recorded.push({ type: 'request', ...record });
@@ -76,6 +80,10 @@ test('records RabbitMQ error metrics', async () => {
     const metrics: MetricsRegistry = {
         recordHttpError() {},
         recordHttpRequest() {},
+        recordIntegrationConsumer() {},
+        recordOutboxBacklog() {},
+        recordOutboxCleanup() {},
+        recordOutboxPublish() {},
         recordRmqError(record) {
             recorded.push({ type: 'error', ...record });
         },

@@ -15,7 +15,41 @@ class FakeIamPrismaClient implements IamPrismaClient {
     findUnique: async () => null,
     update: async () => {
       throw new Error('Not implemented in this test');
-    }
+    },
+    updateMany: async () => ({ count: 0 })
+  };
+
+  outbox = {
+    count: async () => 0,
+    create: async () => ({
+      eventName: 'unused',
+      id: 'unused',
+      lastError: null,
+      nextRetryAt: null,
+      occurredAt: new Date(),
+      payload: {},
+      processingAt: null,
+      processedAt: null,
+      retryCount: 0,
+      status: 'pending' as const
+    }),
+    deleteMany: async () => ({ count: 0 }),
+    findFirst: async () => null,
+    findMany: async () => [],
+    findUnique: async () => null,
+    update: async () => ({
+      eventName: 'unused',
+      id: 'unused',
+      lastError: null,
+      nextRetryAt: null,
+      occurredAt: new Date(),
+      payload: {},
+      processingAt: null,
+      processedAt: null,
+      retryCount: 0,
+      status: 'pending' as const
+    }),
+    updateMany: async () => ({ count: 0 })
   };
 
   identity = {
@@ -26,6 +60,17 @@ class FakeIamPrismaClient implements IamPrismaClient {
     update: async () => {
       throw new Error('Not implemented in this test');
     }
+  };
+
+  passwordResetToken = {
+    create: async () => {
+      throw new Error('Not implemented in this test');
+    },
+    findUnique: async () => null,
+    update: async () => {
+      throw new Error('Not implemented in this test');
+    },
+    updateMany: async () => ({ count: 0 })
   };
 
   async $connect(): Promise<void> {
@@ -39,6 +84,12 @@ class FakeIamPrismaClient implements IamPrismaClient {
   async $queryRawUnsafe<T = unknown>(query: string): Promise<T> {
     this.queries.push(query);
     return { database: 'up' } as T;
+  }
+
+  async $transaction<T>(
+    fn: (client: IamPrismaClient) => Promise<T>
+  ): Promise<T> {
+    return fn(this);
   }
 }
 

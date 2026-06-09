@@ -12,7 +12,7 @@ import {
   type PasswordHasher,
   type TokenService
 } from '../../index';
-import { LoginIdentityUseCase } from './login-identity.use-case';
+import { LoginIdentityCommandHandler } from '../../commands/login-identity/login-identity.command-handler';
 
 const ARGON2ID_HASH =
   '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$ZmFrZWhhc2gxMjM0NTY3ODkw';
@@ -86,6 +86,10 @@ class FakeAuthSessionRepository implements AuthSessionRepository {
 
   async revoke(): Promise<void> {}
 
+  async revokeByIdentityId(): Promise<number> {
+    return 0;
+  }
+
   async rotate(): Promise<void> {}
 }
 
@@ -134,7 +138,7 @@ test('logs in successfully and creates a refresh session', async () => {
   const passwordHasher = new FakePasswordHasher();
   const authSessionRepository = new FakeAuthSessionRepository();
   const tokenService = new FakeTokenService();
-  const useCase = new LoginIdentityUseCase(
+  const useCase = new LoginIdentityCommandHandler(
     identityRepository,
     passwordHasher,
     authSessionRepository,
@@ -167,7 +171,7 @@ test('logs in successfully and creates a refresh session', async () => {
 });
 
 test('fails when identity does not exist', async () => {
-  const useCase = new LoginIdentityUseCase(
+  const useCase = new LoginIdentityCommandHandler(
     new FakeIdentityRepository(),
     new FakePasswordHasher(),
     new FakeAuthSessionRepository(),
@@ -191,7 +195,7 @@ test('fails when password does not match', async () => {
   const passwordHasher = new FakePasswordHasher();
   passwordHasher.verifyResult = false;
   const authSessionRepository = new FakeAuthSessionRepository();
-  const useCase = new LoginIdentityUseCase(
+  const useCase = new LoginIdentityCommandHandler(
     identityRepository,
     passwordHasher,
     authSessionRepository,
@@ -214,7 +218,7 @@ test('fails when password does not match', async () => {
 test('fails when identity is disabled', async () => {
   const identityRepository = new FakeIdentityRepository();
   identityRepository.identity = createIdentity('disabled');
-  const useCase = new LoginIdentityUseCase(
+  const useCase = new LoginIdentityCommandHandler(
     identityRepository,
     new FakePasswordHasher(),
     new FakeAuthSessionRepository(),
@@ -235,7 +239,7 @@ test('fails when identity is disabled', async () => {
 test('fails when identity is pending profile activation', async () => {
   const identityRepository = new FakeIdentityRepository();
   identityRepository.identity = createIdentity('pending_profile');
-  const useCase = new LoginIdentityUseCase(
+  const useCase = new LoginIdentityCommandHandler(
     identityRepository,
     new FakePasswordHasher(),
     new FakeAuthSessionRepository(),

@@ -1,17 +1,20 @@
 import type { IdentityRepository } from '../../../application';
 import type { Email, Identity } from '../../../domain';
-import { IamPrismaService } from '../prisma/iam-prisma.service';
-import { toIdentityDomain, toIdentityPersistence } from './prisma-identity.mapper';
+import type { IamPrismaRepositoryClient } from '../prisma/iam-prisma.types';
+import {
+  toIdentityDomain,
+  toIdentityPersistence
+} from './prisma-identity.mapper';
 
 export class PrismaIdentityRepository implements IdentityRepository {
-  constructor(private readonly prismaService: IamPrismaService) {}
+  constructor(private readonly prismaClient: IamPrismaRepositoryClient) {}
 
   async existsByEmail(email: Email): Promise<boolean> {
     return (await this.findByEmail(email)) !== null;
   }
 
   async findByEmail(email: Email): Promise<Identity | null> {
-    const identity = await this.prismaService.prisma.identity.findUnique({
+    const identity = await this.prismaClient.identity.findUnique({
       where: {
         email: email.value
       }
@@ -21,7 +24,7 @@ export class PrismaIdentityRepository implements IdentityRepository {
   }
 
   async findById(identityId: string): Promise<Identity | null> {
-    const identity = await this.prismaService.prisma.identity.findUnique({
+    const identity = await this.prismaClient.identity.findUnique({
       where: {
         id: identityId
       }
@@ -31,13 +34,13 @@ export class PrismaIdentityRepository implements IdentityRepository {
   }
 
   async save(identity: Identity): Promise<void> {
-    await this.prismaService.prisma.identity.create({
+    await this.prismaClient.identity.create({
       data: toIdentityPersistence(identity)
     });
   }
 
   async update(identity: Identity): Promise<void> {
-    await this.prismaService.prisma.identity.update({
+    await this.prismaClient.identity.update({
       data: toIdentityPersistence(identity),
       where: {
         id: identity.id.toString()

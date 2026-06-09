@@ -11,9 +11,9 @@ import {
 import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import {
-  CreateCandidateProfileUseCase,
-  GetCandidateProfileByIdentityIdUseCase,
-  UpdateCandidateProfileUseCase,
+  CreateCandidateProfileCommandHandler,
+  GetCandidateProfileByIdentityIdQueryHandler,
+  UpdateCandidateProfileCommandHandler,
   type CandidateProfileRecord
 } from '../../../application';
 import { mapErrorToCandidateGrpcException } from '../mappers/grpc-error.mapper';
@@ -59,9 +59,9 @@ function toGrpcCandidateProfile(profile: CandidateProfileRecord): CandidateProfi
 @Controller()
 export class CandidateGrpcController {
   constructor(
-    private readonly createCandidateProfileUseCase: CreateCandidateProfileUseCase,
-    private readonly getCandidateProfileByIdentityIdUseCase: GetCandidateProfileByIdentityIdUseCase,
-    private readonly updateCandidateProfileUseCase: UpdateCandidateProfileUseCase
+    private readonly createCandidateProfileCommandHandler: CreateCandidateProfileCommandHandler,
+    private readonly getCandidateProfileByIdentityIdQueryHandler: GetCandidateProfileByIdentityIdQueryHandler,
+    private readonly updateCandidateProfileCommandHandler: UpdateCandidateProfileCommandHandler
   ) {}
 
   @GrpcMethod(CANDIDATE_GRPC_SERVICE_NAME, 'CreateCandidateProfile')
@@ -69,7 +69,7 @@ export class CandidateGrpcController {
     request: CreateCandidateProfileRequest
   ): Promise<CreateCandidateProfileResponse> {
     try {
-      const result = await this.createCandidateProfileUseCase.execute({
+      const result = await this.createCandidateProfileCommandHandler.execute({
         fullName: request.full_name,
         identityId: request.identity_id,
         phone: request.phone
@@ -90,7 +90,7 @@ export class CandidateGrpcController {
   ): Promise<GetCandidateProfileByIdentityIdResponse> {
     try {
       const profile =
-        await this.getCandidateProfileByIdentityIdUseCase.execute({
+        await this.getCandidateProfileByIdentityIdQueryHandler.execute({
           identityId: request.identity_id
         });
 
@@ -109,7 +109,7 @@ export class CandidateGrpcController {
     try {
       const updatedFields = new Set(request.updated_fields ?? []);
       const clearFields = new Set(request.clear_fields ?? []);
-      const profile = await this.updateCandidateProfileUseCase.execute({
+      const profile = await this.updateCandidateProfileCommandHandler.execute({
         address: updatedFields.has('address')
           ? request.address
           : clearFields.has('address')

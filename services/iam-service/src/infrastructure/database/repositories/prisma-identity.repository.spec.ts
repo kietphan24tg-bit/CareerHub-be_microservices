@@ -23,7 +23,41 @@ class FakeIamPrismaClient implements IamPrismaClient {
     findUnique: async () => null,
     update: async () => {
       throw new Error('Not implemented in this test');
-    }
+    },
+    updateMany: async () => ({ count: 0 })
+  };
+
+  outbox = {
+    count: async () => 0,
+    create: async () => ({
+      eventName: 'unused',
+      id: 'unused',
+      lastError: null,
+      nextRetryAt: null,
+      occurredAt: new Date(),
+      payload: {},
+      processingAt: null,
+      processedAt: null,
+      retryCount: 0,
+      status: 'pending' as const
+    }),
+    deleteMany: async () => ({ count: 0 }),
+    findFirst: async () => null,
+    findMany: async () => [],
+    findUnique: async () => null,
+    update: async () => ({
+      eventName: 'unused',
+      id: 'unused',
+      lastError: null,
+      nextRetryAt: null,
+      occurredAt: new Date(),
+      payload: {},
+      processingAt: null,
+      processedAt: null,
+      retryCount: 0,
+      status: 'pending' as const
+    }),
+    updateMany: async () => ({ count: 0 })
   };
 
   identity = {
@@ -80,15 +114,29 @@ class FakeIamPrismaClient implements IamPrismaClient {
     }
   };
 
+  passwordResetToken = {
+    create: async () => {
+      throw new Error('Not implemented in this test');
+    },
+    findUnique: async () => null,
+    update: async () => {
+      throw new Error('Not implemented in this test');
+    },
+    updateMany: async () => ({ count: 0 })
+  };
+
   async $connect(): Promise<void> {}
   async $disconnect(): Promise<void> {}
+  async $transaction<T>(
+    fn: (client: IamPrismaClient) => Promise<T>
+  ): Promise<T> {
+    return fn(this);
+  }
 }
 
 test('returns false before save and true after save for normalized email', async () => {
   const prismaClient = new FakeIamPrismaClient();
-  const repository = new PrismaIdentityRepository(
-    new IamPrismaService(prismaClient)
-  );
+  const repository = new PrismaIdentityRepository(prismaClient);
 
   const email = new Email('User@Example.com');
   assert.equal(await repository.existsByEmail(email), false);
