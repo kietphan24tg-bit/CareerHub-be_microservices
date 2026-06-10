@@ -13,6 +13,15 @@ export type CreateCandidateProfileResponse = {
   profile_id: string;
 };
 
+export type DeleteCandidateProfileCompensationRequest = {
+  identity_id: string;
+  request_id?: string;
+};
+
+export type DeleteCandidateProfileCompensationResponse = {
+  compensated: boolean;
+};
+
 export type GetCandidateProfileByIdentityIdRequest = {
   identity_id: string;
   request_id?: string;

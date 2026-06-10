@@ -41,6 +41,7 @@ export type UpdateEmployerProfilePatch = {
 };
 
 export interface EmployerProfileRepository {
+  deleteByIdentityId(identityId: string): Promise<boolean>;
   existsByIdentityId(identityId: string): Promise<boolean>;
   findByIdentityId(identityId: string): Promise<EmployerProfileRecord | null>;
   save(profile: CreateEmployerProfileRecord): Promise<void>;

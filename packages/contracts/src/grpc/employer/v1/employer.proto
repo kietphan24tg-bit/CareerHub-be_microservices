@@ -4,6 +4,7 @@ package careerhub.employer.v1;
 
 service EmployerService {
   rpc CreateEmployerProfile (CreateEmployerProfileRequest) returns (CreateEmployerProfileResponse);
+  rpc DeleteEmployerProfileCompensation (DeleteEmployerProfileCompensationRequest) returns (DeleteEmployerProfileCompensationResponse);
   rpc GetEmployerProfileByIdentityId (GetEmployerProfileByIdentityIdRequest) returns (GetEmployerProfileByIdentityIdResponse);
   rpc UpdateEmployerProfile (UpdateEmployerProfileRequest) returns (UpdateEmployerProfileResponse);
 }
@@ -21,6 +22,15 @@ message CreateEmployerProfileRequest {
 message CreateEmployerProfileResponse {
   string profile_id = 1;
   string identity_id = 2;
+}
+
+message DeleteEmployerProfileCompensationRequest {
+  string identity_id = 1;
+  string request_id = 2;
+}
+
+message DeleteEmployerProfileCompensationResponse {
+  bool compensated = 1;
 }
 
 message GetEmployerProfileByIdentityIdRequest {

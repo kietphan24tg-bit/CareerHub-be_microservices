@@ -3,6 +3,10 @@ import { join } from 'node:path';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import {
+  InMemoryMetricsRegistry,
+  type MetricsRegistry
+} from '@careerhub/infrastructure';
+import {
   CANDIDATE_GRPC_PACKAGE_NAME,
   EMPLOYER_GRPC_PACKAGE_NAME,
   IAM_GRPC_PACKAGE_NAME
@@ -30,7 +34,10 @@ import {
   type GatewayEnvironmentVariables,
   validateGatewayEnvironment
 } from './config/gateway-env.schema';
-import { GATEWAY_RUNTIME_CONFIG } from './config/gateway.constants';
+import {
+  GATEWAY_METRICS_TOKENS,
+  GATEWAY_RUNTIME_CONFIG
+} from './config/gateway.constants';
 
 function resolveGrpcProtoPath(serviceName: 'candidate' | 'employer' | 'iam'): string {
   const distRelativePath = join(
@@ -86,6 +93,10 @@ function resolveGrpcProtoPath(serviceName: 'candidate' | 'employer' | 'iam'): st
     CandidateGrpcClient,
     EmployerGrpcClient,
     IamGrpcClient,
+    {
+      provide: GATEWAY_METRICS_TOKENS.registry,
+      useFactory: (): MetricsRegistry => new InMemoryMetricsRegistry()
+    },
     {
       provide: APP_GUARD,
       useClass: GatewayJwtAuthGuard

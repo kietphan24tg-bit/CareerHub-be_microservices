@@ -36,6 +36,7 @@ export type UpdateCandidateProfilePatch = {
 };
 
 export interface CandidateProfileRepository {
+  deleteByIdentityId(identityId: string): Promise<boolean>;
   existsByIdentityId(identityId: string): Promise<boolean>;
   findByIdentityId(identityId: string): Promise<CandidateProfileRecord | null>;
   save(profile: CreateCandidateProfileRecord): Promise<void>;

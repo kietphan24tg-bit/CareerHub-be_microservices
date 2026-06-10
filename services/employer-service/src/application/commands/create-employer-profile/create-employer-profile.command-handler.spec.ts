@@ -8,6 +8,9 @@ test('creates an employer profile successfully', async () => {
   const savedProfiles: Array<Record<string, string>> = [];
   const handler = new CreateEmployerProfileCommandHandler(
     {
+      async deleteByIdentityId() {
+        return false;
+      },
       async existsByIdentityId() {
         return false;
       },
@@ -47,6 +50,9 @@ test('creates an employer profile successfully', async () => {
 test('fails when profile already exists for identity', async () => {
   const handler = new CreateEmployerProfileCommandHandler(
     {
+      async deleteByIdentityId() {
+        return false;
+      },
       async existsByIdentityId() {
         return true;
       },
@@ -82,6 +88,9 @@ test('fails when profile already exists for identity', async () => {
 test('fails when required fields are blank', async () => {
   const handler = new CreateEmployerProfileCommandHandler(
     {
+      async deleteByIdentityId() {
+        return false;
+      },
       async existsByIdentityId() {
         return false;
       },

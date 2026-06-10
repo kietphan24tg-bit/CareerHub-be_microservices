@@ -36,6 +36,9 @@ class FakeCandidateWriteTransaction implements CandidateWriteTransaction {
           return null;
         },
         async save() {},
+        async deleteByIdentityId() {
+          return false;
+        },
         updateByIdentityId: this.updateByIdentityId as never
       },
       outboxRepository: {

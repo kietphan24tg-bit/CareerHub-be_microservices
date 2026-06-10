@@ -11,6 +11,15 @@ export type ActivateIdentityResponse = {
   status: string;
 };
 
+export type CancelPendingIdentityRequest = {
+  identity_id: string;
+  request_id?: string;
+};
+
+export type CancelPendingIdentityResponse = {
+  cancelled: boolean;
+};
+
 export type RegisterIdentityRequest = {
   accepted_terms: boolean;
   email: string;

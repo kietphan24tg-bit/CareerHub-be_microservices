@@ -5,6 +5,7 @@ import {
 import { Module } from '@nestjs/common';
 import {
   CreateEmployerProfileCommandHandler,
+  DeleteEmployerProfileCompensationCommandHandler,
   EMPLOYER_PORT_TOKENS,
   GetEmployerProfileByIdentityIdQueryHandler,
   UpdateEmployerProfileCommandHandler
@@ -58,6 +59,16 @@ import { EmployerGrpcController } from './presentation';
         new CreateEmployerProfileCommandHandler(
           employerProfileRepository,
           idGenerator
+        )
+    },
+    {
+      provide: DeleteEmployerProfileCompensationCommandHandler,
+      inject: [EMPLOYER_PORT_TOKENS.employerProfileRepository],
+      useFactory: (
+        employerProfileRepository: PrismaEmployerProfileRepository
+      ) =>
+        new DeleteEmployerProfileCompensationCommandHandler(
+          employerProfileRepository
         )
     },
     {

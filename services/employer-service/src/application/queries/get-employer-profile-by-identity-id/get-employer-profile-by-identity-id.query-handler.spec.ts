@@ -28,6 +28,9 @@ test('loads employer profile by identity id', async () => {
       };
     },
     async save() {},
+    async deleteByIdentityId() {
+      return false;
+    },
     async updateByIdentityId() {
       return null;
     }
@@ -50,6 +53,9 @@ test('throws when employer profile does not exist', async () => {
       return null;
     },
     async save() {},
+    async deleteByIdentityId() {
+      return false;
+    },
     async updateByIdentityId() {
       return null;
     }

@@ -65,6 +65,8 @@ class FakeIdentityRepository implements IdentityRepository {
   async update(identity: Identity): Promise<void> {
     this.identity = identity;
   }
+
+  async deleteById(): Promise<void> {}
 }
 
 class FakePasswordResetTokenRepository implements PasswordResetTokenRepository {

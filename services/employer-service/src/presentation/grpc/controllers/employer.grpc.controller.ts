@@ -2,6 +2,8 @@ import {
   EMPLOYER_GRPC_SERVICE_NAME,
   type CreateEmployerProfileRequest,
   type CreateEmployerProfileResponse,
+  type DeleteEmployerProfileCompensationRequest,
+  type DeleteEmployerProfileCompensationResponse,
   type EmployerProfile,
   type GetEmployerProfileByIdentityIdRequest,
   type GetEmployerProfileByIdentityIdResponse,
@@ -12,6 +14,7 @@ import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import {
   CreateEmployerProfileCommandHandler,
+  DeleteEmployerProfileCompensationCommandHandler,
   GetEmployerProfileByIdentityIdQueryHandler,
   UpdateEmployerProfileCommandHandler,
   type EmployerProfileRecord
@@ -62,6 +65,7 @@ function toGrpcEmployerProfile(profile: EmployerProfileRecord): EmployerProfile 
 export class EmployerGrpcController {
   constructor(
     private readonly createEmployerProfileCommandHandler: CreateEmployerProfileCommandHandler,
+    private readonly deleteEmployerProfileCompensationCommandHandler: DeleteEmployerProfileCompensationCommandHandler,
     private readonly getEmployerProfileByIdentityIdQueryHandler: GetEmployerProfileByIdentityIdQueryHandler,
     private readonly updateEmployerProfileCommandHandler: UpdateEmployerProfileCommandHandler
   ) {}
@@ -84,6 +88,27 @@ export class EmployerGrpcController {
         identity_id: result.identityId,
         profile_id: result.profileId
       } as unknown as CreateEmployerProfileResponse;
+    } catch (error) {
+      throw mapErrorToEmployerGrpcException(error);
+    }
+  }
+
+  @GrpcMethod(
+    EMPLOYER_GRPC_SERVICE_NAME,
+    'DeleteEmployerProfileCompensation'
+  )
+  async deleteEmployerProfileCompensation(
+    request: DeleteEmployerProfileCompensationRequest
+  ): Promise<DeleteEmployerProfileCompensationResponse> {
+    try {
+      const result =
+        await this.deleteEmployerProfileCompensationCommandHandler.execute({
+          identityId: request.identity_id
+        });
+
+      return {
+        compensated: result.compensated
+      } as unknown as DeleteEmployerProfileCompensationResponse;
     } catch (error) {
       throw mapErrorToEmployerGrpcException(error);
     }

@@ -3,10 +3,7 @@ import {
   Identity,
   Email,
   PasswordHash,
-  Role,
-  type IdentityDisabledEvent,
-  type UserRegisteredEvent,
-  type UserRoleChangedEvent
+  Role
 } from '../../../domain';
 import { IdentityAlreadyExistsError } from '../../errors';
 import type {
@@ -15,7 +12,6 @@ import type {
   IdentityRepository,
   PasswordHasher
 } from '../../ports';
-import { mapIamDomainEventToOutboxRecord } from '../../outbox/iam-outbox-event.mapper';
 import type { RegisterIdentityCommand } from './register-identity.command';
 import type { RegisterIdentityResult } from './register-identity.result';
 
@@ -44,7 +40,7 @@ export class RegisterIdentityCommandHandler {
     );
 
     return this.writeTransaction.execute(
-      async ({ identityRepository, outboxRepository }) => {
+      async ({ identityRepository }) => {
         const identity = Identity.register({
           acceptedTerms: command.acceptedTerms,
           email,
@@ -58,17 +54,7 @@ export class RegisterIdentityCommandHandler {
 
         await identityRepository.save(identity);
 
-        const domainEvents = identity.pullDomainEvents() as Array<
-          UserRegisteredEvent | UserRoleChangedEvent | IdentityDisabledEvent
-        >;
-
-        for (const domainEvent of domainEvents) {
-          await outboxRepository.create(
-            mapIamDomainEventToOutboxRecord(domainEvent, {
-              createId: () => this.idGenerator.generate()
-            })
-          );
-        }
+        const domainEvents = identity.pullDomainEvents();
 
         return {
           createdAt: identity.createdAt?.toISOString() ?? new Date().toISOString(),

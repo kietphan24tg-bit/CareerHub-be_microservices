@@ -4,7 +4,6 @@ import type { OutboxRecord } from '@careerhub/contracts';
 import { ValidationError } from '@careerhub/shared-kernel';
 import {
   InvalidRoleError,
-  UserRegisteredEvent,
   type Email,
   type Identity
 } from '../../../domain';
@@ -35,6 +34,8 @@ class InMemoryIdentityRepository implements IdentityRepository {
   savedIdentities: Identity[] = [];
   existingEmails = new Set<string>();
   existsByEmailCalls = 0;
+
+  async deleteById(): Promise<void> {}
 
   async existsByEmail(email: Email): Promise<boolean> {
     this.existsByEmailCalls += 1;
@@ -181,10 +182,8 @@ test('registers identity successfully and persists aggregate', async () => {
   assert.equal(repository.savedIdentities.length, 1);
   assert.equal(repository.savedIdentities[0]?.passwordHash.value, ARGON2ID_HASH);
   assert.equal(repository.savedIdentities[0]?.domainEvents.length, 0);
-  assert.equal(result.domainEvents.length, 1);
-  assert.ok(result.domainEvents[0] instanceof UserRegisteredEvent);
-  assert.equal(outboxRepository.records.length, 1);
-  assert.equal(outboxRepository.records[0]?.eventName, 'iam.user.registered.v1');
+  assert.equal(result.domainEvents.length, 0);
+  assert.equal(outboxRepository.records.length, 0);
 });
 
 test('fails when identity already exists', async () => {

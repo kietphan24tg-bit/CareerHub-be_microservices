@@ -4,6 +4,7 @@ package careerhub.candidate.v1;
 
 service CandidateService {
   rpc CreateCandidateProfile (CreateCandidateProfileRequest) returns (CreateCandidateProfileResponse);
+  rpc DeleteCandidateProfileCompensation (DeleteCandidateProfileCompensationRequest) returns (DeleteCandidateProfileCompensationResponse);
   rpc GetCandidateProfileByIdentityId (GetCandidateProfileByIdentityIdRequest) returns (GetCandidateProfileByIdentityIdResponse);
   rpc UpdateCandidateProfile (UpdateCandidateProfileRequest) returns (UpdateCandidateProfileResponse);
 }
@@ -18,6 +19,15 @@ message CreateCandidateProfileRequest {
 message CreateCandidateProfileResponse {
   string profile_id = 1;
   string identity_id = 2;
+}
+
+message DeleteCandidateProfileCompensationRequest {
+  string identity_id = 1;
+  string request_id = 2;
+}
+
+message DeleteCandidateProfileCompensationResponse {
+  bool compensated = 1;
 }
 
 message GetCandidateProfileByIdentityIdRequest {

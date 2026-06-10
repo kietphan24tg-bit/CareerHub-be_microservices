@@ -5,6 +5,8 @@ import {
   type ServiceError
 } from '@grpc/grpc-js';
 import type {
+  DeleteEmployerProfileCompensationRequest,
+  DeleteEmployerProfileCompensationResponse,
   GetEmployerProfileByIdentityIdRequest,
   GetEmployerProfileByIdentityIdResponse,
   UpdateEmployerProfileRequest,
@@ -32,6 +34,14 @@ type EmployerGrpcServiceClient = {
     callback: (
       error: ServiceError | null,
       response: CreateEmployerProfileResponse
+    ) => void
+  ): ClientUnaryCall;
+  DeleteEmployerProfileCompensation(
+    request: DeleteEmployerProfileCompensationRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: DeleteEmployerProfileCompensationResponse
     ) => void
   ): ClientUnaryCall;
   GetEmployerProfileByIdentityId(
@@ -208,6 +218,29 @@ export class EmployerGrpcClient {
       'GetEmployerProfileByIdentityId',
       (client, payload, metadata, callback) =>
         client.GetEmployerProfileByIdentityId(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async deleteEmployerProfileCompensation(
+    request: DeleteEmployerProfileCompensationRequest,
+    requestId?: string
+  ): Promise<DeleteEmployerProfileCompensationResponse> {
+    const grpcRequest = {
+      ...request,
+      identityId: request.identity_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as DeleteEmployerProfileCompensationRequest & {
+      identityId: string;
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      'DeleteEmployerProfileCompensation',
+      (client, payload, metadata, callback) =>
+        client.DeleteEmployerProfileCompensation(payload, metadata, callback),
       grpcRequest,
       requestId
     );

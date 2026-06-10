@@ -1,4 +1,5 @@
 export * from './activate-identity';
+export * from './cancel-pending-identity';
 export * from './login-identity';
 export * from './logout-session';
 export * from './refresh-session';

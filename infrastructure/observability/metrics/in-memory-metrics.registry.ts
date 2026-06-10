@@ -1,4 +1,5 @@
 import type {
+    IntegrationConsumerDurationMetricRecord,
     HttpErrorMetricRecord,
     HttpMetricRecord,
     IntegrationConsumerMetricRecord,
@@ -6,6 +7,7 @@ import type {
     OutboxBacklogMetricRecord,
     OutboxCleanupMetricRecord,
     OutboxPublishMetricRecord,
+    RegisterCompensationMetricRecord,
     RmqMetricRecord,
     RpcMetricRecord
 } from './metrics.types';
@@ -150,6 +152,21 @@ export class InMemoryMetricsRegistry implements MetricsRegistry {
         values: new Map()
     };
 
+    private readonly integrationConsumerDuration: SummaryMetric = {
+        count: new Map(),
+        help: 'Integration consumer processing duration in milliseconds',
+        name: 'careerhub_integration_consumer_duration_ms',
+        sum: new Map(),
+        type: 'summary'
+    };
+
+    private readonly registerCompensationTotal: CounterMetric = {
+        help: 'Total number of gateway register compensation outcomes',
+        name: 'careerhub_register_compensation_total',
+        type: 'counter',
+        values: new Map()
+    };
+
     recordHttpRequest(record: HttpMetricRecord): void {
         const labels = {
             method: record.method,
@@ -173,6 +190,29 @@ export class InMemoryMetricsRegistry implements MetricsRegistry {
         this.incrementCounter(this.integrationConsumerTotal, {
             consumer: record.consumer,
             event_name: record.eventName,
+            reason: record.reason ?? 'none',
+            service: record.service,
+            status: record.status
+        });
+    }
+
+    recordIntegrationConsumerDuration(
+        record: IntegrationConsumerDurationMetricRecord
+    ): void {
+        this.observeSummary(this.integrationConsumerDuration, {
+            consumer: record.consumer,
+            event_name: record.eventName,
+            reason: record.reason ?? 'none',
+            service: record.service,
+            status: record.status
+        }, record.durationMs);
+    }
+
+    recordRegisterCompensation(record: RegisterCompensationMetricRecord): void {
+        this.incrementCounter(this.registerCompensationTotal, {
+            action: record.action,
+            flow: record.flow,
+            reason: record.reason,
             service: record.service,
             status: record.status
         });
@@ -254,7 +294,9 @@ export class InMemoryMetricsRegistry implements MetricsRegistry {
             this.renderCounterMetric(this.outboxCleanupDeletedTotal),
             this.renderGaugeMetric(this.outboxBacklogGauge),
             this.renderGaugeMetric(this.outboxOldestPendingAgeGauge),
-            this.renderCounterMetric(this.integrationConsumerTotal)
+            this.renderCounterMetric(this.integrationConsumerTotal),
+            this.renderSummaryMetric(this.integrationConsumerDuration),
+            this.renderCounterMetric(this.registerCompensationTotal)
         ].join('\n');
     }
 

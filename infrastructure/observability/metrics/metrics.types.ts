@@ -49,17 +49,41 @@ export type OutboxBacklogMetricRecord = {
 export type IntegrationConsumerMetricRecord = {
   consumer: string;
   eventName: string;
+  reason?: string;
   service: string;
   status: 'duplicate' | 'error' | 'processed';
+};
+
+export type IntegrationConsumerDurationMetricRecord = {
+  consumer: string;
+  durationMs: number;
+  eventName: string;
+  reason?: string;
+  service: string;
+  status: 'duplicate' | 'error' | 'processed';
+};
+
+export type RegisterCompensationMetricRecord = {
+  action:
+    | 'cancel_pending_identity'
+    | 'delete_profile'
+    | 'skip_already_active'
+    | 'skip_profile_exists';
+  flow: 'candidate' | 'employer';
+  reason: 'activation_failed' | 'profile_creation_failed';
+  service: string;
+  status: 'failed' | 'performed' | 'skipped';
 };
 
 export interface MetricsRegistry {
     recordHttpError(record: HttpErrorMetricRecord): void;
     recordHttpRequest(record: HttpMetricRecord): void;
     recordIntegrationConsumer(record: IntegrationConsumerMetricRecord): void;
+    recordIntegrationConsumerDuration?(record: IntegrationConsumerDurationMetricRecord): void;
     recordOutboxBacklog(record: OutboxBacklogMetricRecord): void;
     recordOutboxCleanup(record: OutboxCleanupMetricRecord): void;
     recordOutboxPublish(record: OutboxPublishMetricRecord): void;
+    recordRegisterCompensation?(record: RegisterCompensationMetricRecord): void;
     recordRmqError(record: RmqMetricRecord): void;
     recordRmqRequest(record: RmqMetricRecord): void;
     recordRpcError(record: RpcMetricRecord): void;

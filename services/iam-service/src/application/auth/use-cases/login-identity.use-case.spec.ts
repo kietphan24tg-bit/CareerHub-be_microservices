@@ -57,6 +57,8 @@ class FakeIdentityRepository implements IdentityRepository {
   async save(): Promise<void> {}
 
   async update(): Promise<void> {}
+
+  async deleteById(): Promise<void> {}
 }
 
 class FakePasswordHasher implements PasswordHasher {

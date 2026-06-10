@@ -3,6 +3,8 @@ import { getRequestIdFromGrpcMetadata } from '@careerhub/infrastructure';
 import {
   type ActivateIdentityRequest,
   type ActivateIdentityResponse,
+  type CancelPendingIdentityRequest,
+  type CancelPendingIdentityResponse,
   type GetCurrentIdentityRequest,
   type GetCurrentIdentityResponse,
   IAM_GRPC_SERVICE_NAME,
@@ -25,6 +27,7 @@ import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import {
   ActivateIdentityCommandHandler,
+  CancelPendingIdentityCommandHandler,
   GetCurrentIdentityQueryHandler,
   LoginIdentityCommandHandler,
   LogoutSessionCommandHandler,
@@ -52,7 +55,8 @@ export class IamGrpcController {
     private readonly resetPasswordCommandHandler: ResetPasswordCommandHandler,
     private readonly validateAccessTokenQueryHandler: ValidateAccessTokenQueryHandler,
     private readonly getCurrentIdentityQueryHandler: GetCurrentIdentityQueryHandler,
-    private readonly activateIdentityCommandHandler: ActivateIdentityCommandHandler
+    private readonly activateIdentityCommandHandler: ActivateIdentityCommandHandler,
+    private readonly cancelPendingIdentityCommandHandler: CancelPendingIdentityCommandHandler
   ) {}
 
   @GrpcMethod(IAM_GRPC_SERVICE_NAME, 'RegisterIdentity')
@@ -86,17 +90,36 @@ export class IamGrpcController {
 
   @GrpcMethod(IAM_GRPC_SERVICE_NAME, 'ActivateIdentity')
   async activateIdentity(
-    request: ActivateIdentityRequest
+    request: ActivateIdentityRequest,
+    metadata?: Metadata
   ): Promise<ActivateIdentityResponse> {
     try {
       const result = await this.activateIdentityCommandHandler.execute({
-        identityId: request.identity_id
+        identityId: request.identity_id,
+        requestId: request.request_id ?? getRequestIdFromGrpcMetadata(metadata)
       });
 
       return {
         identity_id: result.identityId,
         status: result.status ?? 'unknown'
       } as unknown as ActivateIdentityResponse;
+    } catch (error) {
+      throw mapErrorToIamGrpcException(error);
+    }
+  }
+
+  @GrpcMethod(IAM_GRPC_SERVICE_NAME, 'CancelPendingIdentity')
+  async cancelPendingIdentity(
+    request: CancelPendingIdentityRequest
+  ): Promise<CancelPendingIdentityResponse> {
+    try {
+      const result = await this.cancelPendingIdentityCommandHandler.execute({
+        identityId: request.identity_id
+      });
+
+      return {
+        cancelled: result.cancelled
+      } as unknown as CancelPendingIdentityResponse;
     } catch (error) {
       throw mapErrorToIamGrpcException(error);
     }

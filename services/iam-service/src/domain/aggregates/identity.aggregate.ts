@@ -42,7 +42,7 @@ export class Identity extends AggregateRoot<IdentityProps> {
     }
 
     static register(props: RegisterIdentityProps): Identity {
-        const identity = new Identity({
+        return new Identity({
             id: props.id,
             createdAt: props.createdAt ?? new Date(),
             updatedAt: props.createdAt ?? new Date(),
@@ -54,18 +54,6 @@ export class Identity extends AggregateRoot<IdentityProps> {
                 status: IdentityStatus.pendingProfile()
             }
         });
-
-        identity.addDomainEvent(
-            new UserRegisteredEvent({
-                aggregateId: identity.id,
-                acceptedTerms: identity.acceptedTerms,
-                email: identity.email.value,
-                role: identity.role.value,
-                metadata: props.metadata
-            })
-        );
-
-        return identity;
     }
 
     static reconstitute(props: ReconstituteIdentityProps): Identity {
@@ -137,17 +125,30 @@ export class Identity extends AggregateRoot<IdentityProps> {
         );
     }
 
-    enable(): void {
+    enable(metadata?: Partial<DomainEventMetadata>): void {
         const props = this.propsRef;
 
         if (props.status.isActive()) {
             throw new InvalidIdentityStateError('Identity is already active');
         }
 
+        const previousStatus = props.status;
         this.replaceProps({
             ...props,
             status: IdentityStatus.active()
         });
+
+        if (previousStatus.isPendingProfile()) {
+            this.addDomainEvent(
+                new UserRegisteredEvent({
+                    aggregateId: this.id,
+                    acceptedTerms: this.acceptedTerms,
+                    email: this.email.value,
+                    metadata,
+                    role: this.role.value
+                })
+            );
+        }
     }
 
     changePassword(nextPasswordHash: PasswordHash): void {

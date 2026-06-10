@@ -56,6 +56,7 @@ class FakeIamPrismaClient implements IamPrismaClient {
     create: async () => {
       throw new Error('Not implemented in this test');
     },
+    deleteMany: async () => ({ count: 0 }),
     findUnique: async () => null,
     update: async () => {
       throw new Error('Not implemented in this test');

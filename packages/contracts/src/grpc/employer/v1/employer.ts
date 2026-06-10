@@ -16,6 +16,15 @@ export type CreateEmployerProfileResponse = {
   profile_id: string;
 };
 
+export type DeleteEmployerProfileCompensationRequest = {
+  identity_id: string;
+  request_id?: string;
+};
+
+export type DeleteEmployerProfileCompensationResponse = {
+  compensated: boolean;
+};
+
 export type GetEmployerProfileByIdentityIdRequest = {
   identity_id: string;
   request_id?: string;

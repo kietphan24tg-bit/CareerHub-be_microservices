@@ -3,6 +3,8 @@ import {
   type CandidateProfile,
   type CreateCandidateProfileRequest,
   type CreateCandidateProfileResponse,
+  type DeleteCandidateProfileCompensationRequest,
+  type DeleteCandidateProfileCompensationResponse,
   type GetCandidateProfileByIdentityIdRequest,
   type GetCandidateProfileByIdentityIdResponse,
   type UpdateCandidateProfileRequest,
@@ -12,6 +14,7 @@ import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import {
   CreateCandidateProfileCommandHandler,
+  DeleteCandidateProfileCompensationCommandHandler,
   GetCandidateProfileByIdentityIdQueryHandler,
   UpdateCandidateProfileCommandHandler,
   type CandidateProfileRecord
@@ -60,6 +63,7 @@ function toGrpcCandidateProfile(profile: CandidateProfileRecord): CandidateProfi
 export class CandidateGrpcController {
   constructor(
     private readonly createCandidateProfileCommandHandler: CreateCandidateProfileCommandHandler,
+    private readonly deleteCandidateProfileCompensationCommandHandler: DeleteCandidateProfileCompensationCommandHandler,
     private readonly getCandidateProfileByIdentityIdQueryHandler: GetCandidateProfileByIdentityIdQueryHandler,
     private readonly updateCandidateProfileCommandHandler: UpdateCandidateProfileCommandHandler
   ) {}
@@ -79,6 +83,27 @@ export class CandidateGrpcController {
         identity_id: result.identityId,
         profile_id: result.profileId
       } as unknown as CreateCandidateProfileResponse;
+    } catch (error) {
+      throw mapErrorToCandidateGrpcException(error);
+    }
+  }
+
+  @GrpcMethod(
+    CANDIDATE_GRPC_SERVICE_NAME,
+    'DeleteCandidateProfileCompensation'
+  )
+  async deleteCandidateProfileCompensation(
+    request: DeleteCandidateProfileCompensationRequest
+  ): Promise<DeleteCandidateProfileCompensationResponse> {
+    try {
+      const result =
+        await this.deleteCandidateProfileCompensationCommandHandler.execute({
+          identityId: request.identity_id
+        });
+
+      return {
+        compensated: result.compensated
+      } as unknown as DeleteCandidateProfileCompensationResponse;
     } catch (error) {
       throw mapErrorToCandidateGrpcException(error);
     }

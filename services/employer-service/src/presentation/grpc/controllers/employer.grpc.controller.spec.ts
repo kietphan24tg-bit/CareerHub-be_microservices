@@ -16,6 +16,7 @@ test('maps create-employer-profile request and response', async () => {
   } as unknown as CreateEmployerProfileCommandHandler;
   const controller = new EmployerGrpcController(
     useCase,
+    { execute: async () => ({ compensated: true }) } as never,
     { execute: async () => { throw new Error('unused'); } } as unknown as GetEmployerProfileByIdentityIdQueryHandler,
     { execute: async () => { throw new Error('unused'); } } as unknown as UpdateEmployerProfileCommandHandler
   );
@@ -44,6 +45,7 @@ test('converts conflict errors into ALREADY_EXISTS gRPC payloads', async () => {
   } as unknown as CreateEmployerProfileCommandHandler;
   const controller = new EmployerGrpcController(
     useCase,
+    { execute: async () => ({ compensated: true }) } as never,
     { execute: async () => { throw new Error('unused'); } } as unknown as GetEmployerProfileByIdentityIdQueryHandler,
     { execute: async () => { throw new Error('unused'); } } as unknown as UpdateEmployerProfileCommandHandler
   );
@@ -86,6 +88,7 @@ test('converts conflict errors into ALREADY_EXISTS gRPC payloads', async () => {
 test('maps get-employer-profile request and response', async () => {
   const controller = new EmployerGrpcController(
     { execute: async () => ({ identityId: 'identity-1', profileId: 'employer-profile-1' }) } as unknown as CreateEmployerProfileCommandHandler,
+    { execute: async () => ({ compensated: true }) } as never,
     {
       execute: async () => ({
         address: 'Address',
@@ -121,6 +124,7 @@ test('maps get-employer-profile request and response', async () => {
 test('converts not found employer profile errors into NOT_FOUND gRPC payloads', async () => {
   const controller = new EmployerGrpcController(
     { execute: async () => ({ identityId: 'identity-1', profileId: 'employer-profile-1' }) } as unknown as CreateEmployerProfileCommandHandler,
+    { execute: async () => ({ compensated: true }) } as never,
     {
       execute: async () => {
         throw new EmployerProfileNotFoundError('identity-404');

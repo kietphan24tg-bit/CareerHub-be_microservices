@@ -111,6 +111,22 @@ class FakeIamPrismaClient implements IamPrismaClient {
 
       this.identitiesByEmail.set(nextRecord.email, nextRecord);
       return nextRecord;
+    },
+    deleteMany: async ({
+      where
+    }: {
+      where: { id: string };
+    }): Promise<{ count: number }> => {
+      const existingRecord = Array.from(this.identitiesByEmail.values()).find(
+        (record) => record.id === where.id
+      );
+
+      if (!existingRecord) {
+        return { count: 0 };
+      }
+
+      this.identitiesByEmail.delete(existingRecord.email);
+      return { count: 1 };
     }
   };
 

@@ -20,7 +20,7 @@ const ARGON2ID_HASH =
 const NEXT_ARGON2ID_HASH =
   '$argon2id$v=19$m=65536,t=3,p=4$bmV4dHNhbHQ$bmV4dGZha2VoYXNoMTIzNDU2';
 
-test('registers a valid identity and emits UserRegisteredEvent', () => {
+test('registers a valid identity without emitting UserRegisteredEvent yet', () => {
   const identity = Identity.register({
     acceptedTerms: true,
     id: new UniqueEntityID('identity-1'),
@@ -35,10 +35,29 @@ test('registers a valid identity and emits UserRegisteredEvent', () => {
   assert.equal(identity.acceptedTerms, true);
 
   const events = identity.pullDomainEvents();
+  assert.equal(events.length, 0);
+  assert.equal(identity.pullDomainEvents().length, 0);
+});
+
+test('activates a pending identity and emits UserRegisteredEvent', () => {
+  const identity = Identity.reconstitute({
+    id: new UniqueEntityID('identity-activate-registered-1'),
+    props: {
+      acceptedTerms: true,
+      email: new Email('user@example.com'),
+      passwordHash: new PasswordHash(ARGON2ID_HASH),
+      role: new Role('candidate'),
+      status: IdentityStatus.pendingProfile()
+    }
+  });
+
+  identity.enable();
+
+  assert.equal(identity.status.value, 'active');
+  const events = identity.pullDomainEvents();
   assert.equal(events.length, 1);
   assert.ok(events[0] instanceof UserRegisteredEvent);
   assert.equal((events[0] as UserRegisteredEvent).acceptedTerms, true);
-  assert.equal(identity.pullDomainEvents().length, 0);
 });
 
 test('fails when email is invalid', () => {

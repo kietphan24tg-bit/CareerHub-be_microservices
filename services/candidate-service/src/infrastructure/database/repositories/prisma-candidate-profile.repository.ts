@@ -42,6 +42,26 @@ export class PrismaCandidateProfileRepository
     ) !== null;
   }
 
+  async deleteByIdentityId(identityId: string): Promise<boolean> {
+    const existing = await this.prismaClient.candidateProfile.findUnique({
+      where: {
+        identityId
+      }
+    });
+
+    if (!existing) {
+      return false;
+    }
+
+    await this.prismaClient.candidateProfile.deleteMany({
+      where: {
+        id: existing.id
+      }
+    });
+
+    return true;
+  }
+
   async findByIdentityId(
     identityId: string
   ): Promise<CandidateProfileRecord | null> {

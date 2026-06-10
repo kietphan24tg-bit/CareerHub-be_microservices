@@ -32,6 +32,9 @@ export type EmployerProfileModelDelegate = {
   create(args: {
     data: EmployerProfileCreateInput;
   }): Promise<EmployerProfilePersistenceRecord>;
+  deleteMany(args: {
+    where?: Record<string, unknown>;
+  }): Promise<{ count: number }>;
   findUnique(args: {
     where: { identityId: string };
   }): Promise<EmployerProfilePersistenceRecord | null>;

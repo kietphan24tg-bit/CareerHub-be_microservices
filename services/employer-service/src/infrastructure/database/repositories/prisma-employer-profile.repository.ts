@@ -41,6 +41,26 @@ export class PrismaEmployerProfileRepository
     ) !== null;
   }
 
+  async deleteByIdentityId(identityId: string): Promise<boolean> {
+    const existing = await this.prismaService.prisma.employerProfile.findUnique({
+      where: {
+        identityId
+      }
+    });
+
+    if (!existing) {
+      return false;
+    }
+
+    await this.prismaService.prisma.employerProfile.deleteMany({
+      where: {
+        id: existing.id
+      }
+    });
+
+    return true;
+  }
+
   async findByIdentityId(
     identityId: string
   ): Promise<EmployerProfileRecord | null> {

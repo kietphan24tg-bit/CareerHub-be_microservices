@@ -9,6 +9,14 @@ import {
 export class PrismaIdentityRepository implements IdentityRepository {
   constructor(private readonly prismaClient: IamPrismaRepositoryClient) {}
 
+  async deleteById(identityId: string): Promise<void> {
+    await this.prismaClient.identity.deleteMany({
+      where: {
+        id: identityId
+      }
+    });
+  }
+
   async existsByEmail(email: Email): Promise<boolean> {
     return (await this.findByEmail(email)) !== null;
   }

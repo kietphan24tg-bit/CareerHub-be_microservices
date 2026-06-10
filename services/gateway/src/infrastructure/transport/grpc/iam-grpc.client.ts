@@ -7,6 +7,8 @@ import {
 import type {
   ActivateIdentityRequest,
   ActivateIdentityResponse,
+  CancelPendingIdentityRequest,
+  CancelPendingIdentityResponse,
   GetCurrentIdentityRequest,
   GetCurrentIdentityResponse,
   LoginIdentityRequest,
@@ -44,6 +46,14 @@ type IamGrpcServiceClient = {
     callback: (
       error: ServiceError | null,
       response: ActivateIdentityResponse
+    ) => void
+  ): ClientUnaryCall;
+  CancelPendingIdentity(
+    request: CancelPendingIdentityRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: CancelPendingIdentityResponse
     ) => void
   ): ClientUnaryCall;
   GetCurrentIdentity(
@@ -267,6 +277,29 @@ export class IamGrpcClient {
       'ActivateIdentity',
       (client, payload, metadata, callback) =>
         client.ActivateIdentity(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async cancelPendingIdentity(
+    request: CancelPendingIdentityRequest,
+    requestId?: string
+  ): Promise<CancelPendingIdentityResponse> {
+    const grpcRequest = {
+      ...request,
+      identityId: request.identity_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as CancelPendingIdentityRequest & {
+      identityId: string;
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      'CancelPendingIdentity',
+      (client, payload, metadata, callback) =>
+        client.CancelPendingIdentity(payload, metadata, callback),
       grpcRequest,
       requestId
     );

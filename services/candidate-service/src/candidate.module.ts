@@ -9,6 +9,7 @@ import { CandidateProfileAlreadyExistsError } from './application/errors/candida
 import {
   CANDIDATE_PORT_TOKENS,
   CreateCandidateProfileCommandHandler,
+  DeleteCandidateProfileCompensationCommandHandler,
   GetCandidateProfileByIdentityIdQueryHandler,
   UpdateCandidateProfileCommandHandler
 } from './application';
@@ -82,6 +83,16 @@ import { CandidateGrpcController } from './presentation';
         new CreateCandidateProfileCommandHandler(
           candidateProfileRepository,
           idGenerator
+        )
+    },
+    {
+      provide: DeleteCandidateProfileCompensationCommandHandler,
+      inject: [CANDIDATE_PORT_TOKENS.candidateProfileRepository],
+      useFactory: (
+        candidateProfileRepository: PrismaCandidateProfileRepository
+      ) =>
+        new DeleteCandidateProfileCompensationCommandHandler(
+          candidateProfileRepository
         )
     },
     {

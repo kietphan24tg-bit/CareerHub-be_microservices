@@ -11,6 +11,7 @@ import { IamGrpcController } from './iam.grpc.controller';
 
 function createController(overrides?: Partial<{
   activateIdentityCommandHandler: { execute: (input: unknown) => Promise<unknown> };
+  cancelPendingIdentityCommandHandler: { execute: (input: unknown) => Promise<unknown> };
   getCurrentIdentityQueryHandler: { execute: (input: unknown) => Promise<unknown> };
   loginIdentityCommandHandler: { execute: (input: unknown) => Promise<unknown> };
   logoutSessionCommandHandler: { execute: (input: unknown) => Promise<unknown> };
@@ -104,6 +105,14 @@ function createController(overrides?: Partial<{
             identityId: 'identity-grpc-1',
             role: 'candidate',
             status: 'active'
+          };
+        }
+      } as never)) as never,
+    (overrides?.cancelPendingIdentityCommandHandler ??
+      ({
+        async execute() {
+          return {
+            cancelled: true
           };
         }
       } as never)) as never

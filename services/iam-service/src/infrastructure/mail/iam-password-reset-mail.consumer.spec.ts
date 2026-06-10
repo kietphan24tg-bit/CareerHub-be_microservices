@@ -77,10 +77,20 @@ function createConfigService(
 }
 
 function createMetricsRegistry() {
+  const integrationConsumerDurationRecords: Array<Record<string, unknown>> = [];
+  const integrationConsumerRecords: Array<Record<string, unknown>> = [];
+
   return {
+    integrationConsumerDurationRecords,
+    integrationConsumerRecords,
     recordHttpError() {},
     recordHttpRequest() {},
-    recordIntegrationConsumer() {},
+    recordIntegrationConsumer(record: Record<string, unknown>) {
+      integrationConsumerRecords.push(record);
+    },
+    recordIntegrationConsumerDuration(record: Record<string, unknown>) {
+      integrationConsumerDurationRecords.push(record);
+    },
     recordOutboxBacklog() {},
     recordOutboxCleanup() {},
     recordOutboxPublish() {},
@@ -135,6 +145,7 @@ function createRawMessage(content: string): ConsumeMessage {
 
 test('acks password reset mail event only after mail is sent', async () => {
   const sentTokens: string[] = [];
+  const metricsRegistry = createMetricsRegistry();
   const mailService = {
     async sendPasswordResetMail(params: { resetToken: string }) {
       sentTokens.push(params.resetToken);
@@ -144,7 +155,7 @@ test('acks password reset mail event only after mail is sent', async () => {
     mailService,
     new PasswordResetTokenFactory('secret'),
     createPasswordResetTokenRepository(),
-    createMetricsRegistry() as never,
+    metricsRegistry as never,
     createConfigService()
   ) as unknown as TestableConsumer;
   const channelCalls: string[] = [];
@@ -177,6 +188,16 @@ test('acks password reset mail event only after mail is sent', async () => {
   assert.deepEqual(channelCalls, ['ack']);
   assert.equal(sentTokens.length, 1);
   assert.match(sentTokens[0] ?? '', /^reset-token-1\.[A-Za-z0-9_-]+$/);
+  assert.deepEqual(metricsRegistry.integrationConsumerRecords, [
+    {
+      consumer: 'iam-password-reset-mail',
+      eventName: IAM_PASSWORD_RESET_REQUESTED_EVENT_NAME,
+      reason: 'mail_sent',
+      service: 'careerhub-iam-service',
+      status: 'processed'
+    }
+  ]);
+  assert.equal(metricsRegistry.integrationConsumerDurationRecords.length, 1);
 });
 
 test('republishes password reset mail event for retry when mail send fails', async () => {
@@ -298,6 +319,7 @@ test('acknowledges password reset mail event when retry count is exhausted', asy
 });
 
 test('acks malformed password reset mail event without retrying', async () => {
+  const metricsRegistry = createMetricsRegistry();
   const mailService = {
     async sendPasswordResetMail() {
       throw new Error('should not send mail');
@@ -307,7 +329,7 @@ test('acks malformed password reset mail event without retrying', async () => {
     mailService,
     new PasswordResetTokenFactory('secret'),
     createPasswordResetTokenRepository(),
-    createMetricsRegistry() as never,
+    metricsRegistry as never,
     createConfigService()
   ) as unknown as TestableConsumer;
   const channelCalls: string[] = [];
@@ -323,6 +345,16 @@ test('acks malformed password reset mail event without retrying', async () => {
   await consumer.handleMessage(channel, createRawMessage('{'));
 
   assert.deepEqual(channelCalls, ['ack']);
+  assert.deepEqual(metricsRegistry.integrationConsumerRecords, [
+    {
+      consumer: 'iam-password-reset-mail',
+      eventName: 'unknown',
+      reason: 'malformed_payload',
+      service: 'careerhub-iam-service',
+      status: 'error'
+    }
+  ]);
+  assert.equal(metricsRegistry.integrationConsumerDurationRecords.length, 1);
 });
 
 test('acks unsupported password reset mail event payload without retrying', async () => {
@@ -404,6 +436,7 @@ test('acks password reset mail event when mail config is missing', async () => {
 
 test('acks duplicate password reset mail event without sending mail again', async () => {
   const sentTokens: string[] = [];
+  const metricsRegistry = createMetricsRegistry();
   const mailService = {
     async sendPasswordResetMail(params: { resetToken: string }) {
       sentTokens.push(params.resetToken);
@@ -417,7 +450,7 @@ test('acks duplicate password reset mail event without sending mail again', asyn
         return false;
       }
     }),
-    createMetricsRegistry() as never,
+    metricsRegistry as never,
     createConfigService()
   ) as unknown as TestableConsumer;
   const channelCalls: string[] = [];
@@ -449,4 +482,14 @@ test('acks duplicate password reset mail event without sending mail again', asyn
 
   assert.deepEqual(channelCalls, ['ack']);
   assert.equal(sentTokens.length, 0);
+  assert.deepEqual(metricsRegistry.integrationConsumerRecords, [
+    {
+      consumer: 'iam-password-reset-mail',
+      eventName: IAM_PASSWORD_RESET_REQUESTED_EVENT_NAME,
+      reason: 'duplicate_or_in_flight',
+      service: 'careerhub-iam-service',
+      status: 'duplicate'
+    }
+  ]);
+  assert.equal(metricsRegistry.integrationConsumerDurationRecords.length, 1);
 });

@@ -58,6 +58,8 @@ class FakeIdentityRepository implements IdentityRepository {
   async save(): Promise<void> {}
 
   async update(): Promise<void> {}
+
+  async deleteById(): Promise<void> {}
 }
 
 class FakePasswordResetTokenRepository implements PasswordResetTokenRepository {
@@ -190,7 +192,8 @@ class FakeWriteTransaction implements IamWriteTransaction {
           return null;
         },
         async save() {},
-        async update() {}
+        async update() {},
+        async deleteById() {}
       } satisfies IdentityRepository,
       outboxRepository: this.outboxRepository,
       passwordResetTokenRepository: this.passwordResetTokenRepository

@@ -82,6 +82,9 @@ export type PrismaOutboxCreateInput = {
 
 export type IdentityModelDelegate = {
   create(args: { data: PrismaIdentityCreateInput }): Promise<IdentityPersistenceRecord>;
+  deleteMany(args: {
+    where?: Record<string, unknown>;
+  }): Promise<{ count: number }>;
   findUnique(args: {
     where: { email?: string; id?: string };
   }): Promise<IdentityPersistenceRecord | null>;

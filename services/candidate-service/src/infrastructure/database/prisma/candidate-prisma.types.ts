@@ -55,6 +55,9 @@ export type CandidateProfileModelDelegate = {
   create(args: {
     data: CandidateProfileCreateInput;
   }): Promise<CandidateProfilePersistenceRecord>;
+  deleteMany(args: {
+    where?: Record<string, unknown>;
+  }): Promise<{ count: number }>;
   findUnique(args: {
     where: { identityId: string };
   }): Promise<CandidateProfilePersistenceRecord | null>;

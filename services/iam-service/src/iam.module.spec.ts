@@ -93,7 +93,8 @@ test('compiles the iam module and resolves RegisterIdentityCommandHandler', asyn
       },
       update: async () => {
         throw new Error('Not implemented in this test');
-      }
+      },
+      deleteMany: async () => ({ count: 0 })
     },
     authSession: {
       create: async () => {
@@ -155,8 +156,7 @@ test('compiles the iam module and resolves RegisterIdentityCommandHandler', asyn
     identitiesByEmail.get('user@example.com')?.passwordHash ?? '',
     /^\$argon2id\$/
   );
-  assert.equal(outboxRecords.length, 1);
-  assert.equal(outboxRecords[0]?.eventName, 'iam.user.registered.v1');
+  assert.equal(outboxRecords.length, 0);
 
   await moduleRef.close();
 });

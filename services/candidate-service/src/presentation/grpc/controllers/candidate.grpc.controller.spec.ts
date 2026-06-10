@@ -16,6 +16,7 @@ test('maps create-candidate-profile request and response', async () => {
   } as unknown as CreateCandidateProfileCommandHandler;
   const controller = new CandidateGrpcController(
     useCase,
+    { execute: async () => ({ compensated: true }) } as never,
     { execute: async () => { throw new Error('unused'); } } as unknown as GetCandidateProfileByIdentityIdQueryHandler,
     { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileCommandHandler
   );
@@ -41,6 +42,7 @@ test('converts conflict errors into ALREADY_EXISTS gRPC payloads', async () => {
   } as unknown as CreateCandidateProfileCommandHandler;
   const controller = new CandidateGrpcController(
     useCase,
+    { execute: async () => ({ compensated: true }) } as never,
     { execute: async () => { throw new Error('unused'); } } as unknown as GetCandidateProfileByIdentityIdQueryHandler,
     { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileCommandHandler
   );
@@ -80,6 +82,7 @@ test('converts conflict errors into ALREADY_EXISTS gRPC payloads', async () => {
 test('maps get-candidate-profile request and response', async () => {
   const controller = new CandidateGrpcController(
     { execute: async () => ({ identityId: 'identity-1', profileId: 'candidate-profile-1' }) } as unknown as CreateCandidateProfileCommandHandler,
+    { execute: async () => ({ compensated: true }) } as never,
     {
       execute: async () => ({
         address: null,
@@ -114,6 +117,7 @@ test('maps get-candidate-profile request and response', async () => {
 test('converts not found candidate profile errors into NOT_FOUND gRPC payloads', async () => {
   const controller = new CandidateGrpcController(
     { execute: async () => ({ identityId: 'identity-1', profileId: 'candidate-profile-1' }) } as unknown as CreateCandidateProfileCommandHandler,
+    { execute: async () => ({ compensated: true }) } as never,
     {
       execute: async () => {
         throw new CandidateProfileNotFoundError('identity-404');

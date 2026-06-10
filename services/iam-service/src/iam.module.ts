@@ -8,6 +8,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import {
   ActivateIdentityCommandHandler,
+  CancelPendingIdentityCommandHandler,
   GetCurrentIdentityQueryHandler,
   IAM_PORT_TOKENS,
   LoginIdentityCommandHandler,
@@ -271,9 +272,17 @@ import type { IamEnvironmentVariables } from './config';
     },
     {
       provide: ActivateIdentityCommandHandler,
+      inject: [IAM_PORT_TOKENS.writeTransaction, IAM_PORT_TOKENS.idGenerator],
+      useFactory: (
+        writeTransaction: PrismaIamWriteTransaction,
+        idGenerator: UuidIdGenerator
+      ) => new ActivateIdentityCommandHandler(writeTransaction, idGenerator)
+    },
+    {
+      provide: CancelPendingIdentityCommandHandler,
       inject: [IAM_PORT_TOKENS.identityRepository],
       useFactory: (identityRepository: PrismaIdentityRepository) =>
-        new ActivateIdentityCommandHandler(identityRepository)
+        new CancelPendingIdentityCommandHandler(identityRepository)
     },
     MailService,
     IamPasswordResetMailConsumer,

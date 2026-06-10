@@ -68,8 +68,24 @@ test('renders HTTP and RPC metrics in Prometheus format', () => {
     registry.recordIntegrationConsumer({
         consumer: 'candidate.identity-projection.iam-user-registered',
         eventName: 'iam.user.registered.v1',
+        reason: 'duplicate_delivery',
         service: 'candidate-service',
         status: 'duplicate'
+    });
+    registry.recordIntegrationConsumerDuration?.({
+        consumer: 'candidate.identity-projection.iam-user-registered',
+        durationMs: 18,
+        eventName: 'iam.user.registered.v1',
+        reason: 'duplicate_delivery',
+        service: 'candidate-service',
+        status: 'duplicate'
+    });
+    registry.recordRegisterCompensation?.({
+        action: 'cancel_pending_identity',
+        flow: 'candidate',
+        reason: 'profile_creation_failed',
+        service: 'gateway',
+        status: 'performed'
     });
 
     const output = registry.renderPrometheus();
@@ -91,4 +107,7 @@ test('renders HTTP and RPC metrics in Prometheus format', () => {
     assert.match(output, /careerhub_outbox_backlog/);
     assert.match(output, /careerhub_outbox_oldest_pending_age_seconds/);
     assert.match(output, /careerhub_integration_consumer_total/);
+    assert.match(output, /careerhub_integration_consumer_duration_ms_count/);
+    assert.match(output, /careerhub_integration_consumer_duration_ms_sum/);
+    assert.match(output, /careerhub_register_compensation_total/);
 });
