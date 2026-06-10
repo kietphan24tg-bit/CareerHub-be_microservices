@@ -121,6 +121,10 @@ class FakeIamWriteTransaction implements IamWriteTransaction {
       identityRepository: this.identityRepository,
       outboxRepository: this.outboxRepository,
       passwordResetTokenRepository: {
+        async claimMailDelivery() {
+          return true;
+        },
+        async clearMailDeliveryClaim() {},
         async create() {},
         async findByTokenHash(): Promise<PasswordResetTokenRecord | null> {
           return null;
@@ -128,6 +132,7 @@ class FakeIamWriteTransaction implements IamWriteTransaction {
         async invalidateActiveForIdentity() {
           return 0;
         },
+        async markMailSent() {},
         async markUsed() {}
       } satisfies PasswordResetTokenRepository
     })) as T;

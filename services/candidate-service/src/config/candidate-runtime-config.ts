@@ -3,6 +3,7 @@ import type { CandidateEnvironmentVariables } from './candidate-env.schema';
 
 export type CandidateRuntimeConfig = {
   grpcCandidateUrl: string;
+  outboxBacklogIntervalMs: number;
   outboxBatchSize: number;
   outboxCleanupBatchSize: number;
   outboxCleanupEnabled: boolean;
@@ -23,6 +24,9 @@ export function getCandidateRuntimeConfig(
 ): CandidateRuntimeConfig {
   return {
     grpcCandidateUrl: configService.getOrThrow('GRPC_CANDIDATE_URL'),
+    outboxBacklogIntervalMs: configService.getOrThrow(
+      'OUTBOX_BACKLOG_INTERVAL_MS'
+    ),
     outboxBatchSize: configService.getOrThrow('OUTBOX_BATCH_SIZE'),
     outboxCleanupBatchSize: configService.getOrThrow('OUTBOX_CLEANUP_BATCH_SIZE'),
     outboxCleanupEnabled: configService.getOrThrow('OUTBOX_CLEANUP_ENABLED'),

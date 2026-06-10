@@ -78,6 +78,12 @@ class FakePasswordResetTokenRepository implements PasswordResetTokenRepository {
   invalidatedIdentityIds: string[] = [];
   markedUsedTokenIds: string[] = [];
 
+  async claimMailDelivery(): Promise<boolean> {
+    return true;
+  }
+
+  async clearMailDeliveryClaim(): Promise<void> {}
+
   async create(): Promise<void> {}
 
   async findByTokenHash(tokenHash: string): Promise<PasswordResetTokenRecord | null> {
@@ -88,6 +94,8 @@ class FakePasswordResetTokenRepository implements PasswordResetTokenRepository {
     this.invalidatedIdentityIds.push(identityId);
     return 1;
   }
+
+  async markMailSent(): Promise<void> {}
 
   async markUsed(tokenId: string): Promise<void> {
     this.markedUsedTokenIds.push(tokenId);

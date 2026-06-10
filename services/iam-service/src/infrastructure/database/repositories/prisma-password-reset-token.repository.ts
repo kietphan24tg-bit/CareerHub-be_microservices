@@ -10,6 +10,44 @@ export class PrismaPasswordResetTokenRepository
 {
   constructor(private readonly prismaClient: IamPrismaRepositoryClient) {}
 
+  async claimMailDelivery(
+    tokenId: string,
+    processingAt: Date,
+    staleProcessingCutoff: Date
+  ): Promise<boolean> {
+    const result = await this.prismaClient.passwordResetToken.updateMany({
+      data: {
+        mailProcessingAt: processingAt
+      },
+      where: {
+        id: tokenId,
+        mailSentAt: null,
+        OR: [
+          { mailProcessingAt: null },
+          {
+            mailProcessingAt: {
+              lt: staleProcessingCutoff
+            }
+          }
+        ]
+      }
+    });
+
+    return result.count > 0;
+  }
+
+  async clearMailDeliveryClaim(tokenId: string): Promise<void> {
+    await this.prismaClient.passwordResetToken.updateMany({
+      data: {
+        mailProcessingAt: null
+      },
+      where: {
+        id: tokenId,
+        mailSentAt: null
+      }
+    });
+  }
+
   async create(input: CreatePasswordResetTokenInput): Promise<void> {
     await this.prismaClient.passwordResetToken.create({
       data: input
@@ -32,6 +70,8 @@ export class PrismaPasswordResetTokenRepository
       expiresAt: token.expiresAt,
       id: token.id,
       identityId: token.identityId,
+      mailProcessingAt: token.mailProcessingAt ?? undefined,
+      mailSentAt: token.mailSentAt ?? undefined,
       tokenHash: token.tokenHash,
       usedAt: token.usedAt ?? undefined
     };
@@ -61,6 +101,18 @@ export class PrismaPasswordResetTokenRepository
     await this.prismaClient.passwordResetToken.update({
       data: {
         usedAt
+      },
+      where: {
+        id: tokenId
+      }
+    });
+  }
+
+  async markMailSent(tokenId: string, sentAt: Date): Promise<void> {
+    await this.prismaClient.passwordResetToken.update({
+      data: {
+        mailProcessingAt: null,
+        mailSentAt: sentAt
       },
       where: {
         id: tokenId

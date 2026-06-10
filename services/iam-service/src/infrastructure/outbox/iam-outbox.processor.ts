@@ -14,6 +14,9 @@ import { IAM_METRICS_TOKENS } from '../metrics/iam-metrics.constants';
 @Injectable()
 export class IamOutboxProcessor implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(IamOutboxProcessor.name);
+  private backlogRunning = false;
+  private backlogStateKey = 'pending=0|processing=0|failed=0|oldest=n/a';
+  private backlogTimer?: NodeJS.Timeout;
   private cleanupRunning = false;
   private cleanupTimer?: NodeJS.Timeout;
   private publishRunning = false;
@@ -38,10 +41,14 @@ export class IamOutboxProcessor implements OnModuleInit, OnModuleDestroy {
     }
 
     await this.runPublishCycle();
+    await this.runBacklogCycle();
     await this.runCleanupCycle();
     this.pollingTimer = setInterval(() => {
       void this.runPublishCycle();
     }, this.runtimeConfig.outboxPollIntervalMs);
+    this.backlogTimer = setInterval(() => {
+      void this.runBacklogCycle();
+    }, this.runtimeConfig.outboxBacklogIntervalMs);
 
     if (this.runtimeConfig.outboxCleanupEnabled) {
       this.cleanupTimer = setInterval(() => {
@@ -54,6 +61,11 @@ export class IamOutboxProcessor implements OnModuleInit, OnModuleDestroy {
     if (this.pollingTimer) {
       clearInterval(this.pollingTimer);
       this.pollingTimer = undefined;
+    }
+
+    if (this.backlogTimer) {
+      clearInterval(this.backlogTimer);
+      this.backlogTimer = undefined;
     }
 
     if (this.cleanupTimer) {
@@ -117,30 +129,57 @@ export class IamOutboxProcessor implements OnModuleInit, OnModuleDestroy {
       for (const record of pendingRecords) {
         await this.processRecord(record.id);
       }
+    } finally {
+      this.publishRunning = false;
+    }
+  }
 
+  private async runBacklogCycle(): Promise<void> {
+    if (this.backlogRunning) {
+      return;
+    }
+
+    this.backlogRunning = true;
+
+    try {
       const summary = await this.outboxRepository.summarizeBacklog();
+      const oldestPendingAgeSeconds = summary.oldestPendingOccurredAt
+        ? Math.max(
+            0,
+            Math.floor(
+              (Date.now() - summary.oldestPendingOccurredAt.getTime()) / 1000
+            )
+          )
+        : 0;
+
       this.metricsRegistry.recordOutboxBacklog({
         failed: summary.failed,
-        oldestPendingAgeSeconds: summary.oldestPendingOccurredAt
-          ? Math.max(
-              0,
-              Math.floor(
-                (Date.now() - summary.oldestPendingOccurredAt.getTime()) / 1000
-              )
-            )
-          : 0,
+        oldestPendingAgeSeconds,
         pending: summary.pending,
         processing: summary.processing,
         service: 'iam-service'
       });
 
-      if (summary.pending > 0 || summary.processing > 0 || summary.failed > 0) {
+      const nextStateKey = this.createBacklogStateKey(summary);
+
+      if (nextStateKey === this.backlogStateKey) {
+        return;
+      }
+
+      const hadBacklog = !this.backlogStateKey.startsWith('pending=0|processing=0|failed=0|');
+      const hasBacklog = summary.pending > 0 || summary.processing > 0 || summary.failed > 0;
+
+      if (hasBacklog) {
         this.logger.log(
           `Outbox backlog pending=${summary.pending} processing=${summary.processing} failed=${summary.failed} oldestPending=${summary.oldestPendingOccurredAt?.toISOString() ?? 'n/a'}`
         );
+      } else if (hadBacklog) {
+        this.logger.log('Outbox backlog cleared');
       }
+
+      this.backlogStateKey = nextStateKey;
     } finally {
-      this.publishRunning = false;
+      this.backlogRunning = false;
     }
   }
 
@@ -190,5 +229,19 @@ export class IamOutboxProcessor implements OnModuleInit, OnModuleDestroy {
         : undefined,
       retryCount
     };
+  }
+
+  private createBacklogStateKey(summary: {
+    failed: number;
+    oldestPendingOccurredAt?: Date;
+    pending: number;
+    processing: number;
+  }): string {
+    return [
+      `pending=${summary.pending}`,
+      `processing=${summary.processing}`,
+      `failed=${summary.failed}`,
+      `oldest=${summary.oldestPendingOccurredAt?.toISOString() ?? 'n/a'}`
+    ].join('|');
   }
 }

@@ -19,6 +19,12 @@ class FakeOutboxRepository implements OutboxRepository {
   deletedCounts: number[] = [];
   lastCleanupCutoff?: Date;
   lastCleanupLimit?: number;
+  summarizeBacklogCalls = 0;
+  summary: OutboxBacklogSummary = {
+    failed: 0,
+    pending: 0,
+    processing: 0
+  };
 
   async claimPending(): Promise<OutboxRecord | null> {
     this.claimPendingCalls += 1;
@@ -57,11 +63,8 @@ class FakeOutboxRepository implements OutboxRepository {
   }
 
   async summarizeBacklog(): Promise<OutboxBacklogSummary> {
-    return {
-      failed: 0,
-      pending: 0,
-      processing: 0
-    };
+    this.summarizeBacklogCalls += 1;
+    return this.summary;
   }
 }
 
@@ -75,8 +78,11 @@ function createConfigService(
     jwtExpiresIn: '15m',
     jwtRefreshExpiresIn: '7d',
     jwtSecret: 'secret',
+    passwordResetMailClaimTimeoutMs: 60_000,
+    passwordResetMailMaxRetries: 3,
     passwordResetSecret: 'password-reset-secret',
     passwordResetTokenTtlMs: 15 * 60 * 1000,
+    outboxBacklogIntervalMs: 30_000,
     outboxBatchSize: 20,
     outboxCleanupBatchSize: 100,
     outboxCleanupEnabled: true,
@@ -95,8 +101,10 @@ function createConfigService(
     JWT_EXPIRES_IN: config.jwtExpiresIn,
     JWT_REFRESH_EXPIRES_IN: config.jwtRefreshExpiresIn,
     JWT_SECRET: config.jwtSecret,
+    PASSWORD_RESET_MAIL_CLAIM_TIMEOUT_MS: config.passwordResetMailClaimTimeoutMs,
     PASSWORD_RESET_SECRET: config.passwordResetSecret,
     PASSWORD_RESET_TOKEN_TTL_MS: config.passwordResetTokenTtlMs,
+    OUTBOX_BACKLOG_INTERVAL_MS: config.outboxBacklogIntervalMs,
     OUTBOX_BATCH_SIZE: config.outboxBatchSize,
     OUTBOX_CLEANUP_BATCH_SIZE: config.outboxCleanupBatchSize,
     OUTBOX_CLEANUP_ENABLED: config.outboxCleanupEnabled,
@@ -116,12 +124,31 @@ function createConfigService(
   };
 }
 
-function createMetricsRegistry(): MetricsRegistry {
+function createMetricsRegistry(): MetricsRegistry & {
+  backlogRecords: Array<{
+    failed: number;
+    oldestPendingAgeSeconds?: number;
+    pending: number;
+    processing: number;
+    service: string;
+  }>;
+} {
+  const backlogRecords: Array<{
+    failed: number;
+    oldestPendingAgeSeconds?: number;
+    pending: number;
+    processing: number;
+    service: string;
+  }> = [];
+
   return {
+    backlogRecords,
     recordHttpError() {},
     recordHttpRequest() {},
     recordIntegrationConsumer() {},
-    recordOutboxBacklog() {},
+    recordOutboxBacklog(record) {
+      backlogRecords.push(record);
+    },
     recordOutboxCleanup() {},
     recordOutboxPublish() {},
     recordRmqError() {},
@@ -176,4 +203,51 @@ test('cleanup guard skips overlapping cleanup cycles', async () => {
   await firstRun;
 
   assert.equal(repository.cleanupCalls, 1);
+});
+
+test('publish cycle does not summarize backlog metrics', async () => {
+  const repository = new FakeOutboxRepository();
+  const metricsRegistry = createMetricsRegistry();
+  const processor = new IamOutboxProcessor(
+    repository,
+    metricsRegistry,
+    {
+      isEnabled: () => true,
+      publish: async () => undefined
+    } as never,
+    createConfigService() as never
+  );
+
+  await (processor as any).runPublishCycle();
+
+  assert.equal(repository.summarizeBacklogCalls, 0);
+  assert.equal(metricsRegistry.backlogRecords.length, 0);
+});
+
+test('backlog cycle summarizes backlog and records metrics', async () => {
+  const repository = new FakeOutboxRepository();
+  repository.summary = {
+    failed: 1,
+    oldestPendingOccurredAt: new Date(Date.now() - 5_000),
+    pending: 2,
+    processing: 3
+  };
+  const metricsRegistry = createMetricsRegistry();
+  const processor = new IamOutboxProcessor(
+    repository,
+    metricsRegistry,
+    {
+      isEnabled: () => true,
+      publish: async () => undefined
+    } as never,
+    createConfigService() as never
+  );
+
+  await (processor as any).runBacklogCycle();
+
+  assert.equal(repository.summarizeBacklogCalls, 1);
+  assert.equal(metricsRegistry.backlogRecords.length, 1);
+  assert.equal(metricsRegistry.backlogRecords[0]?.pending, 2);
+  assert.equal(metricsRegistry.backlogRecords[0]?.processing, 3);
+  assert.equal(metricsRegistry.backlogRecords[0]?.failed, 1);
 });

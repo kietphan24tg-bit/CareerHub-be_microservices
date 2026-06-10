@@ -15,9 +15,12 @@ export type IamEnvironmentVariables = BaseEnvironmentVariables & {
   MAIL_PORT?: number;
   MAIL_SECURE?: boolean;
   MAIL_USER?: string;
+  PASSWORD_RESET_MAIL_CLAIM_TIMEOUT_MS: number;
+  PASSWORD_RESET_MAIL_MAX_RETRIES: number;
   PASSWORD_RESET_SECRET: string;
   PASSWORD_RESET_TOKEN_TTL_MS: number;
   RESET_PASSWORD_URL_BASE?: string;
+  OUTBOX_BACKLOG_INTERVAL_MS: number;
   OUTBOX_BATCH_SIZE: number;
   OUTBOX_CLEANUP_BATCH_SIZE: number;
   OUTBOX_CLEANUP_ENABLED: boolean;
@@ -91,6 +94,20 @@ export function validateIamEnvironment(
       typeof config.MAIL_USER === 'string' && config.MAIL_USER.trim().length > 0
         ? config.MAIL_USER.trim()
         : undefined,
+    PASSWORD_RESET_MAIL_CLAIM_TIMEOUT_MS:
+      typeof config.PASSWORD_RESET_MAIL_CLAIM_TIMEOUT_MS === 'number'
+        ? config.PASSWORD_RESET_MAIL_CLAIM_TIMEOUT_MS
+        : typeof config.PASSWORD_RESET_MAIL_CLAIM_TIMEOUT_MS === 'string' &&
+            Number.isFinite(Number(config.PASSWORD_RESET_MAIL_CLAIM_TIMEOUT_MS))
+          ? Number(config.PASSWORD_RESET_MAIL_CLAIM_TIMEOUT_MS)
+          : 60_000,
+    PASSWORD_RESET_MAIL_MAX_RETRIES:
+      typeof config.PASSWORD_RESET_MAIL_MAX_RETRIES === 'number'
+        ? config.PASSWORD_RESET_MAIL_MAX_RETRIES
+        : typeof config.PASSWORD_RESET_MAIL_MAX_RETRIES === 'string' &&
+            Number.isFinite(Number(config.PASSWORD_RESET_MAIL_MAX_RETRIES))
+          ? Number(config.PASSWORD_RESET_MAIL_MAX_RETRIES)
+          : 3,
     PASSWORD_RESET_SECRET:
       typeof config.PASSWORD_RESET_SECRET === 'string' &&
       config.PASSWORD_RESET_SECRET.trim().length > 0
@@ -110,6 +127,13 @@ export function validateIamEnvironment(
       config.RESET_PASSWORD_URL_BASE.trim().length > 0
         ? config.RESET_PASSWORD_URL_BASE.trim().replace(/\/$/, '')
         : undefined,
+    OUTBOX_BACKLOG_INTERVAL_MS:
+      typeof config.OUTBOX_BACKLOG_INTERVAL_MS === 'number'
+        ? config.OUTBOX_BACKLOG_INTERVAL_MS
+        : typeof config.OUTBOX_BACKLOG_INTERVAL_MS === 'string' &&
+            Number.isFinite(Number(config.OUTBOX_BACKLOG_INTERVAL_MS))
+          ? Number(config.OUTBOX_BACKLOG_INTERVAL_MS)
+          : 30_000,
     OUTBOX_BATCH_SIZE:
       typeof config.OUTBOX_BATCH_SIZE === 'number'
         ? config.OUTBOX_BATCH_SIZE

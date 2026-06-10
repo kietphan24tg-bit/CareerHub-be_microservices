@@ -6,8 +6,11 @@ export type IamRuntimeConfig = {
   jwtExpiresIn: string;
   jwtRefreshExpiresIn: string;
   jwtSecret: string;
+  passwordResetMailClaimTimeoutMs: number;
+  passwordResetMailMaxRetries: number;
   passwordResetSecret: string;
   passwordResetTokenTtlMs: number;
+  outboxBacklogIntervalMs: number;
   outboxBatchSize: number;
   outboxCleanupBatchSize: number;
   outboxCleanupEnabled: boolean;
@@ -31,9 +34,18 @@ export function getIamRuntimeConfig(
     jwtExpiresIn: configService.getOrThrow('JWT_EXPIRES_IN'),
     jwtRefreshExpiresIn: configService.getOrThrow('JWT_REFRESH_EXPIRES_IN'),
     jwtSecret: configService.getOrThrow('JWT_SECRET'),
+    passwordResetMailClaimTimeoutMs: configService.getOrThrow(
+      'PASSWORD_RESET_MAIL_CLAIM_TIMEOUT_MS'
+    ),
+    passwordResetMailMaxRetries: configService.getOrThrow(
+      'PASSWORD_RESET_MAIL_MAX_RETRIES'
+    ),
     passwordResetSecret: configService.getOrThrow('PASSWORD_RESET_SECRET'),
     passwordResetTokenTtlMs: configService.getOrThrow(
       'PASSWORD_RESET_TOKEN_TTL_MS'
+    ),
+    outboxBacklogIntervalMs: configService.getOrThrow(
+      'OUTBOX_BACKLOG_INTERVAL_MS'
     ),
     outboxBatchSize: configService.getOrThrow('OUTBOX_BATCH_SIZE'),
     outboxCleanupBatchSize: configService.getOrThrow('OUTBOX_CLEANUP_BATCH_SIZE'),

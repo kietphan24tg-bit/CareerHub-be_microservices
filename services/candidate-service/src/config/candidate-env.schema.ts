@@ -5,6 +5,7 @@ import {
 
 export type CandidateEnvironmentVariables = BaseEnvironmentVariables & {
   GRPC_CANDIDATE_URL: string;
+  OUTBOX_BACKLOG_INTERVAL_MS: number;
   OUTBOX_BATCH_SIZE: number;
   OUTBOX_CLEANUP_BATCH_SIZE: number;
   OUTBOX_CLEANUP_ENABLED: boolean;
@@ -30,6 +31,13 @@ export function validateCandidateEnvironment(
   return {
     ...baseEnvironment,
     GRPC_CANDIDATE_URL: grpcCandidateUrl,
+    OUTBOX_BACKLOG_INTERVAL_MS:
+      typeof config.OUTBOX_BACKLOG_INTERVAL_MS === 'number'
+        ? config.OUTBOX_BACKLOG_INTERVAL_MS
+        : typeof config.OUTBOX_BACKLOG_INTERVAL_MS === 'string' &&
+            Number.isFinite(Number(config.OUTBOX_BACKLOG_INTERVAL_MS))
+          ? Number(config.OUTBOX_BACKLOG_INTERVAL_MS)
+          : 30_000,
     OUTBOX_BATCH_SIZE:
       typeof config.OUTBOX_BATCH_SIZE === 'number'
         ? config.OUTBOX_BATCH_SIZE

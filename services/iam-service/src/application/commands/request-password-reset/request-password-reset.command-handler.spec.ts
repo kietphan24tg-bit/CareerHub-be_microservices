@@ -64,6 +64,12 @@ class FakePasswordResetTokenRepository implements PasswordResetTokenRepository {
   created: CreatePasswordResetTokenInput[] = [];
   invalidated: Array<{ identityId: string; usedAt: Date }> = [];
 
+  async claimMailDelivery(): Promise<boolean> {
+    return true;
+  }
+
+  async clearMailDeliveryClaim(): Promise<void> {}
+
   async create(input: CreatePasswordResetTokenInput): Promise<void> {
     this.created.push(input);
   }
@@ -76,6 +82,8 @@ class FakePasswordResetTokenRepository implements PasswordResetTokenRepository {
     this.invalidated.push({ identityId, usedAt });
     return 0;
   }
+
+  async markMailSent(): Promise<void> {}
 
   async markUsed(): Promise<void> {}
 }

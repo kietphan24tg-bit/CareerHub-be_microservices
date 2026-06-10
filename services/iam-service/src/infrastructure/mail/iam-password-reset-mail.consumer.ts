@@ -16,13 +16,25 @@ import {
 } from 'amqplib';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { IamEnvironmentVariables } from '../../config';
+import {
+  getIamRuntimeConfig,
+  type IamEnvironmentVariables
+} from '../../config';
+import {
+  IAM_PORT_TOKENS,
+  type PasswordResetTokenRepository
+} from '../../application';
+import { IAM_METRICS_TOKENS } from '../metrics/iam-metrics.constants';
 import { PasswordResetTokenFactory } from '../auth/password-reset-token.factory';
 import { MailConfigurationError, MailService } from './mail.service';
+import type { MetricsRegistry } from '@careerhub/infrastructure';
+import { Inject } from '@nestjs/common';
 
 const OUTBOX_EVENTS_EXCHANGE = 'events';
 const PASSWORD_RESET_MAIL_QUEUE = 'iam.password-reset-mail';
 const RECONNECT_DELAY_MS = 5_000;
+const RETRY_COUNT_HEADER = 'x-careerhub-retry-count';
+const PASSWORD_RESET_MAIL_CONSUMER = 'iam-password-reset-mail';
 
 function isPasswordResetRequestedEvent(
   value: unknown
@@ -47,7 +59,9 @@ function isPasswordResetRequestedEvent(
 
 @Injectable()
 export class IamPasswordResetMailConsumer implements OnModuleInit, OnModuleDestroy {
+  private readonly claimTimeoutMs: number;
   private readonly logger = new Logger(IamPasswordResetMailConsumer.name);
+  private readonly maxRetryCount: number;
   private readonly runtimeConfig: ReturnType<typeof getRuntimeConfig>;
   private channel?: ConfirmChannel;
   private connecting = false;
@@ -59,8 +73,15 @@ export class IamPasswordResetMailConsumer implements OnModuleInit, OnModuleDestr
   constructor(
     private readonly mailService: MailService,
     private readonly passwordResetTokenFactory: PasswordResetTokenFactory,
+    @Inject(IAM_PORT_TOKENS.passwordResetTokenRepository)
+    private readonly passwordResetTokenRepository: PasswordResetTokenRepository,
+    @Inject(IAM_METRICS_TOKENS.registry)
+    private readonly metricsRegistry: MetricsRegistry,
     configService: ConfigService<IamEnvironmentVariables & EnvironmentVariables, true>
   ) {
+    const iamRuntimeConfig = getIamRuntimeConfig(configService);
+    this.claimTimeoutMs = iamRuntimeConfig.passwordResetMailClaimTimeoutMs;
+    this.maxRetryCount = iamRuntimeConfig.passwordResetMailMaxRetries;
     this.runtimeConfig = getRuntimeConfig(configService);
   }
 
@@ -150,7 +171,6 @@ export class IamPasswordResetMailConsumer implements OnModuleInit, OnModuleDestr
       this.runtimeConfig,
       PASSWORD_RESET_MAIL_QUEUE
     );
-
     await channel.assertExchange(exchange, 'topic', {
       durable: this.runtimeConfig.brokerDurable
     });
@@ -196,12 +216,42 @@ export class IamPasswordResetMailConsumer implements OnModuleInit, OnModuleDestr
       const errorMessage =
         error instanceof Error ? error.message : 'Invalid JSON payload';
       this.logger.warn(`Ignoring malformed password reset mail event: ${errorMessage}`);
+      this.metricsRegistry.recordIntegrationConsumer({
+        consumer: PASSWORD_RESET_MAIL_CONSUMER,
+        eventName: 'unknown',
+        service: this.runtimeConfig.serviceName,
+        status: 'error'
+      });
       channel.ack(message);
       return;
     }
 
     if (!isPasswordResetRequestedEvent(parsed)) {
       this.logger.warn('Ignoring unsupported password reset mail event payload');
+      this.metricsRegistry.recordIntegrationConsumer({
+        consumer: PASSWORD_RESET_MAIL_CONSUMER,
+        eventName:
+          typeof (parsed as { name?: unknown }).name === 'string'
+            ? (parsed as { name: string }).name
+            : 'unknown',
+        service: this.runtimeConfig.serviceName,
+        status: 'error'
+      });
+      channel.ack(message);
+      return;
+    }
+
+    const now = new Date();
+    const claimed = await this.passwordResetTokenRepository.claimMailDelivery(
+      parsed.payload.resetTokenId,
+      now,
+      new Date(now.getTime() - this.claimTimeoutMs)
+    );
+
+    if (!claimed) {
+      this.logger.log(
+        `Skipping duplicate or in-flight password reset mail event for token ${parsed.payload.resetTokenId}`
+      );
       channel.ack(message);
       return;
     }
@@ -219,21 +269,120 @@ export class IamPasswordResetMailConsumer implements OnModuleInit, OnModuleDestr
         identityId: parsed.payload.identityId,
         resetToken
       });
+      await this.passwordResetTokenRepository.markMailSent(
+        parsed.payload.resetTokenId,
+        new Date()
+      );
+      this.metricsRegistry.recordIntegrationConsumer({
+        consumer: PASSWORD_RESET_MAIL_CONSUMER,
+        eventName: parsed.name,
+        service: this.runtimeConfig.serviceName,
+        status: 'processed'
+      });
       channel.ack(message);
     } catch (error) {
       if (error instanceof MailConfigurationError) {
+        await this.passwordResetTokenRepository.clearMailDeliveryClaim(
+          parsed.payload.resetTokenId
+        );
         this.logger.error(
           `Password reset mail is not configured; acknowledging event without retry: ${error.message}`
+        );
+        this.metricsRegistry.recordIntegrationConsumer({
+          consumer: PASSWORD_RESET_MAIL_CONSUMER,
+          eventName: parsed.name,
+          service: this.runtimeConfig.serviceName,
+          status: 'error'
+        });
+        channel.ack(message);
+        return;
+      }
+
+      const retryCount = this.getRetryCount(message);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown password reset mail error';
+      this.metricsRegistry.recordIntegrationConsumer({
+        consumer: PASSWORD_RESET_MAIL_CONSUMER,
+        eventName: parsed.name,
+        service: this.runtimeConfig.serviceName,
+        status: 'error'
+      });
+
+      if (retryCount >= this.maxRetryCount) {
+        await this.passwordResetTokenRepository.clearMailDeliveryClaim(
+          parsed.payload.resetTokenId
+        );
+        this.logger.error(
+          `Password reset mail retries exhausted for message ${message.properties.messageId ?? 'unknown'} after ${retryCount} retries; acknowledging event: ${errorMessage}`
         );
         channel.ack(message);
         return;
       }
 
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown password reset mail error';
-      this.logger.warn(`Failed to process password reset mail event: ${errorMessage}`);
-      channel.nack(message, false, true);
+      try {
+        await this.republishForRetry(channel, message, parsed.name, retryCount + 1);
+        await this.passwordResetTokenRepository.clearMailDeliveryClaim(
+          parsed.payload.resetTokenId
+        );
+        this.logger.warn(
+          `Retrying password reset mail event ${message.properties.messageId ?? 'unknown'} attempt ${retryCount + 1}/${this.maxRetryCount}: ${errorMessage}`
+        );
+        channel.ack(message);
+      } catch (republishError) {
+        await this.passwordResetTokenRepository.clearMailDeliveryClaim(
+          parsed.payload.resetTokenId
+        );
+        const republishErrorMessage =
+          republishError instanceof Error
+            ? republishError.message
+            : 'Unknown retry scheduling error';
+        this.logger.warn(
+          `Failed to schedule password reset mail retry: ${republishErrorMessage}`
+        );
+        channel.nack(message, false, true);
+      }
     }
+  }
+
+  private getRetryCount(message: ConsumeMessage): number {
+    const value = message.properties.headers?.[RETRY_COUNT_HEADER];
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === 'string' && Number.isFinite(Number(value))) {
+      return Number(value);
+    }
+
+    return 0;
+  }
+
+  private async republishForRetry(
+    channel: ConfirmChannel,
+    message: ConsumeMessage,
+    eventName: string,
+    retryCount: number
+  ): Promise<void> {
+    const exchange = getRabbitMqExchangeName(
+      this.runtimeConfig,
+      OUTBOX_EVENTS_EXCHANGE
+    );
+    const headers = {
+      ...(message.properties.headers ?? {}),
+      [RETRY_COUNT_HEADER]: retryCount
+    };
+
+    channel.publish(exchange, eventName, message.content, {
+      contentType: message.properties.contentType ?? 'application/json',
+      deliveryMode: this.runtimeConfig.brokerDurable ? 2 : 1,
+      headers,
+      messageId: message.properties.messageId,
+      timestamp: Date.now(),
+      type: message.properties.type ?? eventName
+    });
+
+    await channel.waitForConfirms();
   }
 
   private scheduleReconnect(): void {

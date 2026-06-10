@@ -33,6 +33,8 @@ export type PasswordResetTokenPersistenceRecord = {
   expiresAt: Date;
   id: string;
   identityId: string;
+  mailProcessingAt: Date | null;
+  mailSentAt: Date | null;
   tokenHash: string;
   usedAt: Date | null;
 };
@@ -117,11 +119,21 @@ export type PasswordResetTokenModelDelegate = {
     where: { tokenHash: string; id?: string };
   }): Promise<PasswordResetTokenPersistenceRecord | null>;
   update(args: {
-    data: Partial<Pick<PasswordResetTokenPersistenceRecord, 'usedAt'>>;
+    data: Partial<
+      Pick<
+        PasswordResetTokenPersistenceRecord,
+        'mailProcessingAt' | 'mailSentAt' | 'usedAt'
+      >
+    >;
     where: { id: string };
   }): Promise<PasswordResetTokenPersistenceRecord>;
   updateMany(args: {
-    data: Partial<Pick<PasswordResetTokenPersistenceRecord, 'usedAt'>>;
+    data: Partial<
+      Pick<
+        PasswordResetTokenPersistenceRecord,
+        'mailProcessingAt' | 'mailSentAt' | 'usedAt'
+      >
+    >;
     where?: Record<string, unknown>;
   }): Promise<{ count: number }>;
 };
