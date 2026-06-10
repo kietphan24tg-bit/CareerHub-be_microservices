@@ -14,6 +14,8 @@
     "observability:down": "docker compose -f docker-compose.observability.yml down",
     "observability:up": "docker compose -f docker-compose.observability.yml up -d",
     "test:auth:smoke": "powershell -File scripts/auth-smoke.ps1",
+    "test:register-candidate:integration": "pnpm --filter @careerhub/gateway test:e2e:register-candidate:live",
+    "test:password-reset:integration": "pnpm --filter @careerhub/gateway test:e2e:password-reset:live",
     "test:password-reset:e2e": "pnpm --filter @careerhub/gateway test:e2e:live"
   },
   "dependencies": {

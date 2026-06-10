@@ -5,6 +5,7 @@ import {
   IdentityAlreadyExistsError,
   IdentityNotFoundError,
   InvalidCredentialsError,
+  InvalidPasswordResetTokenError,
   InvalidTokenError
 } from '../../../application';
 import { IamGrpcController } from './iam.grpc.controller';
@@ -369,6 +370,44 @@ test('converts invalid credentials into UNAUTHENTICATED gRPC errors', async () =
       return (
         payload.code === 16 &&
         payload.message === 'Invalid email or password'
+      );
+    }
+  );
+});
+
+test('converts invalid password reset token into INVALID_ARGUMENT gRPC errors', async () => {
+  const controller = createController({
+    resetPasswordCommandHandler: {
+      async execute() {
+        throw new InvalidPasswordResetTokenError();
+      }
+    }
+  });
+
+  await assert.rejects(
+    () =>
+      controller.resetPassword({
+        new_password: 'new-password-1',
+        token: 'used-reset-token'
+      }),
+    (error: unknown) => {
+      if (
+        typeof error !== 'object' ||
+        error === null ||
+        !('getError' in error) ||
+        typeof (error as { getError?: unknown }).getError !== 'function'
+      ) {
+        return false;
+      }
+
+      const payload = (error as { getError: () => unknown }).getError() as {
+        code?: number;
+        message?: string;
+      };
+
+      return (
+        payload.code === 3 &&
+        payload.message === 'Password reset token is invalid or expired'
       );
     }
   );

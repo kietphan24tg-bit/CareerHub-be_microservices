@@ -130,7 +130,18 @@ async function requestJson<T>(
   path: string,
   init?: RequestInit
 ): Promise<{ body: T; response: Response }> {
-  const response = await fetch(`${GATEWAY_BASE_URL}${path}`, init);
+  let response: Response;
+
+  try {
+    response = await fetch(`${GATEWAY_BASE_URL}${path}`, init);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'unknown error';
+
+    throw new Error(
+      `Failed to reach gateway live endpoint ${GATEWAY_BASE_URL}${path}. Ensure gateway and downstream services are running. Cause: ${reason}`
+    );
+  }
+
   const text = await response.text();
   const body = text.length > 0 ? (JSON.parse(text) as T) : ({} as T);
 
@@ -168,7 +179,17 @@ async function fetchPasswordResetTokenFromMailHog(email: string): Promise<string
   const deadline = Date.now() + 15_000;
 
   while (Date.now() < deadline) {
-    const response = await fetch(`${MAILHOG_API_BASE_URL}/api/v2/messages`);
+    let response: Response;
+
+    try {
+      response = await fetch(`${MAILHOG_API_BASE_URL}/api/v2/messages`);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'unknown error';
+
+      throw new Error(
+        `Failed to reach MailHog at ${MAILHOG_API_BASE_URL}. Ensure MailHog is running before password reset live E2E. Cause: ${reason}`
+      );
+    }
 
     if (response.ok) {
       const payload = (await response.json()) as {
@@ -363,6 +384,26 @@ async function resetPassword(
   assert.equal(body.data.passwordReset, true);
 
   return body;
+}
+
+async function resetPasswordExpectFailure(
+  token: string,
+  newPassword: string
+): Promise<{ body: ErrorEnvelope; response: Response }> {
+  const result = await requestJson<ErrorEnvelope>('/auth/reset-password', {
+    body: JSON.stringify({
+      newPassword,
+      token
+    }),
+    headers: {
+      'content-type': 'application/json',
+      'x-request-id': 'e2e-reset-password-failure'
+    },
+    method: 'POST'
+  });
+
+  assert.equal(result.response.ok, false);
+  return result;
 }
 
 async function getMe(accessToken: string): Promise<SuccessEnvelope<MeResponse>> {
@@ -609,6 +650,47 @@ async function runAuthFlow(role: Role): Promise<void> {
   assert.equal(refreshAfterLogoutResult.body.error.code, 'UNAUTHORIZED');
 }
 
+async function runPasswordResetFlow(role: Role): Promise<void> {
+  const email =
+    role === 'candidate'
+      ? createUniqueEmail('candidate.password-reset.live')
+      : createUniqueEmail('employer.password-reset.live');
+  const oldPassword = '12345678';
+  const newPassword = '87654321';
+
+  if (role === 'candidate') {
+    await registerCandidate(email);
+  } else {
+    await registerEmployer(email);
+  }
+
+  await requestPasswordReset(email);
+
+  const resetToken = await fetchPasswordResetTokenFromMailHog(email);
+
+  await resetPassword(resetToken, newPassword);
+
+  const reusedTokenResult = await resetPasswordExpectFailure(
+    resetToken,
+    '76543210'
+  );
+  assert.equal(reusedTokenResult.response.status, 400);
+  assert.equal(reusedTokenResult.body.success, false);
+  assert.equal(
+    reusedTokenResult.body.error.message,
+    'Password reset token is invalid or expired'
+  );
+
+  const oldLogin = await loginWithPassword(email, oldPassword);
+  assert.equal(oldLogin.response.status, 401);
+  assert.equal(oldLogin.body.success, false);
+  assert.equal(oldLogin.body.error.code, 'UNAUTHENTICATED');
+
+  const newLogin = await loginWithPassword(email, newPassword);
+  assert.equal(newLogin.response.status, 200);
+  assert.equal(newLogin.body.success, true);
+}
+
 test('candidate live auth flow works end-to-end through gateway', async () => {
   await runAuthFlow('candidate');
 });
@@ -618,27 +700,29 @@ test('employer live auth flow works end-to-end through gateway', async () => {
 });
 
 test(
+  'forgot-password returns the same accepted response for unknown email',
+  async () => {
+    const email = createUniqueEmail('unknown.password-reset.live');
+
+    const result = await requestPasswordReset(email);
+
+    assert.equal(result.success, true);
+    assert.equal(result.data.accepted, true);
+  }
+);
+
+test(
   'candidate password reset works end-to-end through gateway and MailHog',
   { timeout: 30_000 },
   async () => {
-    const email = createUniqueEmail('candidate.password-reset.live');
-    const oldPassword = '12345678';
-    const newPassword = '87654321';
+    await runPasswordResetFlow('candidate');
+  }
+);
 
-    await registerCandidate(email);
-    await requestPasswordReset(email);
-
-    const resetToken = await fetchPasswordResetTokenFromMailHog(email);
-
-    await resetPassword(resetToken, newPassword);
-
-    const oldLogin = await loginWithPassword(email, oldPassword);
-    assert.equal(oldLogin.response.status, 401);
-    assert.equal(oldLogin.body.success, false);
-    assert.equal(oldLogin.body.error.code, 'UNAUTHENTICATED');
-
-    const newLogin = await loginWithPassword(email, newPassword);
-    assert.equal(newLogin.response.status, 200);
-    assert.equal(newLogin.body.success, true);
+test(
+  'employer password reset works end-to-end through gateway and MailHog',
+  { timeout: 30_000 },
+  async () => {
+    await runPasswordResetFlow('employer');
   }
 );
