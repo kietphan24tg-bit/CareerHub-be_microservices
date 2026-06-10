@@ -4,6 +4,7 @@ import { Metadata } from '@grpc/grpc-js';
 import {
   IdentityAlreadyExistsError,
   IdentityNotFoundError,
+  InvalidCredentialsError,
   InvalidTokenError
 } from '../../../application';
 import { IamGrpcController } from './iam.grpc.controller';
@@ -321,6 +322,44 @@ test('converts application errors into RpcException payloads', async () => {
       return (
         payload.code === 'UNAUTHORIZED' &&
         payload.message === 'Invalid access token'
+      );
+    }
+  );
+});
+
+test('converts invalid credentials into UNAUTHENTICATED gRPC errors', async () => {
+  const controller = createController({
+    loginIdentityCommandHandler: {
+      async execute() {
+        throw new InvalidCredentialsError();
+      }
+    }
+  });
+
+  await assert.rejects(
+    () =>
+      controller.loginIdentity({
+        email: 'user@example.com',
+        password: 'wrong-password'
+      }),
+    (error: unknown) => {
+      if (
+        typeof error !== 'object' ||
+        error === null ||
+        !('getError' in error) ||
+        typeof (error as { getError?: unknown }).getError !== 'function'
+      ) {
+        return false;
+      }
+
+      const payload = (error as { getError: () => unknown }).getError() as {
+        code?: number;
+        message?: string;
+      };
+
+      return (
+        payload.code === 16 &&
+        payload.message === 'Invalid email or password'
       );
     }
   );

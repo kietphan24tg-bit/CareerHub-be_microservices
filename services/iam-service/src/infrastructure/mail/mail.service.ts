@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createTransport, type Transporter } from 'nodemailer';
 import {
@@ -15,6 +15,15 @@ export type SendPasswordResetMailParams = {
   resetToken: string;
 };
 
+export class MailConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'MailConfigurationError';
+  }
+}
+
+type CreateMailTransport = typeof createTransport;
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -22,7 +31,9 @@ export class MailService {
   private readonly transporter: Transporter | null;
 
   constructor(
-    configService: ConfigService<IamEnvironmentVariables, true>
+    configService: ConfigService<IamEnvironmentVariables, true>,
+    @Optional()
+    createMailTransport: CreateMailTransport = createTransport
   ) {
     this.mailConfig = getIamMailConfig(configService);
 
@@ -34,7 +45,7 @@ export class MailService {
       return;
     }
 
-    this.transporter = createTransport({
+    this.transporter = createMailTransport({
       auth: {
         pass: this.mailConfig.password as string,
         user: this.mailConfig.user as string
@@ -51,7 +62,7 @@ export class MailService {
         email: params.email,
         identityId: params.identityId
       });
-      throw new Error('Mail transport is not configured');
+      throw new MailConfigurationError('Mail transport is not configured');
     }
 
     if (!this.mailConfig.resetPasswordUrlBase) {
@@ -62,7 +73,7 @@ export class MailService {
           identityId: params.identityId
         }
       );
-      throw new Error('RESET_PASSWORD_URL_BASE is not configured');
+      throw new MailConfigurationError('RESET_PASSWORD_URL_BASE is not configured');
     }
 
     const resetUrl = `${this.mailConfig.resetPasswordUrlBase}?token=${encodeURIComponent(params.resetToken)}`;

@@ -9,9 +9,12 @@
   "scripts": {
     "build:packages": "pnpm --filter @careerhub/shared-kernel build && pnpm --filter @careerhub/contracts build && pnpm --filter @careerhub/infrastructure build && pnpm --filter @careerhub/nest-common build",
     "install:all": "pnpm install",
+    "local:infra:down": "docker compose -f docker-compose.local.yml down",
+    "local:infra:up": "docker compose -f docker-compose.local.yml up -d",
     "observability:down": "docker compose -f docker-compose.observability.yml down",
     "observability:up": "docker compose -f docker-compose.observability.yml up -d",
-    "test:auth:smoke": "powershell -File scripts/auth-smoke.ps1"
+    "test:auth:smoke": "powershell -File scripts/auth-smoke.ps1",
+    "test:password-reset:e2e": "pnpm --filter @careerhub/gateway test:e2e:live"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.13.4",

@@ -6,6 +6,7 @@ export type IamRuntimeConfig = {
   jwtExpiresIn: string;
   jwtRefreshExpiresIn: string;
   jwtSecret: string;
+  passwordResetSecret: string;
   passwordResetTokenTtlMs: number;
   outboxBatchSize: number;
   outboxCleanupBatchSize: number;
@@ -30,6 +31,7 @@ export function getIamRuntimeConfig(
     jwtExpiresIn: configService.getOrThrow('JWT_EXPIRES_IN'),
     jwtRefreshExpiresIn: configService.getOrThrow('JWT_REFRESH_EXPIRES_IN'),
     jwtSecret: configService.getOrThrow('JWT_SECRET'),
+    passwordResetSecret: configService.getOrThrow('PASSWORD_RESET_SECRET'),
     passwordResetTokenTtlMs: configService.getOrThrow(
       'PASSWORD_RESET_TOKEN_TTL_MS'
     ),

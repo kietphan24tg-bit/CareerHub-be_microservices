@@ -18,7 +18,7 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import type { IamEnvironmentVariables } from '../../config';
 import { PasswordResetTokenFactory } from '../auth/password-reset-token.factory';
-import { MailService } from './mail.service';
+import { MailConfigurationError, MailService } from './mail.service';
 
 const OUTBOX_EVENTS_EXCHANGE = 'events';
 const PASSWORD_RESET_MAIL_QUEUE = 'iam.password-reset-mail';
@@ -188,15 +188,25 @@ export class IamPasswordResetMailConsumer implements OnModuleInit, OnModuleDestr
       return;
     }
 
+    let parsed: unknown;
+
     try {
-      const parsed = JSON.parse(message.content.toString('utf8')) as unknown;
+      parsed = JSON.parse(message.content.toString('utf8')) as unknown;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Invalid JSON payload';
+      this.logger.warn(`Ignoring malformed password reset mail event: ${errorMessage}`);
+      channel.ack(message);
+      return;
+    }
 
-      if (!isPasswordResetRequestedEvent(parsed)) {
-        this.logger.warn('Ignoring unsupported password reset mail event payload');
-        channel.ack(message);
-        return;
-      }
+    if (!isPasswordResetRequestedEvent(parsed)) {
+      this.logger.warn('Ignoring unsupported password reset mail event payload');
+      channel.ack(message);
+      return;
+    }
 
+    try {
       const resetToken = this.passwordResetTokenFactory.createToken({
         expiresAt: parsed.payload.expiresAt,
         identityId: parsed.payload.identityId,
@@ -211,6 +221,14 @@ export class IamPasswordResetMailConsumer implements OnModuleInit, OnModuleDestr
       });
       channel.ack(message);
     } catch (error) {
+      if (error instanceof MailConfigurationError) {
+        this.logger.error(
+          `Password reset mail is not configured; acknowledging event without retry: ${error.message}`
+        );
+        channel.ack(message);
+        return;
+      }
+
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown password reset mail error';
       this.logger.warn(`Failed to process password reset mail event: ${errorMessage}`);

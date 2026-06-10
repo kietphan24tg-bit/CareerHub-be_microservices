@@ -37,6 +37,14 @@ type LoginResponse = {
   };
 };
 
+type PasswordResetAcceptedResponse = {
+  accepted: boolean;
+};
+
+type PasswordResetResponse = {
+  passwordReset: boolean;
+};
+
 type MeResponse = {
   user: {
     email: string;
@@ -86,6 +94,10 @@ type CompanyProfileResponse = {
 };
 
 const GATEWAY_BASE_URL = process.env.GATEWAY_BASE_URL ?? 'http://127.0.0.1:3000';
+const MAILHOG_API_BASE_URL =
+  process.env.MAILHOG_API_BASE_URL ?? 'http://127.0.0.1:8025';
+const RESET_PASSWORD_URL_BASE =
+  process.env.RESET_PASSWORD_URL_BASE ?? 'http://localhost:5173/reset-password';
 
 function createUniqueEmail(prefix: string): string {
   return `${prefix}.${Date.now()}.${Math.random().toString(16).slice(2, 8)}@example.com`;
@@ -126,6 +138,72 @@ async function requestJson<T>(
     body,
     response
   };
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function readStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item) => typeof item === 'string') : [];
+}
+
+function extractResetTokenFromBody(body: string): string | undefined {
+  const normalizedBody = body
+    .replaceAll('&amp;', '&')
+    .replaceAll('=3D', '=')
+    .replace(/=\r?\n/g, '');
+  const tokenMatch = normalizedBody.match(
+    new RegExp(`${RESET_PASSWORD_URL_BASE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\?token=([^\\s"'<>]+)`)
+  );
+
+  if (!tokenMatch?.[1]) {
+    return undefined;
+  }
+
+  return decodeURIComponent(tokenMatch[1]);
+}
+
+async function fetchPasswordResetTokenFromMailHog(email: string): Promise<string> {
+  const deadline = Date.now() + 15_000;
+
+  while (Date.now() < deadline) {
+    const response = await fetch(`${MAILHOG_API_BASE_URL}/api/v2/messages`);
+
+    if (response.ok) {
+      const payload = (await response.json()) as {
+        items?: Array<{
+          Content?: {
+            Body?: unknown;
+            Headers?: Record<string, unknown>;
+          };
+        }>;
+      };
+
+      for (const item of payload.items ?? []) {
+        const headers = item.Content?.Headers ?? {};
+        const recipients = [
+          ...readStringArray(headers.To),
+          ...readStringArray(headers['Delivered-To'])
+        ];
+
+        if (!recipients.some((recipient) => recipient.includes(email))) {
+          continue;
+        }
+
+        const body = typeof item.Content?.Body === 'string' ? item.Content.Body : '';
+        const resetToken = extractResetTokenFromBody(body);
+
+        if (resetToken) {
+          return resetToken;
+        }
+      }
+    }
+
+    await sleep(500);
+  }
+
+  throw new Error(`Password reset email for ${email} was not found in MailHog`);
 }
 
 async function registerCandidate(email: string): Promise<SuccessEnvelope<RegisterResponse>> {
@@ -218,6 +296,73 @@ async function login(email: string): Promise<{
     refreshToken,
     user: body.data.user
   };
+}
+
+async function loginWithPassword(
+  email: string,
+  password: string
+): Promise<{ body: SuccessEnvelope<LoginResponse> | ErrorEnvelope; response: Response }> {
+  return requestJson<SuccessEnvelope<LoginResponse> | ErrorEnvelope>('/auth/login', {
+    body: JSON.stringify({
+      email,
+      password,
+      rememberMe: true
+    }),
+    headers: {
+      'content-type': 'application/json',
+      'x-request-id': 'e2e-login-with-password'
+    },
+    method: 'POST'
+  });
+}
+
+async function requestPasswordReset(
+  email: string
+): Promise<SuccessEnvelope<PasswordResetAcceptedResponse>> {
+  const { body, response } = await requestJson<
+    SuccessEnvelope<PasswordResetAcceptedResponse>
+  >('/auth/forgot-password', {
+    body: JSON.stringify({
+      email
+    }),
+    headers: {
+      'content-type': 'application/json',
+      'x-request-id': 'e2e-forgot-password'
+    },
+    method: 'POST'
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(body.success, true);
+  assert.equal(body.data.accepted, true);
+
+  return body;
+}
+
+async function resetPassword(
+  token: string,
+  newPassword: string
+): Promise<SuccessEnvelope<PasswordResetResponse>> {
+  const { body, response } = await requestJson<SuccessEnvelope<PasswordResetResponse>>(
+    '/auth/reset-password',
+    {
+      body: JSON.stringify({
+        newPassword,
+        token
+      }),
+      headers: {
+        'content-type': 'application/json',
+        'x-request-id': 'e2e-reset-password'
+      },
+      method: 'POST'
+    }
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(body.success, true);
+  assert.equal(body.data.passwordReset, true);
+
+  return body;
 }
 
 async function getMe(accessToken: string): Promise<SuccessEnvelope<MeResponse>> {
@@ -471,3 +616,29 @@ test('candidate live auth flow works end-to-end through gateway', async () => {
 test('employer live auth flow works end-to-end through gateway', async () => {
   await runAuthFlow('employer');
 });
+
+test(
+  'candidate password reset works end-to-end through gateway and MailHog',
+  { timeout: 30_000 },
+  async () => {
+    const email = createUniqueEmail('candidate.password-reset.live');
+    const oldPassword = '12345678';
+    const newPassword = '87654321';
+
+    await registerCandidate(email);
+    await requestPasswordReset(email);
+
+    const resetToken = await fetchPasswordResetTokenFromMailHog(email);
+
+    await resetPassword(resetToken, newPassword);
+
+    const oldLogin = await loginWithPassword(email, oldPassword);
+    assert.equal(oldLogin.response.status, 401);
+    assert.equal(oldLogin.body.success, false);
+    assert.equal(oldLogin.body.error.code, 'UNAUTHENTICATED');
+
+    const newLogin = await loginWithPassword(email, newPassword);
+    assert.equal(newLogin.response.status, 200);
+    assert.equal(newLogin.body.success, true);
+  }
+);

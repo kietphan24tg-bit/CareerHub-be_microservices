@@ -175,7 +175,10 @@ import type { IamEnvironmentVariables } from './config';
       inject: [ConfigService],
       useFactory: (
         configService: ConfigService<IamEnvironmentVariables, true>
-      ) => new PasswordResetTokenFactory(getIamRuntimeConfig(configService).jwtSecret)
+      ) =>
+        new PasswordResetTokenFactory(
+          getIamRuntimeConfig(configService).passwordResetSecret
+        )
     },
     {
       provide: LoginIdentityCommandHandler,

@@ -15,6 +15,7 @@ export type IamEnvironmentVariables = BaseEnvironmentVariables & {
   MAIL_PORT?: number;
   MAIL_SECURE?: boolean;
   MAIL_USER?: string;
+  PASSWORD_RESET_SECRET: string;
   PASSWORD_RESET_TOKEN_TTL_MS: number;
   RESET_PASSWORD_URL_BASE?: string;
   OUTBOX_BATCH_SIZE: number;
@@ -90,6 +91,13 @@ export function validateIamEnvironment(
       typeof config.MAIL_USER === 'string' && config.MAIL_USER.trim().length > 0
         ? config.MAIL_USER.trim()
         : undefined,
+    PASSWORD_RESET_SECRET:
+      typeof config.PASSWORD_RESET_SECRET === 'string' &&
+      config.PASSWORD_RESET_SECRET.trim().length > 0
+        ? config.PASSWORD_RESET_SECRET.trim()
+        : typeof config.JWT_SECRET === 'string' && config.JWT_SECRET.trim().length > 0
+          ? config.JWT_SECRET.trim()
+          : 'careerhub-dev-secret',
     PASSWORD_RESET_TOKEN_TTL_MS:
       typeof config.PASSWORD_RESET_TOKEN_TTL_MS === 'number'
         ? config.PASSWORD_RESET_TOKEN_TTL_MS

@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: careerhub-postgres
+    environment:
+      POSTGRES_DB: careerhub_iam
+      POSTGRES_PASSWORD: careerhub
+      POSTGRES_USER: careerhub
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U careerhub -d careerhub_iam']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - '5432:5432'
+    restart: unless-stopped
+    volumes:
+      - careerhub-postgres-data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: careerhub-rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    restart: unless-stopped
+    volumes:
+      - careerhub-rabbitmq-data:/var/lib/rabbitmq
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: careerhub-mailhog
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+    restart: unless-stopped
+
+volumes:
+  careerhub-postgres-data:
+  careerhub-rabbitmq-data:
