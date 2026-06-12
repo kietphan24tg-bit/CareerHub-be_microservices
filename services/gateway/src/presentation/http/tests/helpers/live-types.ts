@@ -90,7 +90,20 @@ export type GatewaySavedJob = {
   jobId: string;
   savedAt: string;
   job?: {
+    city?: string | null;
+    companyLogoUrl?: string | null;
+    companyName?: string;
+    country?: string | null;
+    currency?: string | null;
+    employmentType?: string | null;
+    expiresAt?: string | null;
     id: string;
+    isRemote?: boolean;
+    level?: string | null;
+    salaryMax?: number | null;
+    salaryMin?: number | null;
+    slug?: string;
+    status?: string;
     title: string;
   } | null;
 };

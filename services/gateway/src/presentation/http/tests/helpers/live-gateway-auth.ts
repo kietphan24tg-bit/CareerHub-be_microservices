@@ -47,6 +47,39 @@ export async function registerCandidate(
   return body;
 }
 
+
+export async function registerEmployer(input: {
+  email: string;
+  requestId: string;
+}): Promise<SuccessEnvelope<RegisterResponse>> {
+  const { body, response } = await requestJson<SuccessEnvelope<RegisterResponse>>(
+    '/auth/employer/register',
+    {
+      body: JSON.stringify({
+        acceptTerms: true,
+        address: 'Ho Chi Minh City',
+        companyEmail: input.email,
+        companyName: 'CareerHub Co',
+        confirmPassword: '12345678',
+        fullName: 'Employer Admin',
+        industry: 'Technology',
+        password: '12345678',
+        phone: '0987654321'
+      }),
+      headers: {
+        'content-type': 'application/json',
+        'x-request-id': input.requestId
+      },
+      method: 'POST'
+    }
+  );
+
+  assert.equal(response.status, 201);
+  assert.equal(body.success, true);
+  assert.equal(body.data.role, 'employer');
+
+  return body;
+}
 export async function login(input: {
   email: string;
   password: string;

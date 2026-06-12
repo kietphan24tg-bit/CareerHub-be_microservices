@@ -8,6 +8,7 @@ export type GatewayRuntimeConfig = {
   grpcCandidateUrl: string;
   grpcEmployerUrl: string;
   grpcIamUrl: string;
+  grpcJobUrl: string;
   jwtRefreshExpiresIn: string;
 };
 
@@ -24,6 +25,7 @@ export function getGatewayRuntimeConfig(
     grpcCandidateUrl: configService.getOrThrow('GRPC_CANDIDATE_URL'),
     grpcEmployerUrl: configService.getOrThrow('GRPC_EMPLOYER_URL'),
     grpcIamUrl: configService.getOrThrow('GRPC_IAM_URL'),
+    grpcJobUrl: configService.getOrThrow('GRPC_JOB_URL'),
     jwtRefreshExpiresIn: configService.getOrThrow('JWT_REFRESH_EXPIRES_IN')
   };
 }

@@ -1,5 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CandidateGrpcClient } from '../../infrastructure/transport/grpc/candidate-grpc.client';
+import { JobGrpcClient } from '../../infrastructure/transport/grpc/job-grpc.client';
 import type { GatewayJobSummary } from './ports/job-lookup.port';
 import { JOB_LOOKUP_PORT, type JobLookupPort } from './ports/job-lookup.port';
 
@@ -14,6 +15,7 @@ export type GatewaySavedJob = {
 export class GatewaySavedJobsService {
   constructor(
     private readonly candidateGrpcClient: CandidateGrpcClient,
+    private readonly jobGrpcClient: JobGrpcClient,
     @Inject(JOB_LOOKUP_PORT)
     private readonly jobLookupPort: JobLookupPort
   ) {}
@@ -43,6 +45,18 @@ export class GatewaySavedJobsService {
     jobId: string;
     requestId?: string;
   }): Promise<GatewaySavedJob> {
+    const jobExistsResponse = await this.jobGrpcClient.jobExists(
+      { job_id: input.jobId },
+      input.requestId
+    );
+
+    if (!jobExistsResponse.exists) {
+      throw new NotFoundException({
+        code: 'JOB_NOT_FOUND',
+        message: 'Job not found.'
+      });
+    }
+
     const response = await this.candidateGrpcClient.saveJob(
       {
         identity_id: input.identityId,

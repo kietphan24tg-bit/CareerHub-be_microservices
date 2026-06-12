@@ -35,6 +35,7 @@ Khởi động các service ứng dụng trên máy host:
 pnpm --filter @careerhub/iam-service start
 pnpm --filter @careerhub/candidate-service start
 pnpm --filter @careerhub/employer-service start
+pnpm --filter @careerhub/job-service start
 pnpm --filter @careerhub/gateway start
 ```
 
@@ -129,6 +130,7 @@ Chạy các service trên host:
 pnpm --filter @careerhub/iam-service start
 pnpm --filter @careerhub/candidate-service start
 pnpm --filter @careerhub/employer-service start
+pnpm --filter @careerhub/job-service start
 pnpm --filter @careerhub/gateway start
 ```
 

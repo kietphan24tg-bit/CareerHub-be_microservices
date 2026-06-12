@@ -11,6 +11,7 @@ export type GatewayEnvironmentVariables = BaseEnvironmentVariables & {
   GRPC_CANDIDATE_URL: string;
   GRPC_EMPLOYER_URL: string;
   GRPC_IAM_URL: string;
+  GRPC_JOB_URL: string;
   JWT_REFRESH_EXPIRES_IN: string;
   JWT_SECRET: string;
   RESUME_PRINT_BASE_URL?: string;
@@ -35,6 +36,11 @@ export function validateGatewayEnvironment(
     config.GRPC_EMPLOYER_URL.trim().length > 0
       ? config.GRPC_EMPLOYER_URL.trim()
       : '127.0.0.1:50053';
+  const grpcJobUrl =
+    typeof config.GRPC_JOB_URL === 'string' &&
+    config.GRPC_JOB_URL.trim().length > 0
+      ? config.GRPC_JOB_URL.trim()
+      : '127.0.0.1:50054';
 
   return {
     ...baseEnvironment,
@@ -64,6 +70,7 @@ export function validateGatewayEnvironment(
     GRPC_CANDIDATE_URL: grpcCandidateUrl,
     GRPC_EMPLOYER_URL: grpcEmployerUrl,
     GRPC_IAM_URL: grpcIamUrl,
+    GRPC_JOB_URL: grpcJobUrl,
     JWT_REFRESH_EXPIRES_IN:
       typeof config.JWT_REFRESH_EXPIRES_IN === 'string' &&
       config.JWT_REFRESH_EXPIRES_IN.trim().length > 0

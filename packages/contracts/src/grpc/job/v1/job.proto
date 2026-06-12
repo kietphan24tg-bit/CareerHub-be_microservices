@@ -1,0 +1,245 @@
+syntax = "proto3";
+
+package careerhub.job.v1;
+
+service JobService {
+  rpc ListPublicJobs (ListPublicJobsRequest) returns (ListPublicJobsResponse);
+  rpc GetPublicJobBySlug (GetPublicJobBySlugRequest) returns (GetPublicJobBySlugResponse);
+  rpc ListEmployerJobs (ListEmployerJobsRequest) returns (ListEmployerJobsResponse);
+  rpc GetEmployerJobById (GetEmployerJobByIdRequest) returns (GetEmployerJobByIdResponse);
+  rpc CreateJob (CreateJobRequest) returns (CreateJobResponse);
+  rpc UpdateJob (UpdateJobRequest) returns (UpdateJobResponse);
+  rpc PublishJob (PublishJobRequest) returns (PublishJobResponse);
+  rpc CloseJob (CloseJobRequest) returns (CloseJobResponse);
+  rpc ArchiveJob (ArchiveJobRequest) returns (ArchiveJobResponse);
+  rpc ReopenJob (ReopenJobRequest) returns (ReopenJobResponse);
+  rpc ListJobsByIds (ListJobsByIdsRequest) returns (ListJobsByIdsResponse);
+  rpc JobExists (JobExistsRequest) returns (JobExistsResponse);
+}
+
+message PageMeta {
+  int32 page = 1;
+  int32 page_size = 2;
+  int32 total = 3;
+}
+
+message JobCompany {
+  string id = 1;
+  string company_name = 2;
+  string logo_url = 3;
+  string industry = 4;
+  string website = 5;
+}
+
+message JobMessage {
+  string id = 1;
+  string company_id = 2;
+  string title = 3;
+  string slug = 4;
+  string description = 5;
+  repeated string responsibilities = 6;
+  repeated string requirements = 7;
+  repeated string benefits = 8;
+  string employment_type = 9;
+  string level = 10;
+  string category = 11;
+  string city = 12;
+  string country = 13;
+  bool is_remote = 14;
+  double salary_min = 15;
+  double salary_max = 16;
+  string currency = 17;
+  string status = 18;
+  string expires_at = 19;
+  string created_at = 20;
+  string updated_at = 21;
+  int32 application_count = 22;
+  JobCompany company = 23;
+  repeated string null_fields = 24;
+}
+
+message SavedJobSummary {
+  string id = 1;
+  string title = 2;
+  string slug = 3;
+  string company_id = 4;
+  string company_name = 5;
+  string company_logo_url = 6;
+  string city = 7;
+  string country = 8;
+  string employment_type = 9;
+  string level = 10;
+  bool is_remote = 11;
+  double salary_min = 12;
+  double salary_max = 13;
+  string currency = 14;
+  string status = 15;
+  string expires_at = 16;
+  repeated string null_fields = 17;
+}
+
+message ListPublicJobsRequest {
+  string keyword = 1;
+  string location = 2;
+  string employment_type = 3;
+  string category = 4;
+  string company_industry = 5;
+  bool remote_only = 6;
+  double salary_min = 7;
+  double salary_max = 8;
+  string sort = 9;
+  int32 page = 10;
+  int32 page_size = 11;
+  string request_id = 12;
+}
+
+message ListPublicJobsResponse {
+  repeated JobMessage items = 1;
+  PageMeta meta = 2;
+}
+
+message GetPublicJobBySlugRequest {
+  string slug = 1;
+  string request_id = 2;
+}
+
+message GetPublicJobBySlugResponse {
+  JobMessage job = 1;
+}
+
+message ListEmployerJobsRequest {
+  string employer_identity_id = 1;
+  string status = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+  string request_id = 5;
+}
+
+message ListEmployerJobsResponse {
+  repeated JobMessage items = 1;
+  PageMeta meta = 2;
+}
+
+message GetEmployerJobByIdRequest {
+  string employer_identity_id = 1;
+  string job_id = 2;
+  string request_id = 3;
+}
+
+message GetEmployerJobByIdResponse {
+  JobMessage job = 1;
+}
+
+message CreateJobRequest {
+  string employer_identity_id = 1;
+  string company_id = 2;
+  string company_name = 3;
+  string company_logo_url = 4;
+  string company_industry = 5;
+  string company_website = 6;
+  string title = 7;
+  string description = 8;
+  repeated string responsibilities = 9;
+  repeated string requirements = 10;
+  repeated string benefits = 11;
+  string employment_type = 12;
+  string level = 13;
+  string category = 14;
+  string city = 15;
+  string country = 16;
+  bool is_remote = 17;
+  double salary_min = 18;
+  double salary_max = 19;
+  string currency = 20;
+  string expires_at = 21;
+  string request_id = 22;
+}
+
+message CreateJobResponse {
+  JobMessage job = 1;
+}
+
+message UpdateJobRequest {
+  string employer_identity_id = 1;
+  string job_id = 2;
+  repeated string updated_fields = 3;
+  repeated string clear_fields = 4;
+  string title = 5;
+  string description = 6;
+  repeated string responsibilities = 7;
+  repeated string requirements = 8;
+  repeated string benefits = 9;
+  string employment_type = 10;
+  string level = 11;
+  string category = 12;
+  string city = 13;
+  string country = 14;
+  bool is_remote = 15;
+  double salary_min = 16;
+  double salary_max = 17;
+  string currency = 18;
+  string expires_at = 19;
+  string request_id = 20;
+}
+
+message UpdateJobResponse {
+  JobMessage job = 1;
+}
+
+message PublishJobRequest {
+  string employer_identity_id = 1;
+  string job_id = 2;
+  string request_id = 3;
+}
+
+message PublishJobResponse {
+  JobMessage job = 1;
+}
+
+message CloseJobRequest {
+  string employer_identity_id = 1;
+  string job_id = 2;
+  string request_id = 3;
+}
+
+message CloseJobResponse {
+  JobMessage job = 1;
+}
+
+message ArchiveJobRequest {
+  string employer_identity_id = 1;
+  string job_id = 2;
+  string request_id = 3;
+}
+
+message ArchiveJobResponse {
+  JobMessage job = 1;
+}
+
+message ReopenJobRequest {
+  string employer_identity_id = 1;
+  string job_id = 2;
+  string request_id = 3;
+}
+
+message ReopenJobResponse {
+  JobMessage job = 1;
+}
+
+message ListJobsByIdsRequest {
+  repeated string job_ids = 1;
+  string request_id = 2;
+}
+
+message ListJobsByIdsResponse {
+  repeated SavedJobSummary items = 1;
+}
+
+message JobExistsRequest {
+  string job_id = 1;
+  string request_id = 2;
+}
+
+message JobExistsResponse {
+  bool exists = 1;
+}

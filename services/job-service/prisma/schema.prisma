@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Job {
+  id                   String    @id @db.VarChar(64)
+  employerIdentityId   String    @map("employer_identity_id") @db.VarChar(64)
+  companyId            String    @map("company_id") @db.VarChar(64)
+  companyName          String    @map("company_name")
+  companyLogoUrl       String?   @map("company_logo_url")
+  companyIndustry      String?   @map("company_industry")
+  companyWebsite       String?   @map("company_website")
+  title                String
+  slug                 String    @unique
+  description          String?
+  responsibilitiesJson String?   @map("responsibilities_json")
+  requirementsJson     String?   @map("requirements_json")
+  benefitsJson         String?   @map("benefits_json")
+  employmentType       String?   @map("employment_type")
+  level                String?
+  category             String?
+  city                 String?
+  country              String?
+  isRemote             Boolean   @default(false) @map("is_remote")
+  salaryMin            Decimal?  @map("salary_min") @db.Decimal(12, 2)
+  salaryMax            Decimal?  @map("salary_max") @db.Decimal(12, 2)
+  currency             String?
+  status               String    @default("draft")
+  expiresAt            DateTime? @map("expires_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  @@index([employerIdentityId])
+  @@index([companyId])
+  @@index([status])
+  @@map("jobs")
+}

@@ -1,0 +1,23 @@
+export type CreateJobCommand = {
+  benefits?: string[];
+  category?: string;
+  city?: string;
+  companyId: string;
+  companyIndustry?: string;
+  companyLogoUrl?: string;
+  companyName: string;
+  companyWebsite?: string;
+  country?: string;
+  currency?: string;
+  description?: string;
+  employerIdentityId: string;
+  employmentType?: string;
+  expiresAt?: string;
+  isRemote?: boolean;
+  level?: string;
+  requirements?: string[];
+  responsibilities?: string[];
+  salaryMax?: number;
+  salaryMin?: number;
+  title: string;
+};

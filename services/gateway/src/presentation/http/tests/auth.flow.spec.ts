@@ -40,6 +40,7 @@ const gatewayRuntimeConfig = {
   grpcCandidateUrl: '127.0.0.1:50052',
   grpcEmployerUrl: '127.0.0.1:50053',
   grpcIamUrl: '127.0.0.1:50051',
+  grpcJobUrl: '127.0.0.1:50054',
   jwtRefreshExpiresIn: '7d'
 };
 
