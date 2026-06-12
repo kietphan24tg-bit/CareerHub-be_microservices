@@ -1,15 +1,12 @@
 import { ValidationError } from '@careerhub/shared-kernel';
 import type {
   CandidateProfileRecord,
+  CandidateProfileRepository,
   CandidateWriteTransaction,
   UpdateCandidateProfilePatch
 } from '../../ports';
 import { CandidateProfileNotFoundError } from '../../errors/candidate-profile-not-found.error';
-import type { IdGenerator } from '../../ports';
-import {
-  mapCandidateIntegrationEventToOutboxRecord,
-  mapCandidateProfileUpdatedIntegrationEvent
-} from '../../outbox/candidate-outbox-event.mapper';
+import { ResumeNotFoundError } from '../../errors/resume-not-found.error';
 import type { UpdateCandidateProfileCommand } from './update-candidate-profile.command';
 
 function normalizeNullableString(value: string | null | undefined): string | null | undefined {
@@ -27,8 +24,8 @@ function normalizeNullableString(value: string | null | undefined): string | nul
 
 export class UpdateCandidateProfileCommandHandler {
   constructor(
-    private readonly writeTransaction: CandidateWriteTransaction,
-    private readonly idGenerator: IdGenerator
+    private readonly candidateProfileRepository: CandidateProfileRepository,
+    private readonly writeTransaction: CandidateWriteTransaction
   ) {}
 
   async execute(
@@ -92,36 +89,58 @@ export class UpdateCandidateProfileCommandHandler {
       patch.yearsExperience = command.yearsExperience;
     }
 
-    if (Object.keys(patch).length === 0) {
+    const hasResumeIdChange = command.resumeId !== undefined;
+
+    if (Object.keys(patch).length === 0 && !hasResumeIdChange) {
       throw new ValidationError('At least one candidate profile field must be provided');
     }
 
-    return this.writeTransaction.execute(
-      async ({ candidateProfileRepository, outboxRepository }) => {
-        const updated = await candidateProfileRepository.updateByIdentityId(
-          identityId,
-          patch
-        );
+    if (!hasResumeIdChange) {
+      const updated = await this.candidateProfileRepository.updateByIdentityId(
+        identityId,
+        patch
+      );
 
-        if (!updated) {
-          throw new CandidateProfileNotFoundError(identityId);
+      if (!updated) {
+        throw new CandidateProfileNotFoundError(identityId);
+      }
+
+      return updated;
+    }
+
+    return this.writeTransaction.execute(async ({ candidateProfileRepository, resumeRepository }) => {
+      if (command.resumeId === null) {
+        await resumeRepository.clearIsUsingByIdentityId(identityId);
+        patch.resumeId = null;
+      } else {
+        const resumeId = command.resumeId?.trim() ?? '';
+
+        if (!resumeId) {
+          throw new ValidationError('Candidate resume id cannot be blank');
         }
 
-        await outboxRepository.create(
-          mapCandidateIntegrationEventToOutboxRecord(
-            mapCandidateProfileUpdatedIntegrationEvent(
-              updated,
-              patch,
-              command.requestId
-            ),
-            {
-              createId: () => this.idGenerator.generate()
-            }
-          )
-        );
+        const resume = await resumeRepository.findById(resumeId);
 
-        return updated;
+        if (!resume || resume.identityId !== identityId) {
+          throw new ResumeNotFoundError(resumeId);
+        }
+
+        await resumeRepository.clearIsUsingByIdentityId(identityId, resumeId);
+        resume.markAsUsing();
+        await resumeRepository.update(resume);
+        patch.resumeId = resumeId;
       }
-    );
+
+      const updated = await candidateProfileRepository.updateByIdentityId(
+        identityId,
+        patch
+      );
+
+      if (!updated) {
+        throw new CandidateProfileNotFoundError(identityId);
+      }
+
+      return updated;
+    });
   }
 }

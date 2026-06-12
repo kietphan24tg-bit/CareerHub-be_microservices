@@ -43,20 +43,6 @@ This document defines the standard outbox flow for CareerHub services that own a
 
 ## IAM Event Flows
 
-### `iam.user.registered.v1`
-
-- Producer: `iam-service`
-- Exchange: `events`
-- Routing key: `iam.user.registered.v1`
-
-Current runtime behavior:
-
-1. `iam-service` writes identity state and an outbox record in one transaction.
-2. The IAM outbox worker publishes the event to RabbitMQ with `messageId = outbox.id`.
-3. `gateway` still completes candidate and employer registration synchronously through gRPC profile creation and activation.
-4. There is currently no active downstream consumer for `iam.user.registered.v1`.
-5. This event is kept as an integration contract for future async side effects that are not part of the synchronous register path.
-
 ### `iam.password-reset-requested.v1`
 
 - Producer: `iam-service`

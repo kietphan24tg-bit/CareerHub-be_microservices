@@ -20,10 +20,52 @@ model CandidateProfile {
   linkedinUrl     String?  @map("linkedin_url")
   portfolioUrl    String?  @map("portfolio_url")
   yearsExperience Int?     @map("years_experience")
+  resumeId        String?  @map("resume_id") @db.VarChar(64)
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
+  @@index([resumeId])
   @@map("candidate_profiles")
+}
+
+model ResumeTemplate {
+  id         String   @id @db.VarChar(64)
+  name       String
+  thumbnail  String?
+  category   String?
+  layoutData Json     @map("layout_data")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  resumes    Resume[]
+
+  @@map("resume_templates")
+}
+
+model Resume {
+  id         String          @id @db.VarChar(64)
+  identityId String          @map("identity_id") @db.VarChar(64)
+  templateId String?         @map("template_id") @db.VarChar(64)
+  title      String
+  isUsing    Boolean         @default(false) @map("is_using")
+  content    Json
+  createdAt  DateTime        @default(now()) @map("created_at")
+  updatedAt  DateTime        @updatedAt @map("updated_at")
+  template   ResumeTemplate? @relation(fields: [templateId], references: [id])
+
+  @@index([identityId])
+  @@index([identityId, templateId])
+  @@map("resumes")
+}
+
+model SavedJob {
+  id         String   @id @db.VarChar(64)
+  identityId String   @map("identity_id") @db.VarChar(64)
+  jobId      String   @map("job_id") @db.VarChar(64)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([identityId, jobId])
+  @@index([identityId, createdAt])
+  @@map("saved_jobs")
 }
 
 model Outbox {

@@ -27,9 +27,34 @@ export class PrismaCandidateProfileRepository
       linkedinUrl: record.linkedinUrl,
       phone: record.phone,
       portfolioUrl: record.portfolioUrl,
+      resumeId: record.resumeId,
       updatedAt: record.updatedAt,
       yearsExperience: record.yearsExperience
     };
+  }
+
+  async clearResumeIdIfMatches(
+    identityId: string,
+    resumeId: string
+  ): Promise<void> {
+    const existing = await this.prismaClient.candidateProfile.findUnique({
+      where: {
+        identityId
+      }
+    });
+
+    if (!existing || existing.resumeId !== resumeId) {
+      return;
+    }
+
+    await this.prismaClient.candidateProfile.update({
+      data: {
+        resumeId: null
+      },
+      where: {
+        id: existing.id
+      }
+    });
   }
 
   async existsByIdentityId(identityId: string): Promise<boolean> {

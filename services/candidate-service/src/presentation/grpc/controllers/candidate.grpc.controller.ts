@@ -7,6 +7,13 @@ import {
   type DeleteCandidateProfileCompensationResponse,
   type GetCandidateProfileByIdentityIdRequest,
   type GetCandidateProfileByIdentityIdResponse,
+  type ListSavedJobsByIdentityIdRequest,
+  type ListSavedJobsByIdentityIdResponse,
+  type RemoveSavedJobRequest,
+  type RemoveSavedJobResponse,
+  type SaveJobRequest,
+  type SaveJobResponse,
+  type SavedJob,
   type UpdateCandidateProfileRequest,
   type UpdateCandidateProfileResponse
 } from '@careerhub/contracts';
@@ -16,8 +23,12 @@ import {
   CreateCandidateProfileCommandHandler,
   DeleteCandidateProfileCompensationCommandHandler,
   GetCandidateProfileByIdentityIdQueryHandler,
+  ListSavedJobsByIdentityIdQueryHandler,
+  RemoveSavedJobCommandHandler,
+  SaveJobCommandHandler,
   UpdateCandidateProfileCommandHandler,
-  type CandidateProfileRecord
+  type CandidateProfileRecord,
+  type SavedJobRecord
 } from '../../../application';
 import { mapErrorToCandidateGrpcException } from '../mappers/grpc-error.mapper';
 
@@ -39,6 +50,7 @@ function toGrpcCandidateProfile(profile: CandidateProfileRecord): CandidateProfi
   collectNullable('linkedin_url', profile.linkedinUrl);
   collectNullable('portfolio_url', profile.portfolioUrl);
   collectNullable('years_experience', profile.yearsExperience);
+  collectNullable('resume_id', profile.resumeId);
 
   return {
     address: profile.address ?? '',
@@ -54,9 +66,19 @@ function toGrpcCandidateProfile(profile: CandidateProfileRecord): CandidateProfi
     null_fields: nullFields,
     phone: profile.phone ?? '',
     portfolio_url: profile.portfolioUrl ?? '',
+    resume_id: profile.resumeId ?? '',
     updated_at: profile.updatedAt.toISOString(),
     years_experience: profile.yearsExperience ?? 0
   } as unknown as CandidateProfile;
+}
+
+function toGrpcSavedJob(savedJob: SavedJobRecord): SavedJob {
+  return {
+    id: savedJob.id,
+    identity_id: savedJob.identityId,
+    job_id: savedJob.jobId,
+    saved_at: savedJob.createdAt.toISOString()
+  } as unknown as SavedJob;
 }
 
 @Controller()
@@ -65,6 +87,9 @@ export class CandidateGrpcController {
     private readonly createCandidateProfileCommandHandler: CreateCandidateProfileCommandHandler,
     private readonly deleteCandidateProfileCompensationCommandHandler: DeleteCandidateProfileCompensationCommandHandler,
     private readonly getCandidateProfileByIdentityIdQueryHandler: GetCandidateProfileByIdentityIdQueryHandler,
+    private readonly listSavedJobsByIdentityIdQueryHandler: ListSavedJobsByIdentityIdQueryHandler,
+    private readonly removeSavedJobCommandHandler: RemoveSavedJobCommandHandler,
+    private readonly saveJobCommandHandler: SaveJobCommandHandler,
     private readonly updateCandidateProfileCommandHandler: UpdateCandidateProfileCommandHandler
   ) {}
 
@@ -181,12 +206,69 @@ export class CandidateGrpcController {
           ? request.years_experience
           : clearFields.has('years_experience')
             ? null
+            : undefined,
+        resumeId: updatedFields.has('resume_id')
+          ? request.resume_id
+          : clearFields.has('resume_id')
+            ? null
             : undefined
       });
 
       return {
         profile: toGrpcCandidateProfile(profile)
       };
+    } catch (error) {
+      throw mapErrorToCandidateGrpcException(error);
+    }
+  }
+
+  @GrpcMethod(CANDIDATE_GRPC_SERVICE_NAME, 'ListSavedJobsByIdentityId')
+  async listSavedJobsByIdentityId(
+    request: ListSavedJobsByIdentityIdRequest
+  ): Promise<ListSavedJobsByIdentityIdResponse> {
+    try {
+      const savedJobs =
+        await this.listSavedJobsByIdentityIdQueryHandler.execute({
+          identityId: request.identity_id
+        });
+
+      return {
+        saved_jobs: savedJobs.map(toGrpcSavedJob)
+      };
+    } catch (error) {
+      throw mapErrorToCandidateGrpcException(error);
+    }
+  }
+
+  @GrpcMethod(CANDIDATE_GRPC_SERVICE_NAME, 'SaveJob')
+  async saveJob(request: SaveJobRequest): Promise<SaveJobResponse> {
+    try {
+      const savedJob = await this.saveJobCommandHandler.execute({
+        identityId: request.identity_id,
+        jobId: request.job_id
+      });
+
+      return {
+        saved_job: toGrpcSavedJob(savedJob)
+      };
+    } catch (error) {
+      throw mapErrorToCandidateGrpcException(error);
+    }
+  }
+
+  @GrpcMethod(CANDIDATE_GRPC_SERVICE_NAME, 'RemoveSavedJob')
+  async removeSavedJob(
+    request: RemoveSavedJobRequest
+  ): Promise<RemoveSavedJobResponse> {
+    try {
+      await this.removeSavedJobCommandHandler.execute({
+        identityId: request.identity_id,
+        jobId: request.job_id
+      });
+
+      return {
+        removed: true
+      } as unknown as RemoveSavedJobResponse;
     } catch (error) {
       throw mapErrorToCandidateGrpcException(error);
     }

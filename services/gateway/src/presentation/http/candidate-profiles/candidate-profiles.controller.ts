@@ -1,18 +1,18 @@
 import { Body, Controller, Get, Headers, Patch } from '@nestjs/common';
-import { GatewayProfileService } from '../../../application/gateway-profile.service';
+import { GatewayProfileService } from '../../../application/profiles/gateway-profile.service';
 import { CurrentUser } from '../../../auth/decorators/current-user.decorator';
 import { Roles } from '../../../auth/decorators/roles.decorator';
 import type { GatewayAuthenticatedUser } from '../../../auth/types/gateway-auth.types';
 import { UpdateCandidateProfileRequestDto } from './dto/update-candidate-profile.request.dto';
 
-@Controller('candidate-profiles')
+@Controller('candidate/profile')
 @Roles('candidate')
 export class CandidateProfilesController {
   constructor(
     private readonly gatewayProfileService: GatewayProfileService
   ) {}
 
-  @Get('me')
+  @Get()
   async getProfile(
     @CurrentUser() user: GatewayAuthenticatedUser,
     @Headers('x-request-id') requestId?: string
@@ -28,7 +28,7 @@ export class CandidateProfilesController {
     };
   }
 
-  @Patch('me')
+  @Patch()
   async updateProfile(
     @CurrentUser() user: GatewayAuthenticatedUser,
     @Body() dto: UpdateCandidateProfileRequestDto,

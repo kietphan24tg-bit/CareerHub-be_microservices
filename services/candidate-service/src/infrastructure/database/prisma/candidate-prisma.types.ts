@@ -14,6 +14,7 @@ export type CandidateProfilePersistenceRecord = {
   linkedinUrl: string | null;
   phone: string | null;
   portfolioUrl: string | null;
+  resumeId: string | null;
   updatedAt: Date;
   yearsExperience: number | null;
 };
@@ -101,9 +102,105 @@ export type CandidateOutboxModelDelegate = {
   }): Promise<{ count: number }>;
 };
 
+export type SavedJobPersistenceRecord = {
+  createdAt: Date;
+  id: string;
+  identityId: string;
+  jobId: string;
+};
+
+export type SavedJobCreateInput = {
+  createdAt?: Date;
+  id: string;
+  identityId: string;
+  jobId: string;
+};
+
+export type SavedJobModelDelegate = {
+  create(args: { data: SavedJobCreateInput }): Promise<SavedJobPersistenceRecord>;
+  deleteMany(args: {
+    where?: Record<string, unknown>;
+  }): Promise<{ count: number }>;
+  findMany(args: {
+    orderBy?: { createdAt: 'asc' | 'desc' };
+    where?: Record<string, unknown>;
+  }): Promise<SavedJobPersistenceRecord[]>;
+  findUnique(args: {
+    where: { identityId_jobId: { identityId: string; jobId: string } };
+  }): Promise<SavedJobPersistenceRecord | null>;
+};
+
+export type ResumeTemplatePersistenceRecord = {
+  category: string | null;
+  createdAt: Date;
+  id: string;
+  isActive: boolean;
+  layoutData: unknown;
+  name: string;
+  thumbnail: string | null;
+};
+
+export type ResumePersistenceRecord = {
+  content: unknown;
+  createdAt: Date;
+  id: string;
+  identityId: string;
+  isUsing: boolean;
+  templateId: string | null;
+  title: string;
+  updatedAt: Date;
+};
+
+export type ResumeCreateInput = {
+  content: unknown;
+  id: string;
+  identityId: string;
+  isUsing?: boolean;
+  templateId: string | null;
+  title: string;
+};
+
+export type ResumeTemplateModelDelegate = {
+  findFirst(args: {
+    where?: Record<string, unknown>;
+  }): Promise<ResumeTemplatePersistenceRecord | null>;
+  findMany(args: {
+    orderBy?: Record<string, 'asc' | 'desc'>;
+    select?: Record<string, boolean>;
+    where?: Record<string, unknown>;
+  }): Promise<ResumeTemplatePersistenceRecord[] | Array<Partial<ResumeTemplatePersistenceRecord>>>;
+};
+
+export type ResumeModelDelegate = {
+  create(args: { data: ResumeCreateInput }): Promise<ResumePersistenceRecord>;
+  deleteMany(args: { where?: Record<string, unknown> }): Promise<{ count: number }>;
+  findFirst(args: {
+    orderBy?: Array<Record<string, 'asc' | 'desc'>>;
+    where?: Record<string, unknown>;
+  }): Promise<ResumePersistenceRecord | null>;
+  findMany(args: {
+    orderBy?: Array<Record<string, 'asc' | 'desc'>>;
+    where?: Record<string, unknown>;
+  }): Promise<ResumePersistenceRecord[]>;
+  findUnique(args: {
+    where: { id: string };
+  }): Promise<ResumePersistenceRecord | null>;
+  update(args: {
+    data: Partial<ResumePersistenceRecord>;
+    where: { id: string };
+  }): Promise<ResumePersistenceRecord>;
+  updateMany(args: {
+    data: Partial<ResumePersistenceRecord>;
+    where?: Record<string, unknown>;
+  }): Promise<{ count: number }>;
+};
+
 export type CandidatePrismaRepositoryClient = {
   candidateProfile: CandidateProfileModelDelegate;
   outbox: CandidateOutboxModelDelegate;
+  resume: ResumeModelDelegate;
+  resumeTemplate: ResumeTemplateModelDelegate;
+  savedJob: SavedJobModelDelegate;
 };
 
 export type CandidatePrismaClient = PrismaClientLike & {
@@ -112,4 +209,7 @@ export type CandidatePrismaClient = PrismaClientLike & {
   ): Promise<T>;
   candidateProfile: CandidateProfileModelDelegate;
   outbox: CandidateOutboxModelDelegate;
+  resume: ResumeModelDelegate;
+  resumeTemplate: ResumeTemplateModelDelegate;
+  savedJob: SavedJobModelDelegate;
 };

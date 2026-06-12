@@ -9,6 +9,30 @@ import type {
   DeleteCandidateProfileCompensationResponse,
   GetCandidateProfileByIdentityIdRequest,
   GetCandidateProfileByIdentityIdResponse,
+  ListSavedJobsByIdentityIdRequest,
+  ListSavedJobsByIdentityIdResponse,
+  CreateOrGetTemplateDraftRequest,
+  CreateOrGetTemplateDraftResponse,
+  CreateResumeRequest,
+  CreateResumeResponse,
+  DeleteResumeRequest,
+  DeleteResumeResponse,
+  GetResumeByIdRequest,
+  GetResumeByIdResponse,
+  GetResumeExportPayloadRequest,
+  GetResumeExportPayloadResponse,
+  GetResumeTemplateByIdRequest,
+  GetResumeTemplateByIdResponse,
+  ListResumeTemplatesRequest,
+  ListResumeTemplatesResponse,
+  ListResumesByIdentityIdRequest,
+  ListResumesByIdentityIdResponse,
+  RemoveSavedJobRequest,
+  RemoveSavedJobResponse,
+  SaveJobRequest,
+  SaveJobResponse,
+  UpdateResumeRequest,
+  UpdateResumeResponse,
   UpdateCandidateProfileRequest,
   UpdateCandidateProfileResponse,
   CreateCandidateProfileRequest,
@@ -58,6 +82,102 @@ type CandidateGrpcServiceClient = {
     callback: (
       error: ServiceError | null,
       response: UpdateCandidateProfileResponse
+    ) => void
+  ): ClientUnaryCall;
+  ListSavedJobsByIdentityId(
+    request: ListSavedJobsByIdentityIdRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: ListSavedJobsByIdentityIdResponse
+    ) => void
+  ): ClientUnaryCall;
+  SaveJob(
+    request: SaveJobRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: SaveJobResponse
+    ) => void
+  ): ClientUnaryCall;
+  RemoveSavedJob(
+    request: RemoveSavedJobRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: RemoveSavedJobResponse
+    ) => void
+  ): ClientUnaryCall;
+  ListResumeTemplates(
+    request: ListResumeTemplatesRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: ListResumeTemplatesResponse
+    ) => void
+  ): ClientUnaryCall;
+  GetResumeTemplateById(
+    request: GetResumeTemplateByIdRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: GetResumeTemplateByIdResponse
+    ) => void
+  ): ClientUnaryCall;
+  ListResumesByIdentityId(
+    request: ListResumesByIdentityIdRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: ListResumesByIdentityIdResponse
+    ) => void
+  ): ClientUnaryCall;
+  GetResumeById(
+    request: GetResumeByIdRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: GetResumeByIdResponse
+    ) => void
+  ): ClientUnaryCall;
+  CreateOrGetTemplateDraft(
+    request: CreateOrGetTemplateDraftRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: CreateOrGetTemplateDraftResponse
+    ) => void
+  ): ClientUnaryCall;
+  CreateResume(
+    request: CreateResumeRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: CreateResumeResponse
+    ) => void
+  ): ClientUnaryCall;
+  UpdateResume(
+    request: UpdateResumeRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: UpdateResumeResponse
+    ) => void
+  ): ClientUnaryCall;
+  DeleteResume(
+    request: DeleteResumeRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: DeleteResumeResponse
+    ) => void
+  ): ClientUnaryCall;
+  GetResumeExportPayload(
+    request: GetResumeExportPayloadRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: GetResumeExportPayloadResponse
     ) => void
   ): ClientUnaryCall;
 };
@@ -242,6 +362,79 @@ export class CandidateGrpcClient {
     );
   }
 
+  async listSavedJobsByIdentityId(
+    request: ListSavedJobsByIdentityIdRequest,
+    requestId?: string
+  ): Promise<ListSavedJobsByIdentityIdResponse> {
+    const grpcRequest = {
+      ...request,
+      identityId: request.identity_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as ListSavedJobsByIdentityIdRequest & {
+      identityId: string;
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      'ListSavedJobsByIdentityId',
+      (client, payload, metadata, callback) =>
+        client.ListSavedJobsByIdentityId(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async saveJob(
+    request: SaveJobRequest,
+    requestId?: string
+  ): Promise<SaveJobResponse> {
+    const grpcRequest = {
+      ...request,
+      identityId: request.identity_id,
+      jobId: request.job_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as SaveJobRequest & {
+      identityId: string;
+      jobId: string;
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      'SaveJob',
+      (client, payload, metadata, callback) =>
+        client.SaveJob(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async removeSavedJob(
+    request: RemoveSavedJobRequest,
+    requestId?: string
+  ): Promise<RemoveSavedJobResponse> {
+    const grpcRequest = {
+      ...request,
+      identityId: request.identity_id,
+      jobId: request.job_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as RemoveSavedJobRequest & {
+      identityId: string;
+      jobId: string;
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      'RemoveSavedJob',
+      (client, payload, metadata, callback) =>
+        client.RemoveSavedJob(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
   async updateCandidateProfile(
     request: UpdateCandidateProfileRequest,
     requestId?: string
@@ -274,6 +467,225 @@ export class CandidateGrpcClient {
       'UpdateCandidateProfile',
       (client, payload, metadata, callback) =>
         client.UpdateCandidateProfile(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async listResumeTemplates(
+    request: ListResumeTemplatesRequest,
+    requestId?: string
+  ): Promise<ListResumeTemplatesResponse> {
+    const grpcRequest = {
+      ...request,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as ListResumeTemplatesRequest & { requestId: string };
+
+    return this.invokeUnary(
+      'ListResumeTemplates',
+      (client, payload, metadata, callback) =>
+        client.ListResumeTemplates(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async getResumeTemplateById(
+    request: GetResumeTemplateByIdRequest,
+    requestId?: string
+  ): Promise<GetResumeTemplateByIdResponse> {
+    const grpcRequest = {
+      ...request,
+      requestId: requestId ?? '',
+      request_id: requestId ?? '',
+      templateId: request.template_id
+    } as GetResumeTemplateByIdRequest & {
+      requestId: string;
+      templateId: string;
+    };
+
+    return this.invokeUnary(
+      'GetResumeTemplateById',
+      (client, payload, metadata, callback) =>
+        client.GetResumeTemplateById(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async listResumesByIdentityId(
+    request: ListResumesByIdentityIdRequest,
+    requestId?: string
+  ): Promise<ListResumesByIdentityIdResponse> {
+    const grpcRequest = {
+      ...request,
+      identityId: request.identity_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as ListResumesByIdentityIdRequest & {
+      identityId: string;
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      'ListResumesByIdentityId',
+      (client, payload, metadata, callback) =>
+        client.ListResumesByIdentityId(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async getResumeById(
+    request: GetResumeByIdRequest,
+    requestId?: string
+  ): Promise<GetResumeByIdResponse> {
+    const grpcRequest = {
+      ...request,
+      identityId: request.identity_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? '',
+      resumeId: request.resume_id
+    } as GetResumeByIdRequest & {
+      identityId: string;
+      requestId: string;
+      resumeId: string;
+    };
+
+    return this.invokeUnary(
+      'GetResumeById',
+      (client, payload, metadata, callback) =>
+        client.GetResumeById(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async createOrGetTemplateDraft(
+    request: CreateOrGetTemplateDraftRequest,
+    requestId?: string
+  ): Promise<CreateOrGetTemplateDraftResponse> {
+    const grpcRequest = {
+      ...request,
+      identityId: request.identity_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? '',
+      templateId: request.template_id
+    } as CreateOrGetTemplateDraftRequest & {
+      identityId: string;
+      requestId: string;
+      templateId: string;
+    };
+
+    return this.invokeUnary(
+      'CreateOrGetTemplateDraft',
+      (client, payload, metadata, callback) =>
+        client.CreateOrGetTemplateDraft(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async createResume(
+    request: CreateResumeRequest,
+    requestId?: string
+  ): Promise<CreateResumeResponse> {
+    const grpcRequest = {
+      ...request,
+      contentJson: request.content_json,
+      identityId: request.identity_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? '',
+      templateId: request.template_id
+    } as CreateResumeRequest & {
+      contentJson: string;
+      identityId: string;
+      requestId: string;
+      templateId: string;
+    };
+
+    return this.invokeUnary(
+      'CreateResume',
+      (client, payload, metadata, callback) =>
+        client.CreateResume(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async updateResume(
+    request: UpdateResumeRequest,
+    requestId?: string
+  ): Promise<UpdateResumeResponse> {
+    const grpcRequest = {
+      ...request,
+      contentJson: request.content_json,
+      identityId: request.identity_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? '',
+      resumeId: request.resume_id
+    } as UpdateResumeRequest & {
+      contentJson: string;
+      identityId: string;
+      requestId: string;
+      resumeId: string;
+    };
+
+    return this.invokeUnary(
+      'UpdateResume',
+      (client, payload, metadata, callback) =>
+        client.UpdateResume(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async deleteResume(
+    request: DeleteResumeRequest,
+    requestId?: string
+  ): Promise<DeleteResumeResponse> {
+    const grpcRequest = {
+      ...request,
+      identityId: request.identity_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? '',
+      resumeId: request.resume_id
+    } as DeleteResumeRequest & {
+      identityId: string;
+      requestId: string;
+      resumeId: string;
+    };
+
+    return this.invokeUnary(
+      'DeleteResume',
+      (client, payload, metadata, callback) =>
+        client.DeleteResume(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async getResumeExportPayload(
+    request: GetResumeExportPayloadRequest,
+    requestId?: string
+  ): Promise<GetResumeExportPayloadResponse> {
+    const grpcRequest = {
+      ...request,
+      identityId: request.identity_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? '',
+      resumeId: request.resume_id
+    } as GetResumeExportPayloadRequest & {
+      identityId: string;
+      requestId: string;
+      resumeId: string;
+    };
+
+    return this.invokeUnary(
+      'GetResumeExportPayload',
+      (client, payload, metadata, callback) =>
+        client.GetResumeExportPayload(payload, metadata, callback),
       grpcRequest,
       requestId
     );

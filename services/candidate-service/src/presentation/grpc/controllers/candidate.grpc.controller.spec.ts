@@ -7,6 +7,32 @@ import { GetCandidateProfileByIdentityIdQueryHandler } from '../../../applicatio
 import { UpdateCandidateProfileCommandHandler } from '../../../application/commands/update-candidate-profile/update-candidate-profile.command-handler';
 import { CandidateGrpcController } from './candidate.grpc.controller';
 
+const unusedSavedJobHandlers = {
+  listSavedJobs: { execute: async () => [] },
+  removeSavedJob: { execute: async () => undefined },
+  saveJob: { execute: async () => { throw new Error('unused'); } }
+} as const;
+
+function createCandidateGrpcController(
+  handlers: {
+    createCandidateProfile: CreateCandidateProfileCommandHandler;
+    deleteCandidateProfileCompensation?: { execute: () => Promise<unknown> };
+    getCandidateProfileByIdentityId: GetCandidateProfileByIdentityIdQueryHandler;
+    updateCandidateProfile: UpdateCandidateProfileCommandHandler;
+  }
+) {
+  return new CandidateGrpcController(
+    handlers.createCandidateProfile,
+    (handlers.deleteCandidateProfileCompensation ??
+      { execute: async () => ({ compensated: true }) }) as never,
+    handlers.getCandidateProfileByIdentityId,
+    unusedSavedJobHandlers.listSavedJobs as never,
+    unusedSavedJobHandlers.removeSavedJob as never,
+    unusedSavedJobHandlers.saveJob as never,
+    handlers.updateCandidateProfile
+  );
+}
+
 test('maps create-candidate-profile request and response', async () => {
   const useCase = {
     execute: async () => ({
@@ -14,12 +40,11 @@ test('maps create-candidate-profile request and response', async () => {
       profileId: 'candidate-profile-1'
     })
   } as unknown as CreateCandidateProfileCommandHandler;
-  const controller = new CandidateGrpcController(
-    useCase,
-    { execute: async () => ({ compensated: true }) } as never,
-    { execute: async () => { throw new Error('unused'); } } as unknown as GetCandidateProfileByIdentityIdQueryHandler,
-    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileCommandHandler
-  );
+  const controller = createCandidateGrpcController({
+    createCandidateProfile: useCase,
+    getCandidateProfileByIdentityId: { execute: async () => { throw new Error('unused'); } } as unknown as GetCandidateProfileByIdentityIdQueryHandler,
+    updateCandidateProfile: { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileCommandHandler
+  });
 
   const response = await controller.createCandidateProfile({
     full_name: 'Candidate Name',
@@ -40,12 +65,11 @@ test('converts conflict errors into ALREADY_EXISTS gRPC payloads', async () => {
       throw new CandidateProfileAlreadyExistsError('identity-1');
     }
   } as unknown as CreateCandidateProfileCommandHandler;
-  const controller = new CandidateGrpcController(
-    useCase,
-    { execute: async () => ({ compensated: true }) } as never,
-    { execute: async () => { throw new Error('unused'); } } as unknown as GetCandidateProfileByIdentityIdQueryHandler,
-    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileCommandHandler
-  );
+  const controller = createCandidateGrpcController({
+    createCandidateProfile: useCase,
+    getCandidateProfileByIdentityId: { execute: async () => { throw new Error('unused'); } } as unknown as GetCandidateProfileByIdentityIdQueryHandler,
+    updateCandidateProfile: { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileCommandHandler
+  });
 
   await assert.rejects(
     async () =>
@@ -80,10 +104,9 @@ test('converts conflict errors into ALREADY_EXISTS gRPC payloads', async () => {
 });
 
 test('maps get-candidate-profile request and response', async () => {
-  const controller = new CandidateGrpcController(
-    { execute: async () => ({ identityId: 'identity-1', profileId: 'candidate-profile-1' }) } as unknown as CreateCandidateProfileCommandHandler,
-    { execute: async () => ({ compensated: true }) } as never,
-    {
+  const controller = createCandidateGrpcController({
+    createCandidateProfile: { execute: async () => ({ identityId: 'identity-1', profileId: 'candidate-profile-1' }) } as unknown as CreateCandidateProfileCommandHandler,
+    getCandidateProfileByIdentityId: {
       execute: async () => ({
         address: null,
         avatarUrl: null,
@@ -101,8 +124,8 @@ test('maps get-candidate-profile request and response', async () => {
         yearsExperience: 3
       })
     } as unknown as GetCandidateProfileByIdentityIdQueryHandler,
-    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileCommandHandler
-  );
+    updateCandidateProfile: { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileCommandHandler
+  });
 
   const response = await controller.getCandidateProfileByIdentityId({
     identity_id: 'identity-1',
@@ -115,16 +138,15 @@ test('maps get-candidate-profile request and response', async () => {
 });
 
 test('converts not found candidate profile errors into NOT_FOUND gRPC payloads', async () => {
-  const controller = new CandidateGrpcController(
-    { execute: async () => ({ identityId: 'identity-1', profileId: 'candidate-profile-1' }) } as unknown as CreateCandidateProfileCommandHandler,
-    { execute: async () => ({ compensated: true }) } as never,
-    {
+  const controller = createCandidateGrpcController({
+    createCandidateProfile: { execute: async () => ({ identityId: 'identity-1', profileId: 'candidate-profile-1' }) } as unknown as CreateCandidateProfileCommandHandler,
+    getCandidateProfileByIdentityId: {
       execute: async () => {
         throw new CandidateProfileNotFoundError('identity-404');
       }
     } as unknown as GetCandidateProfileByIdentityIdQueryHandler,
-    { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileCommandHandler
-  );
+    updateCandidateProfile: { execute: async () => { throw new Error('unused'); } } as unknown as UpdateCandidateProfileCommandHandler
+  });
 
   await assert.rejects(
     async () =>

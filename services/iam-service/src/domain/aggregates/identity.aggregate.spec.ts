@@ -3,11 +3,6 @@ import test from 'node:test';
 import { UniqueEntityID, ValidationError } from '@careerhub/shared-kernel';
 import { Identity } from './identity.aggregate';
 import {
-  IdentityDisabledEvent,
-  UserRegisteredEvent,
-  UserRoleChangedEvent
-} from '../events';
-import {
   Email,
   IdentityStatus,
   PasswordHash,
@@ -20,7 +15,7 @@ const ARGON2ID_HASH =
 const NEXT_ARGON2ID_HASH =
   '$argon2id$v=19$m=65536,t=3,p=4$bmV4dHNhbHQ$bmV4dGZha2VoYXNoMTIzNDU2';
 
-test('registers a valid identity without emitting UserRegisteredEvent yet', () => {
+test('registers a valid identity without emitting any domain event', () => {
   const identity = Identity.register({
     acceptedTerms: true,
     id: new UniqueEntityID('identity-1'),
@@ -39,7 +34,7 @@ test('registers a valid identity without emitting UserRegisteredEvent yet', () =
   assert.equal(identity.pullDomainEvents().length, 0);
 });
 
-test('activates a pending identity and emits UserRegisteredEvent', () => {
+test('activates a pending identity', () => {
   const identity = Identity.reconstitute({
     id: new UniqueEntityID('identity-activate-registered-1'),
     props: {
@@ -54,17 +49,14 @@ test('activates a pending identity and emits UserRegisteredEvent', () => {
   identity.enable();
 
   assert.equal(identity.status.value, 'active');
-  const events = identity.pullDomainEvents();
-  assert.equal(events.length, 1);
-  assert.ok(events[0] instanceof UserRegisteredEvent);
-  assert.equal((events[0] as UserRegisteredEvent).acceptedTerms, true);
+  assert.equal(identity.pullDomainEvents().length, 0);
 });
 
 test('fails when email is invalid', () => {
   assert.throws(() => new Email('invalid-email'), ValidationError);
 });
 
-test('changes role and emits UserRoleChangedEvent', () => {
+test('changes role', () => {
   const identity = Identity.reconstitute({
     id: new UniqueEntityID('identity-2'),
     props: {
@@ -79,12 +71,10 @@ test('changes role and emits UserRoleChangedEvent', () => {
   identity.changeRole(new Role('employer'));
 
   assert.equal(identity.role.value, 'employer');
-  const events = identity.pullDomainEvents();
-  assert.equal(events.length, 1);
-  assert.ok(events[0] instanceof UserRoleChangedEvent);
+  assert.equal(identity.pullDomainEvents().length, 0);
 });
 
-test('disables identity and emits IdentityDisabledEvent', () => {
+test('disables identity', () => {
   const identity = Identity.reconstitute({
     id: new UniqueEntityID('identity-3'),
     props: {
@@ -99,9 +89,7 @@ test('disables identity and emits IdentityDisabledEvent', () => {
   identity.disable();
 
   assert.equal(identity.status.value, 'disabled');
-  const events = identity.pullDomainEvents();
-  assert.equal(events.length, 1);
-  assert.ok(events[0] instanceof IdentityDisabledEvent);
+  assert.equal(identity.pullDomainEvents().length, 0);
 });
 
 test('changes password for active identity', () => {

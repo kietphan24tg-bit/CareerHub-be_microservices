@@ -10,5 +10,6 @@ export type UpdateCandidateProfileCommand = {
   phone?: string | null;
   portfolioUrl?: string | null;
   requestId?: string;
+  resumeId?: string | null;
   yearsExperience?: number | null;
 };

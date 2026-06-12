@@ -1,16 +1,10 @@
 import {
     AggregateRoot,
     type CreateEntityProps,
-    type DomainEventMetadata,
     UniqueEntityID,
     ValidationError
 } from '@careerhub/shared-kernel';
 import { IdentityDisabledError, InvalidIdentityStateError } from '../errors';
-import {
-    IdentityDisabledEvent,
-    UserRegisteredEvent,
-    UserRoleChangedEvent
-} from '../events';
 import { Email, IdentityStatus, PasswordHash, Role } from '../value-objects';
 
 export type IdentityProps = {
@@ -28,7 +22,6 @@ export type RegisterIdentityProps = {
     passwordHash: PasswordHash;
     role: Role;
     createdAt?: Date;
-    metadata?: Partial<DomainEventMetadata>;
 };
 
 type ReconstituteIdentityProps = CreateEntityProps<IdentityProps>;
@@ -80,75 +73,43 @@ export class Identity extends AggregateRoot<IdentityProps> {
         return this.propsRef.status;
     }
 
-    changeRole(nextRole: Role, metadata?: Partial<DomainEventMetadata>): void {
+    changeRole(nextRole: Role): void {
         const props = this.propsRef;
 
         if (props.role.equals(nextRole)) {
             return;
         }
 
-        const previousRole = props.role;
         this.replaceProps({
             ...props,
             role: nextRole
         });
-
-        this.addDomainEvent(
-            new UserRoleChangedEvent({
-                aggregateId: this.id,
-                previousRole: previousRole.value,
-                nextRole: nextRole.value,
-                metadata
-            })
-        );
     }
 
-    disable(metadata?: Partial<DomainEventMetadata>): void {
+    disable(): void {
         const props = this.propsRef;
 
         if (props.status.isDisabled()) {
             throw new InvalidIdentityStateError('Identity is already disabled');
         }
 
-        const previousStatus = props.status;
         this.replaceProps({
             ...props,
             status: IdentityStatus.disabled()
         });
-
-        this.addDomainEvent(
-            new IdentityDisabledEvent({
-                aggregateId: this.id,
-                previousStatus: previousStatus.value,
-                metadata
-            })
-        );
     }
 
-    enable(metadata?: Partial<DomainEventMetadata>): void {
+    enable(): void {
         const props = this.propsRef;
 
         if (props.status.isActive()) {
             throw new InvalidIdentityStateError('Identity is already active');
         }
 
-        const previousStatus = props.status;
         this.replaceProps({
             ...props,
             status: IdentityStatus.active()
         });
-
-        if (previousStatus.isPendingProfile()) {
-            this.addDomainEvent(
-                new UserRegisteredEvent({
-                    aggregateId: this.id,
-                    acceptedTerms: this.acceptedTerms,
-                    email: this.email.value,
-                    metadata,
-                    role: this.role.value
-                })
-            );
-        }
     }
 
     changePassword(nextPasswordHash: PasswordHash): void {

@@ -4,6 +4,7 @@ import {
 } from '@careerhub/infrastructure';
 
 export type GatewayEnvironmentVariables = BaseEnvironmentVariables & {
+  APP_BASE_URL?: string;
   AUTH_REFRESH_COOKIE_DOMAIN?: string;
   AUTH_REFRESH_COOKIE_NAME: string;
   AUTH_REFRESH_COOKIE_SECURE: boolean;
@@ -11,6 +12,8 @@ export type GatewayEnvironmentVariables = BaseEnvironmentVariables & {
   GRPC_EMPLOYER_URL: string;
   GRPC_IAM_URL: string;
   JWT_REFRESH_EXPIRES_IN: string;
+  JWT_SECRET: string;
+  RESUME_PRINT_BASE_URL?: string;
 };
 
 export function validateGatewayEnvironment(
@@ -35,6 +38,11 @@ export function validateGatewayEnvironment(
 
   return {
     ...baseEnvironment,
+    APP_BASE_URL:
+      typeof config.APP_BASE_URL === 'string' &&
+      config.APP_BASE_URL.trim().length > 0
+        ? config.APP_BASE_URL.trim()
+        : undefined,
     AUTH_REFRESH_COOKIE_DOMAIN:
       typeof config.AUTH_REFRESH_COOKIE_DOMAIN === 'string' &&
       config.AUTH_REFRESH_COOKIE_DOMAIN.trim().length > 0
@@ -60,6 +68,15 @@ export function validateGatewayEnvironment(
       typeof config.JWT_REFRESH_EXPIRES_IN === 'string' &&
       config.JWT_REFRESH_EXPIRES_IN.trim().length > 0
         ? config.JWT_REFRESH_EXPIRES_IN.trim()
-        : '7d'
+        : '7d',
+    JWT_SECRET:
+      typeof config.JWT_SECRET === 'string' && config.JWT_SECRET.trim().length > 0
+        ? config.JWT_SECRET.trim()
+        : 'careerhub-dev-secret',
+    RESUME_PRINT_BASE_URL:
+      typeof config.RESUME_PRINT_BASE_URL === 'string' &&
+      config.RESUME_PRINT_BASE_URL.trim().length > 0
+        ? config.RESUME_PRINT_BASE_URL.trim()
+        : undefined
   };
 }

@@ -19,6 +19,7 @@ test('candidate profiles controller returns profile payload', async () => {
         linkedinUrl: null,
         phone: '0123456789',
         portfolioUrl: null,
+        resumeId: 'resume-1',
         updatedAt: '2026-06-06T01:00:00.000Z',
         yearsExperience: null
       };
@@ -26,8 +27,24 @@ test('candidate profiles controller returns profile payload', async () => {
     async getEmployerProfile() {
       throw new Error('unused');
     },
-    async updateCandidateProfile() {
-      throw new Error('unused');
+    async updateCandidateProfile(input: { resumeId?: string | null }) {
+      return {
+        address: null,
+        avatarUrl: null,
+        bio: null,
+        createdAt: '2026-06-06T00:00:00.000Z',
+        fullName: 'Candidate',
+        githubUrl: null,
+        headline: null,
+        id: 'candidate-profile-1',
+        identityId: 'identity-1',
+        linkedinUrl: null,
+        phone: '0123456789',
+        portfolioUrl: null,
+        resumeId: input.resumeId ?? null,
+        updatedAt: '2026-06-06T01:00:00.000Z',
+        yearsExperience: null
+      };
     },
     async updateEmployerProfile() {
       throw new Error('unused');
@@ -45,6 +62,58 @@ test('candidate profiles controller returns profile payload', async () => {
 
   assert.equal(response.message, 'Candidate profile loaded successfully');
   assert.equal(response.data.profile.id, 'candidate-profile-1');
+  assert.equal(response.data.profile.resumeId, 'resume-1');
+});
+
+test('candidate profiles controller updates profile payload', async () => {
+  const controller = new CandidateProfilesController({
+    async getCandidateProfile() {
+      throw new Error('unused');
+    },
+    async getEmployerProfile() {
+      throw new Error('unused');
+    },
+    async updateCandidateProfile(input: {
+      identityId: string;
+      resumeId?: string | null;
+    }) {
+      return {
+        address: null,
+        avatarUrl: null,
+        bio: null,
+        createdAt: '2026-06-06T00:00:00.000Z',
+        fullName: 'Candidate',
+        githubUrl: null,
+        headline: null,
+        id: 'candidate-profile-1',
+        identityId: input.identityId,
+        linkedinUrl: null,
+        phone: '0123456789',
+        portfolioUrl: null,
+        resumeId: input.resumeId ?? null,
+        updatedAt: '2026-06-06T01:00:00.000Z',
+        yearsExperience: null
+      };
+    },
+    async updateEmployerProfile() {
+      throw new Error('unused');
+    }
+  } as never);
+
+  const response = await controller.updateProfile(
+    {
+      email: 'candidate@example.com',
+      id: 'identity-1',
+      role: 'candidate'
+    },
+    {
+      resumeId: null
+    },
+    'req-2'
+  );
+
+  assert.equal(response.message, 'Candidate profile updated successfully');
+  assert.equal(response.data.profile.resumeId, null);
 });
 
 test('company profiles controller returns profile payload', async () => {

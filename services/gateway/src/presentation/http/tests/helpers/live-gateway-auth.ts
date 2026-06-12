@@ -115,7 +115,7 @@ export async function getCandidateProfile(input: {
 }): Promise<SuccessEnvelope<CandidateProfileResponse>> {
   const { body, response } = await requestJson<
     SuccessEnvelope<CandidateProfileResponse>
-  >('/candidate-profiles/me', {
+  >('/candidate/profile', {
     headers: {
       authorization: `Bearer ${input.accessToken}`,
       'x-request-id': input.requestId

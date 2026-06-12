@@ -426,7 +426,7 @@ async function getCandidateProfile(
 ): Promise<SuccessEnvelope<CandidateProfileResponse>> {
   const { body, response } = await requestJson<
     SuccessEnvelope<CandidateProfileResponse>
-  >('/candidate-profiles/me', {
+  >('/candidate/profile', {
     headers: {
       authorization: `Bearer ${accessToken}`,
       'x-request-id': 'e2e-candidate-profile-get'
@@ -445,7 +445,7 @@ async function updateCandidateProfile(
 ): Promise<SuccessEnvelope<CandidateProfileResponse>> {
   const { body, response } = await requestJson<
     SuccessEnvelope<CandidateProfileResponse>
-  >('/candidate-profiles/me', {
+  >('/candidate/profile', {
     body: JSON.stringify({
       bio: 'Candidate bio updated from live e2e',
       githubUrl: 'https://github.com/candidate-live',
@@ -626,7 +626,7 @@ async function runAuthFlow(role: Role): Promise<void> {
     assert.equal(updatedCompanyProfile.data.profile.website, 'https://careerhub.dev');
     assert.equal(updatedCompanyProfile.data.profile.companySize, '51-200');
 
-    const candidatePathResult = await requestJson<ErrorEnvelope>('/candidate-profiles/me', {
+    const candidatePathResult = await requestJson<ErrorEnvelope>('/candidate/profile', {
       headers: {
         authorization: `Bearer ${loginResult.accessToken}`,
         'x-request-id': 'e2e-employer-forbidden-candidate-profile'

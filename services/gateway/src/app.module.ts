@@ -13,8 +13,13 @@ import {
 } from '@careerhub/contracts';
 import { createRuntimeConfigModule } from '@careerhub/infrastructure';
 import { ConfigService } from '@nestjs/config';
-import { GatewayAuthService } from './application/gateway-auth.service';
-import { GatewayProfileService } from './application/gateway-profile.service';
+import { GatewayAuthService } from './application/auth/gateway-auth.service';
+import { GatewayProfileService } from './application/profiles/gateway-profile.service';
+import { GatewayResumeExportService } from './application/resumes/gateway-resume-export.service';
+import { GatewayResumesService } from './application/resumes/gateway-resumes.service';
+import { NoOpJobLookupAdapter } from './application/saved-jobs/adapters/no-op-job-lookup.adapter';
+import { GatewaySavedJobsService } from './application/saved-jobs/gateway-saved-jobs.service';
+import { JOB_LOOKUP_PORT } from './application/saved-jobs/ports/job-lookup.port';
 import { GatewayRolesGuard } from './auth/guards/gateway-roles.guard';
 import { GatewayJwtAuthGuard } from './auth/guards/gateway-jwt-auth.guard';
 import { CandidateGrpcClient } from './infrastructure/transport/grpc/candidate-grpc.client';
@@ -22,6 +27,8 @@ import { EmployerGrpcClient } from './infrastructure/transport/grpc/employer-grp
 import { AuthController } from './presentation/http/auth/auth.controller';
 import { CandidateProfilesController } from './presentation/http/candidate-profiles/candidate-profiles.controller';
 import { CompanyProfilesController } from './presentation/http/company-profiles/company-profiles.controller';
+import { ResumesController } from './presentation/http/resumes/resumes.controller';
+import { SavedJobsController } from './presentation/http/saved-jobs/saved-jobs.controller';
 import { GatewayController } from './presentation/http/health/gateway.controller';
 import { GRPC_CLIENT_OPTIONS } from './infrastructure/transport/grpc/grpc.constants';
 import { GatewayGrpcClient } from './infrastructure/transport/grpc/gateway-grpc.client';
@@ -81,12 +88,21 @@ function resolveGrpcProtoPath(serviceName: 'candidate' | 'employer' | 'iam'): st
     AuthController,
     CandidateProfilesController,
     CompanyProfilesController,
+    ResumesController,
+    SavedJobsController,
     GatewayController
   ],
   imports: [createRuntimeConfigModule({ validate: validateGatewayEnvironment })],
   providers: [
     GatewayAuthService,
     GatewayProfileService,
+    GatewayResumeExportService,
+    GatewayResumesService,
+    GatewaySavedJobsService,
+    {
+      provide: JOB_LOOKUP_PORT,
+      useClass: NoOpJobLookupAdapter
+    },
     GatewayJwtAuthGuard,
     GatewayRolesGuard,
     GatewayGrpcClient,

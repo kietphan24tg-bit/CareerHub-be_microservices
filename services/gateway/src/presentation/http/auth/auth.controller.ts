@@ -11,7 +11,7 @@ import {
   Res,
   UnauthorizedException
 } from '@nestjs/common';
-import { GatewayAuthService } from '../../../application/gateway-auth.service';
+import { GatewayAuthService } from '../../../application/auth/gateway-auth.service';
 import { CurrentUser } from '../../../auth/decorators/current-user.decorator';
 import { Public } from '../../../auth/decorators/public.decorator';
 import { Roles } from '../../../auth/decorators/roles.decorator';

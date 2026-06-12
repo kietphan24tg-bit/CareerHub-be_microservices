@@ -1,89 +1,143 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { OutboxRecord } from '@careerhub/contracts';
 import { ValidationError } from '@careerhub/shared-kernel';
 import { CandidateProfileNotFoundError } from '../../errors/candidate-profile-not-found.error';
-import type { CandidateWriteTransaction, IdGenerator } from '../../ports';
+import { ResumeNotFoundError } from '../../errors/resume-not-found.error';
+import type {
+  CandidateProfileRecord,
+  CandidateProfileRepository,
+  CandidateWriteTransaction,
+  ResumeRepository,
+  UpdateCandidateProfilePatch
+} from '../../ports';
+import { UniqueEntityID } from '@careerhub/shared-kernel';
+import { ResumeAggregate } from '../../../domain/resume/resume.aggregate';
+import { createEmptyResumeContent } from '../../../domain/resume/resume-content.types';
+import { ResumeOwner, ResumeTitle } from '../../../domain/resume/value-objects';
 import { UpdateCandidateProfileCommandHandler } from './update-candidate-profile.command-handler';
 
-class FakeIdGenerator implements IdGenerator {
-  constructor(private readonly value: string) {}
-
-  generate(): string {
-    return this.value;
-  }
+function buildOwnedResume(resumeId: string, identityId: string) {
+  return ResumeAggregate.reconstitute({
+    createdAt: new Date(),
+    id: new UniqueEntityID(resumeId),
+    props: {
+      content: createEmptyResumeContent(),
+      isUsing: false,
+      owner: new ResumeOwner(identityId),
+      templateId: 'template-1',
+      title: new ResumeTitle('Default Resume')
+    },
+    updatedAt: new Date()
+  });
 }
 
-class FakeCandidateWriteTransaction implements CandidateWriteTransaction {
-  outboxRecords: OutboxRecord[] = [];
-
-  constructor(
-    private readonly updateByIdentityId: (
-      identityId: string,
-      patch: Record<string, unknown>
-    ) => Promise<Record<string, unknown> | null>
-  ) {}
-
-  async execute<T>(
-    work: Parameters<CandidateWriteTransaction['execute']>[0]
-  ): Promise<T> {
-    return (await work({
-      candidateProfileRepository: {
-        async existsByIdentityId() {
-          return true;
-        },
-        async findByIdentityId() {
-          return null;
-        },
-        async save() {},
-        async deleteByIdentityId() {
-          return false;
-        },
-        updateByIdentityId: this.updateByIdentityId as never
-      },
-      outboxRepository: {
-        claimPending: async () => null,
-        create: async (record) => {
-          this.outboxRecords.push(record);
-        },
-        deleteProcessedBatch: async () => 0,
-        findPendingBatch: async () => [],
-        markFailed: async () => {},
-        markProcessed: async () => {},
-        requeueRetryableFailed: async () => 0,
-        requeueStaleProcessing: async () => 0,
-        summarizeBacklog: async () => ({
-          failed: 0,
-          pending: 0,
-          processing: 0
-        })
-      }
-    })) as T;
-  }
+function createProfileRecord(
+  identityId: string,
+  patch: UpdateCandidateProfilePatch = {}
+): CandidateProfileRecord {
+  return {
+    address: patch.address ?? null,
+    avatarUrl: patch.avatarUrl ?? null,
+    bio: patch.bio ?? null,
+    createdAt: new Date('2026-06-06T00:00:00.000Z'),
+    fullName: patch.fullName ?? 'Candidate',
+    githubUrl: patch.githubUrl ?? null,
+    headline: patch.headline ?? null,
+    id: 'candidate-profile-1',
+    identityId,
+    linkedinUrl: patch.linkedinUrl ?? null,
+    phone: patch.phone ?? null,
+    portfolioUrl: patch.portfolioUrl ?? null,
+    resumeId: patch.resumeId ?? null,
+    updatedAt: new Date('2026-06-06T01:00:00.000Z'),
+    yearsExperience: patch.yearsExperience ?? null
+  };
 }
 
-test('updates candidate profile successfully and writes outbox record', async () => {
-  const writeTransaction = new FakeCandidateWriteTransaction(
-    async (identityId, patch) => ({
-      address: (patch.address as string | null | undefined) ?? null,
-      avatarUrl: (patch.avatarUrl as string | null | undefined) ?? null,
-      bio: (patch.bio as string | null | undefined) ?? null,
-      createdAt: new Date('2026-06-06T00:00:00.000Z'),
-      fullName: (patch.fullName as string | undefined) ?? 'Candidate',
-      githubUrl: (patch.githubUrl as string | null | undefined) ?? null,
-      headline: (patch.headline as string | null | undefined) ?? null,
-      id: 'candidate-profile-1',
-      identityId,
-      linkedinUrl: (patch.linkedinUrl as string | null | undefined) ?? null,
-      phone: (patch.phone as string | null | undefined) ?? null,
-      portfolioUrl: (patch.portfolioUrl as string | null | undefined) ?? null,
-      updatedAt: new Date('2026-06-06T01:00:00.000Z'),
-      yearsExperience: (patch.yearsExperience as number | null | undefined) ?? null
-    })
+function createRepository(
+  updateByIdentityId: (
+    identityId: string,
+    patch: UpdateCandidateProfilePatch
+  ) => Promise<CandidateProfileRecord | null>
+): CandidateProfileRepository {
+  return {
+    async clearResumeIdIfMatches() {},
+    async existsByIdentityId() {
+      return true;
+    },
+    async findByIdentityId() {
+      return null;
+    },
+    async save() {},
+    async deleteByIdentityId() {
+      return false;
+    },
+    updateByIdentityId
+  };
+}
+
+function createWriteTransaction(
+  candidateProfileRepository: CandidateProfileRepository,
+  resumeRepository: ResumeRepository
+): CandidateWriteTransaction {
+  return {
+    async execute(work) {
+      return work({
+        candidateProfileRepository,
+        outboxRepository: {
+          async claimPending() {
+            return null;
+          },
+          async create() {},
+          async deleteProcessedBatch() {
+            return 0;
+          },
+          async findPendingBatch() {
+            return [];
+          },
+          async markFailed() {},
+          async markProcessed() {},
+          async requeueRetryableFailed() {
+            return 0;
+          },
+          async requeueStaleProcessing() {
+            return 0;
+          },
+          async summarizeBacklog() {
+            return {
+              failed: 0,
+              pending: 0,
+              processing: 0
+            };
+          }
+        },
+        resumeRepository
+      });
+    }
+  };
+}
+
+test('updates candidate profile successfully', async () => {
+  const repository = createRepository(async (identityId, patch) =>
+    createProfileRecord(identityId, patch)
   );
   const handler = new UpdateCandidateProfileCommandHandler(
-    writeTransaction,
-    new FakeIdGenerator('candidate-outbox-1')
+    repository,
+    createWriteTransaction(repository, {
+      async clearIsUsingByIdentityId() {},
+      async deleteById() {},
+      async findById() {
+        return null;
+      },
+      async findByIdentityAndTemplateId() {
+        return null;
+      },
+      async findByIdentityId() {
+        return [];
+      },
+      async save() {},
+      async update() {}
+    })
   );
 
   const result = await handler.execute({
@@ -97,18 +151,27 @@ test('updates candidate profile successfully and writes outbox record', async ()
   assert.equal(result.fullName, 'Updated Candidate');
   assert.equal(result.githubUrl, 'https://github.com/candidate');
   assert.equal(result.yearsExperience, 3);
-  assert.equal(writeTransaction.outboxRecords.length, 1);
-  assert.equal(
-    writeTransaction.outboxRecords[0]?.eventName,
-    'candidate.profile.updated.v1'
-  );
 });
 
 test('throws when updated candidate profile does not exist', async () => {
-  const writeTransaction = new FakeCandidateWriteTransaction(async () => null);
+  const repository = createRepository(async () => null);
   const handler = new UpdateCandidateProfileCommandHandler(
-    writeTransaction,
-    new FakeIdGenerator('candidate-outbox-2')
+    repository,
+    createWriteTransaction(repository, {
+      async clearIsUsingByIdentityId() {},
+      async deleteById() {},
+      async findById() {
+        return null;
+      },
+      async findByIdentityAndTemplateId() {
+        return null;
+      },
+      async findByIdentityId() {
+        return [];
+      },
+      async save() {},
+      async update() {}
+    })
   );
 
   await assert.rejects(
@@ -119,15 +182,27 @@ test('throws when updated candidate profile does not exist', async () => {
       }),
     CandidateProfileNotFoundError
   );
-
-  assert.equal(writeTransaction.outboxRecords.length, 0);
 });
 
 test('throws when candidate update payload is empty', async () => {
-  const writeTransaction = new FakeCandidateWriteTransaction(async () => null);
+  const repository = createRepository(async () => null);
   const handler = new UpdateCandidateProfileCommandHandler(
-    writeTransaction,
-    new FakeIdGenerator('candidate-outbox-3')
+    repository,
+    createWriteTransaction(repository, {
+      async clearIsUsingByIdentityId() {},
+      async deleteById() {},
+      async findById() {
+        return null;
+      },
+      async findByIdentityAndTemplateId() {
+        return null;
+      },
+      async findByIdentityId() {
+        return [];
+      },
+      async save() {},
+      async update() {}
+    })
   );
 
   await assert.rejects(
@@ -137,6 +212,116 @@ test('throws when candidate update payload is empty', async () => {
       }),
     ValidationError
   );
+});
 
-  assert.equal(writeTransaction.outboxRecords.length, 0);
+test('throws when resume id does not belong to candidate', async () => {
+  const repository = createRepository(async (identityId, patch) =>
+    createProfileRecord(identityId, patch)
+  );
+  const handler = new UpdateCandidateProfileCommandHandler(
+    repository,
+    createWriteTransaction(repository, {
+      async clearIsUsingByIdentityId() {},
+      async deleteById() {},
+      async findById() {
+        return null;
+      },
+      async findByIdentityAndTemplateId() {
+        return null;
+      },
+      async findByIdentityId() {
+        return [];
+      },
+      async save() {},
+      async update() {}
+    })
+  );
+
+  await assert.rejects(
+    () =>
+      handler.execute({
+        identityId: 'identity-1',
+        resumeId: 'resume-missing'
+      }),
+    ResumeNotFoundError
+  );
+});
+
+test('syncs isUsing when resume id is set on profile', async () => {
+  const resume = buildOwnedResume('resume-1', 'identity-1');
+  const calls: string[] = [];
+
+  const repository = createRepository(async (identityId, patch) =>
+    createProfileRecord(identityId, patch)
+  );
+  const resumeRepository: ResumeRepository = {
+    async clearIsUsingByIdentityId(identityId, exceptResumeId) {
+      calls.push(`clear:${identityId}:${exceptResumeId ?? ''}`);
+    },
+    async deleteById() {},
+    async findById(id) {
+      return id === 'resume-1' ? resume : null;
+    },
+    async findByIdentityAndTemplateId() {
+      return null;
+    },
+    async findByIdentityId() {
+      return [];
+    },
+    async save() {},
+    async update(updatedResume) {
+      calls.push(`update:${updatedResume.id.toString()}:${updatedResume.isUsing}`);
+    }
+  };
+
+  const handler = new UpdateCandidateProfileCommandHandler(
+    repository,
+    createWriteTransaction(repository, resumeRepository)
+  );
+
+  const result = await handler.execute({
+    identityId: 'identity-1',
+    resumeId: 'resume-1'
+  });
+
+  assert.equal(result.resumeId, 'resume-1');
+  assert.deepEqual(calls, ['clear:identity-1:resume-1', 'update:resume-1:true']);
+});
+
+test('clears isUsing when resume id is cleared on profile', async () => {
+  const calls: string[] = [];
+
+  const repository = createRepository(async (identityId, patch) =>
+    createProfileRecord(identityId, patch)
+  );
+  const resumeRepository: ResumeRepository = {
+    async clearIsUsingByIdentityId(identityId) {
+      calls.push(`clear-all:${identityId}`);
+    },
+    async deleteById() {},
+    async findById() {
+      return null;
+    },
+    async findByIdentityAndTemplateId() {
+      return null;
+    },
+    async findByIdentityId() {
+      return [];
+    },
+    async save() {},
+    async update() {}
+  };
+
+  const handler = new UpdateCandidateProfileCommandHandler(
+    repository,
+    createWriteTransaction(repository, resumeRepository)
+  );
+
+  const result = await handler.execute({
+    identityId: 'identity-1',
+    resumeId: null
+  });
+
+  assert.equal(result.resumeId, null);
+  assert.deepEqual(calls, ['clear-all:identity-1']);
 });

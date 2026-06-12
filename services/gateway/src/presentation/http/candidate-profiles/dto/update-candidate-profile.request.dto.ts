@@ -73,4 +73,10 @@ export class UpdateCandidateProfileRequestDto {
   @IsInt()
   @Min(0)
   yearsExperience?: number | null;
+
+  @Transform(({ value }) => trimOptional(value))
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  resumeId?: string | null;
 }

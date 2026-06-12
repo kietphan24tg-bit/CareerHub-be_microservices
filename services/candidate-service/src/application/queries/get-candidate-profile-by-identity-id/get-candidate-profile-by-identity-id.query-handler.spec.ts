@@ -5,6 +5,7 @@ import { GetCandidateProfileByIdentityIdQueryHandler } from './get-candidate-pro
 
 test('loads candidate profile by identity id', async () => {
   const handler = new GetCandidateProfileByIdentityIdQueryHandler({
+    async clearResumeIdIfMatches() {},
     async existsByIdentityId() {
       return true;
     },
@@ -22,6 +23,7 @@ test('loads candidate profile by identity id', async () => {
         linkedinUrl: null,
         phone: '0123456789',
         portfolioUrl: null,
+        resumeId: null,
         updatedAt: new Date('2026-06-06T00:00:00.000Z'),
         yearsExperience: null
       };
@@ -45,6 +47,7 @@ test('loads candidate profile by identity id', async () => {
 
 test('throws when candidate profile does not exist', async () => {
   const handler = new GetCandidateProfileByIdentityIdQueryHandler({
+    async clearResumeIdIfMatches() {},
     async existsByIdentityId() {
       return false;
     },

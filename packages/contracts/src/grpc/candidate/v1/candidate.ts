@@ -41,6 +41,7 @@ export type CandidateProfile = {
   null_fields: string[];
   phone: string;
   portfolio_url: string;
+  resume_id: string;
   updated_at: string;
   years_experience: number;
 };
@@ -62,10 +63,163 @@ export type UpdateCandidateProfileRequest = {
   phone?: string;
   portfolio_url?: string;
   request_id?: string;
+  resume_id?: string;
   updated_fields?: string[];
   years_experience?: number;
 };
 
 export type UpdateCandidateProfileResponse = {
   profile: CandidateProfile;
+};
+
+export type SavedJob = {
+  id: string;
+  identity_id: string;
+  job_id: string;
+  saved_at: string;
+};
+
+export type ListSavedJobsByIdentityIdRequest = {
+  identity_id: string;
+  request_id?: string;
+};
+
+export type ListSavedJobsByIdentityIdResponse = {
+  saved_jobs: SavedJob[];
+};
+
+export type SaveJobRequest = {
+  identity_id: string;
+  job_id: string;
+  request_id?: string;
+};
+
+export type SaveJobResponse = {
+  saved_job: SavedJob;
+};
+
+export type RemoveSavedJobRequest = {
+  identity_id: string;
+  job_id: string;
+  request_id?: string;
+};
+
+export type RemoveSavedJobResponse = {
+  removed: boolean;
+};
+
+export type ResumeTemplateListItem = {
+  category: string;
+  id: string;
+  name: string;
+  thumbnail: string;
+};
+
+export type ResumeTemplateDetail = {
+  category: string;
+  id: string;
+  layout_data_json: string;
+  name: string;
+  thumbnail: string;
+};
+
+export type ResumeMessage = {
+  content_json: string;
+  id: string;
+  identity_id: string;
+  is_using: boolean;
+  template_id: string;
+  title: string;
+  updated_at: string;
+};
+
+export type ListResumeTemplatesRequest = {
+  request_id?: string;
+};
+
+export type ListResumeTemplatesResponse = {
+  templates: ResumeTemplateListItem[];
+};
+
+export type GetResumeTemplateByIdRequest = {
+  request_id?: string;
+  template_id: string;
+};
+
+export type GetResumeTemplateByIdResponse = {
+  template: ResumeTemplateDetail;
+};
+
+export type ListResumesByIdentityIdRequest = {
+  identity_id: string;
+  request_id?: string;
+};
+
+export type ListResumesByIdentityIdResponse = {
+  resumes: ResumeMessage[];
+};
+
+export type GetResumeByIdRequest = {
+  identity_id: string;
+  request_id?: string;
+  resume_id: string;
+};
+
+export type GetResumeByIdResponse = {
+  resume: ResumeMessage;
+};
+
+export type CreateOrGetTemplateDraftRequest = {
+  identity_id: string;
+  request_id?: string;
+  template_id: string;
+};
+
+export type CreateOrGetTemplateDraftResponse = {
+  resume: ResumeMessage;
+};
+
+export type CreateResumeRequest = {
+  content_json: string;
+  identity_id: string;
+  request_id?: string;
+  template_id: string;
+  title: string;
+};
+
+export type CreateResumeResponse = {
+  resume: ResumeMessage;
+};
+
+export type UpdateResumeRequest = {
+  content_json: string;
+  identity_id: string;
+  request_id?: string;
+  resume_id: string;
+  title: string;
+};
+
+export type UpdateResumeResponse = {
+  resume: ResumeMessage;
+};
+
+export type DeleteResumeRequest = {
+  identity_id: string;
+  request_id?: string;
+  resume_id: string;
+};
+
+export type DeleteResumeResponse = {
+  deleted: boolean;
+};
+
+export type GetResumeExportPayloadRequest = {
+  identity_id: string;
+  request_id?: string;
+  resume_id: string;
+};
+
+export type GetResumeExportPayloadResponse = {
+  resume: ResumeMessage;
+  template: ResumeTemplateDetail;
 };

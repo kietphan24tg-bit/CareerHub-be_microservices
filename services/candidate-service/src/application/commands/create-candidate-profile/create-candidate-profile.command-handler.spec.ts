@@ -9,6 +9,7 @@ test('creates a candidate profile successfully', async () => {
   const savedProfiles: CreateCandidateProfileRecord[] = [];
   const handler = new CreateCandidateProfileCommandHandler(
     {
+      async clearResumeIdIfMatches() {},
       async deleteByIdentityId() {
         return false;
       },
@@ -48,6 +49,7 @@ test('creates a candidate profile successfully', async () => {
 test('fails when profile already exists for identity', async () => {
   const handler = new CreateCandidateProfileCommandHandler(
     {
+      async clearResumeIdIfMatches() {},
       async deleteByIdentityId() {
         return false;
       },
@@ -83,6 +85,7 @@ test('fails when profile already exists for identity', async () => {
 test('fails when required fields are blank', async () => {
   const handler = new CreateCandidateProfileCommandHandler(
     {
+      async clearResumeIdIfMatches() {},
       async deleteByIdentityId() {
         return false;
       },

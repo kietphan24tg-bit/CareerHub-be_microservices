@@ -102,22 +102,21 @@ DDD hiện là phần rõ nhất trong `iam-service`:
 
 - aggregate: `Identity`
 - value objects: `Email`, `Role`, `PasswordHash`, `IdentityStatus`
-- domain events: `UserRegisteredEvent`, `UserRoleChangedEvent`, `IdentityDisabledEvent`
 - domain errors: `InvalidIdentityStateError`, `IdentityDisabledError`, `InvalidRoleError`
 
 Vai trò của DDD trong dự án:
 
 - giữ business rule nằm trong domain thay vì rải vào controller/service
 - biến state transition thành hành vi có kiểm soát
-- giúp event phát ra từ domain có nghĩa nghiệp vụ rõ ràng
 
 Ví dụ `Identity` aggregate:
 
-- `register()` tạo identity và phát `UserRegisteredEvent`
-- `changeRole()` đổi role và phát `UserRoleChangedEvent`
-- `disable()` đổi trạng thái và phát `IdentityDisabledEvent`
+- `register()` tạo identity ở trạng thái `pending_profile`
+- `enable()` kích hoạt identity sang `active`
+- `changeRole()` đổi role
+- `disable()` đổi trạng thái sang `disabled`
 
-Đây là nền tốt để sau này nối sang outbox và event bus.
+> Lưu ý: hiện `Identity` chưa phát domain event nào. Các integration event `iam.user.registered.v1`, `iam.identity.role_changed.v1`, `iam.identity.disabled.v1` đã được gỡ bỏ vì không có consumer; activate identity chạy đồng bộ qua gRPC và chỉ cập nhật state.
 
 ### 4. CQRS
 
@@ -168,7 +167,7 @@ Trong repo hiện tại đã có:
 
 Phân biệt hai loại event:
 
-- domain event: nội bộ domain, ví dụ `UserRegisteredEvent`
+- domain event: nội bộ domain (hiện `iam-service` chưa phát domain event nào)
 - integration event: dùng để giao tiếp giữa service, ví dụ `GatewayCacheInvalidatedEvent`
 
 Đây là lý do `events/gateway` nằm trong `packages/contracts`:

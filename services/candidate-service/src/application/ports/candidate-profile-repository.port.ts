@@ -11,6 +11,7 @@ export type CandidateProfileRecord = {
   linkedinUrl: string | null;
   phone: string | null;
   portfolioUrl: string | null;
+  resumeId: string | null;
   updatedAt: Date;
   yearsExperience: number | null;
 };
@@ -32,10 +33,12 @@ export type UpdateCandidateProfilePatch = {
   linkedinUrl?: string | null;
   phone?: string | null;
   portfolioUrl?: string | null;
+  resumeId?: string | null;
   yearsExperience?: number | null;
 };
 
 export interface CandidateProfileRepository {
+  clearResumeIdIfMatches(identityId: string, resumeId: string): Promise<void>;
   deleteByIdentityId(identityId: string): Promise<boolean>;
   existsByIdentityId(identityId: string): Promise<boolean>;
   findByIdentityId(identityId: string): Promise<CandidateProfileRecord | null>;

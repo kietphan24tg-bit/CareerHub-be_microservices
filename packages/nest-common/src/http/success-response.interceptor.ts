@@ -2,7 +2,8 @@ import {
     CallHandler,
     ExecutionContext,
     Injectable,
-    NestInterceptor
+    NestInterceptor,
+    StreamableFile
 } from '@nestjs/common';
 import { map, Observable } from 'rxjs';
 import type { HttpSuccessResponse } from './http-success-response';
@@ -19,17 +20,25 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 @Injectable()
 export class SuccessResponseInterceptor<TData = unknown>
-    implements NestInterceptor<TData, HttpSuccessResponse<TData>>
+    implements NestInterceptor<TData, unknown>
 {
     intercept(
         context: ExecutionContext,
         next: CallHandler<TData>
-    ): Observable<HttpSuccessResponse<TData>> {
+    ): Observable<unknown> {
         if (context.getType() !== 'http') {
-            return next.handle().pipe(map((data) => this.wrapResponse(data)));
+            return next.handle().pipe(map((data) => this.mapResponse(data)));
         }
 
-        return next.handle().pipe(map((data) => this.wrapResponse(data)));
+        return next.handle().pipe(map((data) => this.mapResponse(data)));
+    }
+
+    private mapResponse(data: TData): unknown {
+        if (data instanceof StreamableFile) {
+            return data;
+        }
+
+        return this.wrapResponse(data);
     }
 
     private wrapResponse(data: TData): HttpSuccessResponse<TData> {

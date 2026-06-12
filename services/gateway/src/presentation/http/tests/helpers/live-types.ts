@@ -63,7 +63,34 @@ export type CandidateProfileResponse = {
     linkedinUrl: string | null;
     phone: string | null;
     portfolioUrl: string | null;
+    resumeId: string | null;
     updatedAt: string;
     yearsExperience: number | null;
   };
+};
+
+export type ResumeTemplateListItem = {
+  category?: string | null;
+  id: string;
+  name: string;
+  thumbnail?: string | null;
+};
+
+export type GatewayResume = {
+  id: string;
+  isUsing: boolean;
+  templateId?: string | null;
+  title: string;
+  updatedAt: string;
+  userId: string;
+};
+
+export type GatewaySavedJob = {
+  id: string;
+  jobId: string;
+  savedAt: string;
+  job?: {
+    id: string;
+    title: string;
+  } | null;
 };

@@ -45,9 +45,6 @@ export class RegisterIdentityCommandHandler {
           acceptedTerms: command.acceptedTerms,
           email,
           id: new UniqueEntityID(this.idGenerator.generate()),
-          metadata: command.requestId
-            ? { correlationId: command.requestId }
-            : undefined,
           passwordHash,
           role
         });

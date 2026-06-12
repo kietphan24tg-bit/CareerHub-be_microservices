@@ -272,11 +272,9 @@ import type { IamEnvironmentVariables } from './config';
     },
     {
       provide: ActivateIdentityCommandHandler,
-      inject: [IAM_PORT_TOKENS.writeTransaction, IAM_PORT_TOKENS.idGenerator],
-      useFactory: (
-        writeTransaction: PrismaIamWriteTransaction,
-        idGenerator: UuidIdGenerator
-      ) => new ActivateIdentityCommandHandler(writeTransaction, idGenerator)
+      inject: [IAM_PORT_TOKENS.identityRepository],
+      useFactory: (identityRepository: PrismaIdentityRepository) =>
+        new ActivateIdentityCommandHandler(identityRepository)
     },
     {
       provide: CancelPendingIdentityCommandHandler,

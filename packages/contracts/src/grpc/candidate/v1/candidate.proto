@@ -7,6 +7,18 @@ service CandidateService {
   rpc DeleteCandidateProfileCompensation (DeleteCandidateProfileCompensationRequest) returns (DeleteCandidateProfileCompensationResponse);
   rpc GetCandidateProfileByIdentityId (GetCandidateProfileByIdentityIdRequest) returns (GetCandidateProfileByIdentityIdResponse);
   rpc UpdateCandidateProfile (UpdateCandidateProfileRequest) returns (UpdateCandidateProfileResponse);
+  rpc ListSavedJobsByIdentityId (ListSavedJobsByIdentityIdRequest) returns (ListSavedJobsByIdentityIdResponse);
+  rpc SaveJob (SaveJobRequest) returns (SaveJobResponse);
+  rpc RemoveSavedJob (RemoveSavedJobRequest) returns (RemoveSavedJobResponse);
+  rpc ListResumeTemplates (ListResumeTemplatesRequest) returns (ListResumeTemplatesResponse);
+  rpc GetResumeTemplateById (GetResumeTemplateByIdRequest) returns (GetResumeTemplateByIdResponse);
+  rpc ListResumesByIdentityId (ListResumesByIdentityIdRequest) returns (ListResumesByIdentityIdResponse);
+  rpc GetResumeById (GetResumeByIdRequest) returns (GetResumeByIdResponse);
+  rpc CreateOrGetTemplateDraft (CreateOrGetTemplateDraftRequest) returns (CreateOrGetTemplateDraftResponse);
+  rpc CreateResume (CreateResumeRequest) returns (CreateResumeResponse);
+  rpc UpdateResume (UpdateResumeRequest) returns (UpdateResumeResponse);
+  rpc DeleteResume (DeleteResumeRequest) returns (DeleteResumeResponse);
+  rpc GetResumeExportPayload (GetResumeExportPayloadRequest) returns (GetResumeExportPayloadResponse);
 }
 
 message CreateCandidateProfileRequest {
@@ -51,6 +63,7 @@ message CandidateProfile {
   string created_at = 13;
   string updated_at = 14;
   repeated string null_fields = 15;
+  string resume_id = 16;
 }
 
 message GetCandidateProfileByIdentityIdResponse {
@@ -72,8 +85,161 @@ message UpdateCandidateProfileRequest {
   string linkedin_url = 12;
   string portfolio_url = 13;
   int32 years_experience = 14;
+  string resume_id = 15;
 }
 
 message UpdateCandidateProfileResponse {
   CandidateProfile profile = 1;
+}
+
+message SavedJob {
+  string id = 1;
+  string identity_id = 2;
+  string job_id = 3;
+  string saved_at = 4;
+}
+
+message ListSavedJobsByIdentityIdRequest {
+  string identity_id = 1;
+  string request_id = 2;
+}
+
+message ListSavedJobsByIdentityIdResponse {
+  repeated SavedJob saved_jobs = 1;
+}
+
+message SaveJobRequest {
+  string identity_id = 1;
+  string job_id = 2;
+  string request_id = 3;
+}
+
+message SaveJobResponse {
+  SavedJob saved_job = 1;
+}
+
+message RemoveSavedJobRequest {
+  string identity_id = 1;
+  string job_id = 2;
+  string request_id = 3;
+}
+
+message RemoveSavedJobResponse {
+  bool removed = 1;
+}
+
+message ResumeTemplateListItem {
+  string id = 1;
+  string name = 2;
+  string thumbnail = 3;
+  string category = 4;
+}
+
+message ResumeTemplateDetail {
+  string id = 1;
+  string name = 2;
+  string thumbnail = 3;
+  string category = 4;
+  string layout_data_json = 5;
+}
+
+message ResumeMessage {
+  string id = 1;
+  string identity_id = 2;
+  string template_id = 3;
+  string title = 4;
+  bool is_using = 5;
+  string content_json = 6;
+  string updated_at = 7;
+}
+
+message ListResumeTemplatesRequest {
+  string request_id = 1;
+}
+
+message ListResumeTemplatesResponse {
+  repeated ResumeTemplateListItem templates = 1;
+}
+
+message GetResumeTemplateByIdRequest {
+  string template_id = 1;
+  string request_id = 2;
+}
+
+message GetResumeTemplateByIdResponse {
+  ResumeTemplateDetail template = 1;
+}
+
+message ListResumesByIdentityIdRequest {
+  string identity_id = 1;
+  string request_id = 2;
+}
+
+message ListResumesByIdentityIdResponse {
+  repeated ResumeMessage resumes = 1;
+}
+
+message GetResumeByIdRequest {
+  string identity_id = 1;
+  string resume_id = 2;
+  string request_id = 3;
+}
+
+message GetResumeByIdResponse {
+  ResumeMessage resume = 1;
+}
+
+message CreateOrGetTemplateDraftRequest {
+  string identity_id = 1;
+  string template_id = 2;
+  string request_id = 3;
+}
+
+message CreateOrGetTemplateDraftResponse {
+  ResumeMessage resume = 1;
+}
+
+message CreateResumeRequest {
+  string identity_id = 1;
+  string template_id = 2;
+  string title = 3;
+  string content_json = 4;
+  string request_id = 5;
+}
+
+message CreateResumeResponse {
+  ResumeMessage resume = 1;
+}
+
+message UpdateResumeRequest {
+  string identity_id = 1;
+  string resume_id = 2;
+  string title = 3;
+  string content_json = 4;
+  string request_id = 5;
+}
+
+message UpdateResumeResponse {
+  ResumeMessage resume = 1;
+}
+
+message DeleteResumeRequest {
+  string identity_id = 1;
+  string resume_id = 2;
+  string request_id = 3;
+}
+
+message DeleteResumeResponse {
+  bool deleted = 1;
+}
+
+message GetResumeExportPayloadRequest {
+  string identity_id = 1;
+  string resume_id = 2;
+  string request_id = 3;
+}
+
+message GetResumeExportPayloadResponse {
+  ResumeMessage resume = 1;
+  ResumeTemplateDetail template = 2;
 }
