@@ -3,6 +3,7 @@ import { requestJson } from './live-http';
 import type { SuccessEnvelope } from './live-types';
 
 type JobResponse = {
+  applicationCount?: number;
   id: string;
   slug: string;
   status: string;
@@ -81,6 +82,22 @@ export async function listPublicJobs(requestId: string): Promise<SuccessEnvelope
   });
 
   assert.equal(response.status, 200);
+  return body;
+}
+
+export async function listEmployerJobs(input: {
+  accessToken: string;
+  requestId: string;
+}): Promise<SuccessEnvelope<JobListResponse>> {
+  const { body, response } = await requestJson<SuccessEnvelope<JobListResponse>>('/employer/jobs', {
+    headers: {
+      authorization: `Bearer ${input.accessToken}`,
+      'x-request-id': input.requestId
+    }
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(body.success, true);
   return body;
 }
 

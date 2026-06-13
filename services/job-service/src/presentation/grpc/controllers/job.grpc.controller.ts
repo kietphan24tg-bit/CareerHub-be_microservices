@@ -8,6 +8,8 @@
   type CreateJobResponse,
   type GetEmployerJobByIdRequest,
   type GetEmployerJobByIdResponse,
+  type GetJobForApplicationRequest,
+  type GetJobForApplicationResponse,
   type GetPublicJobBySlugRequest,
   type GetPublicJobBySlugResponse,
   type JobExistsRequest,
@@ -32,6 +34,7 @@ import {
   CloseJobCommandHandler,
   CreateJobCommandHandler,
   GetEmployerJobByIdQueryHandler,
+  GetJobForApplicationQueryHandler,
   GetPublicJobBySlugQueryHandler,
   JobExistsQueryHandler,
   ListEmployerJobsQueryHandler,
@@ -53,6 +56,7 @@ export class JobGrpcController {
     private readonly closeJobCommandHandler: CloseJobCommandHandler,
     private readonly createJobCommandHandler: CreateJobCommandHandler,
     private readonly getEmployerJobByIdQueryHandler: GetEmployerJobByIdQueryHandler,
+    private readonly getJobForApplicationQueryHandler: GetJobForApplicationQueryHandler,
     private readonly getPublicJobBySlugQueryHandler: GetPublicJobBySlugQueryHandler,
     private readonly jobExistsQueryHandler: JobExistsQueryHandler,
     private readonly listEmployerJobsQueryHandler: ListEmployerJobsQueryHandler,
@@ -150,6 +154,32 @@ export class JobGrpcController {
 
       return {
         job: toGrpcJobMessage(job)
+      };
+    } catch (error) {
+      throw mapErrorToJobGrpcException(error);
+    }
+  }
+
+  @GrpcMethod(JOB_GRPC_SERVICE_NAME, 'GetJobForApplication')
+  async getJobForApplication(
+    request: GetJobForApplicationRequest
+  ): Promise<GetJobForApplicationResponse> {
+    try {
+      const job = await this.getJobForApplicationQueryHandler.execute({
+        jobId: request.job_id
+      });
+      const nullFields: string[] = [];
+
+      if (!job.expiresAt) {
+        nullFields.push('expires_at');
+      }
+
+      return {
+        employer_identity_id: job.employerIdentityId,
+        expires_at: job.expiresAt?.toISOString() ?? '',
+        job_id: job.id,
+        null_fields: nullFields,
+        status: job.status
       };
     } catch (error) {
       throw mapErrorToJobGrpcException(error);

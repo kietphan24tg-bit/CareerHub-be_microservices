@@ -57,6 +57,7 @@ export class LoginIdentityCommandHandler {
       accessToken,
       email: identity.email.value,
       identityId: identity.id.toString(),
+      rememberMe: command.rememberMe === true,
       refreshToken,
       role: identity.role.value
     };

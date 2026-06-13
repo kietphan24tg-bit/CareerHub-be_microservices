@@ -106,10 +106,6 @@ export interface JobRepository {
   ): Promise<JobRecord | null>;
   findByIds(jobIds: string[]): Promise<JobRecord[]>;
   findPublicBySlug(slug: string): Promise<JobRecord | null>;
-  getStatus(
-    jobId: string,
-    employerIdentityId: string
-  ): Promise<{ status: JobStatus } | null>;
   listEmployer(
     filter: ListEmployerJobsFilter
   ): Promise<{ items: JobRecord[]; total: number }>;
@@ -117,11 +113,17 @@ export interface JobRepository {
     filter: ListPublicJobsFilter
   ): Promise<{ items: JobRecord[]; total: number }>;
   slugExists(slug: string, excludeJobId?: string): Promise<boolean>;
-  transitionStatus(
+  /**
+   * Lưu trạng thái mới với optimistic-lock: chỉ ghi khi status hiện tại trong DB
+   * vẫn đúng bằng `expectedStatus` (trạng thái mà aggregate đã đọc lúc quyết định).
+   * Trả về null nếu bị sửa đồng thời (status đã khác) — KHÔNG chứa luật nghiệp vụ,
+   * luật chuyển trạng thái nằm trong Job aggregate.
+   */
+  saveStatus(
     jobId: string,
     employerIdentityId: string,
-    nextStatus: JobStatus,
-    allowedStatuses: JobStatus[]
+    expectedStatus: JobStatus,
+    nextStatus: JobStatus
   ): Promise<JobRecord | null>;
   update(
     jobId: string,

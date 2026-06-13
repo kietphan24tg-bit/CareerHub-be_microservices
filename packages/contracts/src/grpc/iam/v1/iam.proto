@@ -76,6 +76,7 @@ message RefreshSessionResponse {
   string identity_id = 3;
   string email = 4;
   string role = 5;
+  bool remember_me = 6;
 }
 
 message LogoutSessionRequest {

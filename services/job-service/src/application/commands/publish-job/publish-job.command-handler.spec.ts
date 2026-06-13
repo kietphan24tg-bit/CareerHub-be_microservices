@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { InvalidJobStatusTransitionError } from '../../errors/invalid-job-status-transition.error';
+import { InvalidJobStatusTransitionError } from '../../../domain';
 import { PublishJobCommandHandler } from './publish-job.command-handler';
 
 const publishedJob = {
@@ -35,11 +35,11 @@ const publishedJob = {
 
 test('publish job transitions draft to published', async () => {
   const handler = new PublishJobCommandHandler({
-    async transitionStatus() {
-      return publishedJob;
+    async findByIdAndEmployer() {
+      return { ...publishedJob, status: 'draft' };
     },
-    async getStatus() {
-      return null;
+    async saveStatus() {
+      return publishedJob;
     }
   } as never);
 
@@ -53,11 +53,8 @@ test('publish job transitions draft to published', async () => {
 
 test('publish job rejects invalid transition', async () => {
   const handler = new PublishJobCommandHandler({
-    async transitionStatus() {
-      return null;
-    },
-    async getStatus() {
-      return { status: 'archived' as const };
+    async findByIdAndEmployer() {
+      return { ...publishedJob, status: 'archived' as const };
     }
   } as never);
 

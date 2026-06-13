@@ -16,6 +16,10 @@ const employmentTypes = ['fulltime', 'parttime', 'intern', 'contract'] as const;
 const jobLevels = ['intern', 'fresher', 'junior', 'mid', 'senior', 'lead'] as const;
 
 function trimOptional(value: unknown) {
+  if (value === null) {
+    return null;
+  }
+
   return typeof value === 'string' ? value.trim() : value;
 }
 
@@ -40,7 +44,7 @@ export class UpdateJobRequestDto {
   @Transform(({ value }) => trimOptional(value))
   @IsOptional()
   @IsString()
-  description?: string;
+  description?: string | null;
 
   @Transform(({ value }) => trimArray(value))
   @IsOptional()
@@ -62,50 +66,53 @@ export class UpdateJobRequestDto {
 
   @IsOptional()
   @IsIn(employmentTypes)
-  employmentType?: (typeof employmentTypes)[number];
+  employmentType?: (typeof employmentTypes)[number] | null;
 
   @IsOptional()
   @IsIn(jobLevels)
-  level?: (typeof jobLevels)[number];
+  level?: (typeof jobLevels)[number] | null;
 
   @Transform(({ value }) => trimOptional(value))
   @IsOptional()
   @IsString()
-  category?: string;
+  category?: string | null;
 
   @Transform(({ value }) => trimOptional(value))
   @IsOptional()
   @IsString()
-  city?: string;
+  city?: string | null;
 
   @Transform(({ value }) => trimOptional(value))
   @IsOptional()
   @IsString()
-  country?: string;
+  country?: string | null;
 
   @IsOptional()
   @IsBoolean()
   isRemote?: boolean;
 
+  @Transform(({ value }) => (value === null ? null : value))
   @Type(() => Number)
   @IsOptional()
   @IsNumber()
   @Min(0)
-  salaryMin?: number;
+  salaryMin?: number | null;
 
+  @Transform(({ value }) => (value === null ? null : value))
   @Type(() => Number)
   @IsOptional()
   @IsNumber()
   @Min(0)
-  salaryMax?: number;
+  salaryMax?: number | null;
 
   @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
   @IsOptional()
   @IsString()
   @MaxLength(10)
-  currency?: string;
+  currency?: string | null;
 
+  @Transform(({ value }) => (value === null ? null : value))
   @IsOptional()
   @IsDateString()
-  expiresAt?: string;
+  expiresAt?: string | null;
 }

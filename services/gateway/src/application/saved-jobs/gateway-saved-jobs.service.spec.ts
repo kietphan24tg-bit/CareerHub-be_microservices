@@ -37,7 +37,7 @@ const jobClient = {
   }
 } as never;
 
-test('list saved jobs keeps backward-compatible payload without enrichment', async () => {
+test('list saved jobs returns stable payload with explicit null job when enrichment is unavailable', async () => {
   const service = new GatewaySavedJobsService(candidateClient, jobClient, {
     async findByIds(jobIds: string[]) {
       return new Map(jobIds.map((jobId) => [jobId, null]));
@@ -50,6 +50,7 @@ test('list saved jobs keeps backward-compatible payload without enrichment', asy
     {
       id: 'saved-job-1',
       jobId: 'job-1',
+      job: null,
       savedAt: '2026-06-11T00:00:00.000Z'
     }
   ]);

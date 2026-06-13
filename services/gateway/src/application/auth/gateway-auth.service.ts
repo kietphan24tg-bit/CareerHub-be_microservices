@@ -8,6 +8,12 @@ import { CandidateGrpcClient } from '../../infrastructure/transport/grpc/candida
 import { EmployerGrpcClient } from '../../infrastructure/transport/grpc/employer-grpc.client';
 import type { GatewayAuthenticatedUser } from '../../auth/types/gateway-auth.types';
 import {
+  toGatewayCandidateProfile,
+  toGatewayEmployerProfile,
+  type GatewayCandidateProfile,
+  type GatewayEmployerProfile
+} from '../profiles/gateway-profile.service';
+import {
   GATEWAY_METRICS_TOKENS
 } from '../../config/gateway.constants';
 
@@ -40,12 +46,57 @@ type GatewayRegisterResponse = {
 
 type GatewayLoginResponse = {
   accessToken: string;
+  rememberMe?: boolean;
   refreshToken: string;
   user: GatewayAuthenticatedUser;
 };
 
-type GatewayCurrentIdentityResponse = GatewayAuthenticatedUser & {
-  status: string;
+type GatewayCurrentUserResponse = {
+  companyProfile: GatewayAuthCompanyProfileResponse | null;
+  profile: GatewayAuthCandidateProfileResponse | null;
+  user: GatewayAuthUserResponse;
+};
+
+type GatewayAuthUserResponse = {
+  email: string;
+  role: string;
+  userId: string;
+};
+
+type GatewayAuthCandidateProfileResponse = {
+  address: string | null;
+  avatarUrl: string | null;
+  bio: string | null;
+  createdAt: string;
+  fullName: string;
+  githubUrl: string | null;
+  headline: string | null;
+  id: string;
+  linkedinUrl: string | null;
+  phone: string | null;
+  portfolioUrl: string | null;
+  resumeId: string | null;
+  updatedAt: string;
+  userId: string;
+  yearsExperience: number | null;
+};
+
+type GatewayAuthCompanyProfileResponse = {
+  address: string | null;
+  companyName: string;
+  companySize: string | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  createdAt: string;
+  description: string | null;
+  foundedYear: number | null;
+  id: string;
+  industry: string | null;
+  logoUrl: string | null;
+  taxCode: string | null;
+  updatedAt: string;
+  userId: string;
+  website: string | null;
 };
 
 type GatewayPasswordResetRequestResponse = {
@@ -234,6 +285,7 @@ export class GatewayAuthService {
 
     return {
       accessToken: response.access_token,
+      rememberMe: input.rememberMe === true,
       refreshToken: response.refresh_token,
       user: {
         email: response.email,
@@ -258,6 +310,7 @@ export class GatewayAuthService {
 
     return {
       accessToken: response.access_token,
+      rememberMe: response.remember_me,
       refreshToken: response.refresh_token,
       user: {
         email: response.email,
@@ -323,12 +376,12 @@ export class GatewayAuthService {
     };
   }
 
-  async getCurrentIdentity(
+  async getCurrentUser(
     input: {
       identityId: string;
       requestId?: string;
     }
-  ): Promise<GatewayCurrentIdentityResponse> {
+  ): Promise<GatewayCurrentUserResponse> {
     const response = await this.iamGrpcClient.getCurrentIdentity(
       {
         identity_id: input.identityId
@@ -336,11 +389,23 @@ export class GatewayAuthService {
       input.requestId
     );
 
+    const [profile, companyProfile] = await Promise.all([
+      response.role === 'candidate'
+        ? this.safeLoadCandidateProfile(response.identity_id, input.requestId)
+        : Promise.resolve(null),
+      response.role === 'employer'
+        ? this.safeLoadEmployerProfile(response.identity_id, input.requestId)
+        : Promise.resolve(null)
+    ]);
+
     return {
-      email: response.email,
-      id: response.identity_id,
-      role: response.role,
-      status: response.status
+      companyProfile,
+      profile,
+      user: {
+        email: response.email,
+        role: response.role,
+        userId: response.identity_id
+      }
     };
   }
 
@@ -460,6 +525,94 @@ export class GatewayAuthService {
     } catch {
       return null;
     }
+  }
+
+  private async safeLoadCandidateProfile(
+    identityId: string,
+    requestId?: string
+  ): Promise<GatewayAuthCandidateProfileResponse | null> {
+    try {
+      const response = await this.candidateGrpcClient.getCandidateProfileByIdentityId(
+        {
+          identity_id: identityId
+        },
+        requestId
+      );
+
+      return this.toAuthCandidateProfile(
+        toGatewayCandidateProfile(response.profile),
+        identityId
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  private async safeLoadEmployerProfile(
+    identityId: string,
+    requestId?: string
+  ): Promise<GatewayAuthCompanyProfileResponse | null> {
+    try {
+      const response = await this.employerGrpcClient.getEmployerProfileByIdentityId(
+        {
+          identity_id: identityId
+        },
+        requestId
+      );
+
+      return this.toAuthCompanyProfile(
+        toGatewayEmployerProfile(response.profile),
+        identityId
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  private toAuthCandidateProfile(
+    profile: GatewayCandidateProfile,
+    identityId: string
+  ): GatewayAuthCandidateProfileResponse {
+    return {
+      address: profile.address,
+      avatarUrl: profile.avatarUrl,
+      bio: profile.bio,
+      createdAt: profile.createdAt,
+      fullName: profile.fullName,
+      githubUrl: profile.githubUrl,
+      headline: profile.headline,
+      id: profile.id,
+      linkedinUrl: profile.linkedinUrl,
+      phone: profile.phone,
+      portfolioUrl: profile.portfolioUrl,
+      resumeId: profile.resumeId,
+      updatedAt: profile.updatedAt,
+      userId: identityId,
+      yearsExperience: profile.yearsExperience
+    };
+  }
+
+  private toAuthCompanyProfile(
+    profile: GatewayEmployerProfile,
+    identityId: string
+  ): GatewayAuthCompanyProfileResponse {
+    return {
+      address: profile.address,
+      companyName: profile.companyName,
+      companySize: profile.companySize,
+      contactName: profile.contactName,
+      contactPhone: profile.contactPhone,
+      createdAt: profile.createdAt,
+      description: profile.description,
+      foundedYear: profile.foundedYear,
+      id: profile.id,
+      industry: profile.industry,
+      logoUrl: profile.logoUrl,
+      taxCode: profile.taxCode,
+      updatedAt: profile.updatedAt,
+      userId: identityId,
+      website: profile.website
+    };
   }
 
   private async cancelPendingIdentityWithLogging(

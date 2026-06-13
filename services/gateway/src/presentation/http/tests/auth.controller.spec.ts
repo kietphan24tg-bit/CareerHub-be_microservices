@@ -34,6 +34,7 @@ const gatewayRuntimeConfig = {
   authRefreshCookieDomain: undefined,
   authRefreshCookieName: 'refresh_token',
   authRefreshCookieSecure: false,
+  grpcApplicationUrl: '127.0.0.1:50055',
   grpcCandidateUrl: '127.0.0.1:50052',
   grpcEmployerUrl: '127.0.0.1:50053',
   grpcIamUrl: '127.0.0.1:50051',

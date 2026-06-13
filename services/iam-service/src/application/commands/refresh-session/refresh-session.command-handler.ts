@@ -52,6 +52,7 @@ export class RefreshSessionCommandHandler {
       }),
       email: identity.email.value,
       identityId: identity.id.toString(),
+      rememberMe: session.rememberMe,
       refreshToken: nextRefreshToken,
       role: identity.role.value
     };

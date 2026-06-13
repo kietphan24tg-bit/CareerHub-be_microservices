@@ -36,6 +36,7 @@ pnpm --filter @careerhub/iam-service start
 pnpm --filter @careerhub/candidate-service start
 pnpm --filter @careerhub/employer-service start
 pnpm --filter @careerhub/job-service start
+pnpm --filter @careerhub/application-service start
 pnpm --filter @careerhub/gateway start
 ```
 
@@ -131,6 +132,7 @@ pnpm --filter @careerhub/iam-service start
 pnpm --filter @careerhub/candidate-service start
 pnpm --filter @careerhub/employer-service start
 pnpm --filter @careerhub/job-service start
+pnpm --filter @careerhub/application-service start
 pnpm --filter @careerhub/gateway start
 ```
 
@@ -173,6 +175,8 @@ Mục tiêu:
 - iam: `http://127.0.0.1:3001/metrics`
 - candidate: `http://127.0.0.1:3002/metrics`
 - employer: `http://127.0.0.1:3003/metrics`
+- job: `http://127.0.0.1:3004/metrics`
+- application: `http://127.0.0.1:3005/metrics`
 
 Sau đó kiểm tra trên Grafana:
 

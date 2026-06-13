@@ -227,3 +227,16 @@ export type JobExistsRequest = {
 export type JobExistsResponse = {
   exists: boolean;
 };
+
+export type GetJobForApplicationRequest = {
+  job_id: string;
+  request_id?: string;
+};
+
+export type GetJobForApplicationResponse = {
+  employer_identity_id: string;
+  expires_at: string;
+  job_id: string;
+  null_fields: string[];
+  status: string;
+};

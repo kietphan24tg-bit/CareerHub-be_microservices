@@ -13,6 +13,8 @@ import type {
   CreateJobResponse,
   GetEmployerJobByIdRequest,
   GetEmployerJobByIdResponse,
+  GetJobForApplicationRequest,
+  GetJobForApplicationResponse,
   GetPublicJobBySlugRequest,
   GetPublicJobBySlugResponse,
   JobExistsRequest,
@@ -73,6 +75,14 @@ type JobGrpcServiceClient = {
     callback: (
       error: ServiceError | null,
       response: GetPublicJobBySlugResponse
+    ) => void
+  ): ClientUnaryCall;
+  GetJobForApplication(
+    request: GetJobForApplicationRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: GetJobForApplicationResponse
     ) => void
   ): ClientUnaryCall;
   JobExists(
@@ -303,6 +313,29 @@ export class JobGrpcClient {
       'GetEmployerJobById',
       (client, payload, metadata, callback) =>
         client.GetEmployerJobById(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async getJobForApplication(
+    request: GetJobForApplicationRequest,
+    requestId?: string
+  ): Promise<GetJobForApplicationResponse> {
+    const grpcRequest = {
+      ...request,
+      jobId: request.job_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? request.request_id ?? ''
+    } as GetJobForApplicationRequest & {
+      jobId: string;
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      'GetJobForApplication',
+      (client, payload, metadata, callback) =>
+        client.GetJobForApplication(payload, metadata, callback),
       grpcRequest,
       requestId
     );

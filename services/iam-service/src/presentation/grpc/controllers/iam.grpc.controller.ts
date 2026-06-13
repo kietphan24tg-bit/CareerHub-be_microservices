@@ -161,6 +161,7 @@ export class IamGrpcController {
         access_token: result.accessToken,
         email: result.email,
         identity_id: result.identityId,
+        remember_me: result.rememberMe,
         refresh_token: result.refreshToken,
         role: result.role
       } as unknown as RefreshSessionResponse;

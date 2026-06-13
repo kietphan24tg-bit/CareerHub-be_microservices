@@ -56,7 +56,9 @@ export type RefreshSessionRequest = {
   request_id?: string;
 };
 
-export type RefreshSessionResponse = LoginIdentityResponse;
+export type RefreshSessionResponse = LoginIdentityResponse & {
+  remember_me: boolean;
+};
 
 export type LogoutSessionRequest = {
   refresh_token: string;

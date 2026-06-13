@@ -13,9 +13,13 @@ type HttpExceptionCtor = new (objectOrError?: string | object, descriptionOrOpti
 
 const HTTP_EXCEPTION_BY_RPC_CODE: Record<string, HttpExceptionCtor> = {
     ALREADY_EXISTS: ConflictException,
+    APPLICATION_NOT_FOUND: NotFoundException,
     BAD_REQUEST: BadRequestException,
     CONFLICT: ConflictException,
+    DUPLICATE_APPLICATION: ConflictException,
     FORBIDDEN: ForbiddenException,
+    FORBIDDEN_APPLICATION_ACCESS: ForbiddenException,
+    INVALID_APPLICATION_STATUS_TRANSITION: BadRequestException,
     INVALID_ARGUMENT: BadRequestException,
     INVALID_CONFIGURATION: InternalServerErrorException,
     INTERNAL: InternalServerErrorException,

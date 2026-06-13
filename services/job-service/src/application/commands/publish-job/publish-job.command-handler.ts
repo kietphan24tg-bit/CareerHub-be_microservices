@@ -1,26 +1,53 @@
-import { ValidationError } from '@careerhub/shared-kernel';
+import { UniqueEntityID, ValidationError } from '@careerhub/shared-kernel';
+import { InvalidJobStatusTransitionError, Job, JobStatus } from '../../../domain';
+import { JobNotFoundError } from '../../errors/job-not-found.error';
 import type { JobRecord, JobRepository } from '../../ports';
-import { transitionJobStatus } from '../../utils/transition-job-status';
 import type { PublishJobCommand } from './publish-job.command';
 
 export class PublishJobCommandHandler {
   constructor(private readonly jobRepository: JobRepository) {}
 
   async execute(command: PublishJobCommand): Promise<JobRecord> {
-    if (!command.employerIdentityId.trim()) {
+    const employerIdentityId = command.employerIdentityId.trim();
+    const jobId = command.jobId.trim();
+
+    if (!employerIdentityId) {
       throw new ValidationError('Employer identity id is required');
     }
 
-    if (!command.jobId.trim()) {
+    if (!jobId) {
       throw new ValidationError('Job id is required');
     }
 
-    return transitionJobStatus(
-      this.jobRepository,
-      command.jobId.trim(),
-      command.employerIdentityId.trim(),
-      'published',
-      ['draft', 'closed']
+    const record = await this.jobRepository.findByIdAndEmployer(
+      jobId,
+      employerIdentityId
     );
+
+    if (!record) {
+      throw new JobNotFoundError(jobId);
+    }
+
+    const fromStatus = new JobStatus(record.status);
+    const job = Job.reconstitute({
+      id: new UniqueEntityID(record.id),
+      props: { employerIdentityId, status: fromStatus }
+    });
+
+    job.publish();
+
+    const updated = await this.jobRepository.saveStatus(
+      jobId,
+      employerIdentityId,
+      fromStatus.value,
+      job.status.value
+    );
+
+    if (!updated) {
+      // Bị chuyển trạng thái đồng thời sau khi đọc → transition không còn hợp lệ.
+      throw new InvalidJobStatusTransitionError(fromStatus.value, job.status.value);
+    }
+
+    return updated;
   }
 }

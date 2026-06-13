@@ -8,6 +8,7 @@ export type GatewayEnvironmentVariables = BaseEnvironmentVariables & {
   AUTH_REFRESH_COOKIE_DOMAIN?: string;
   AUTH_REFRESH_COOKIE_NAME: string;
   AUTH_REFRESH_COOKIE_SECURE: boolean;
+  GRPC_APPLICATION_URL: string;
   GRPC_CANDIDATE_URL: string;
   GRPC_EMPLOYER_URL: string;
   GRPC_IAM_URL: string;
@@ -31,6 +32,11 @@ export function validateGatewayEnvironment(
     config.GRPC_CANDIDATE_URL.trim().length > 0
       ? config.GRPC_CANDIDATE_URL.trim()
       : '127.0.0.1:50052';
+  const grpcApplicationUrl =
+    typeof config.GRPC_APPLICATION_URL === 'string' &&
+    config.GRPC_APPLICATION_URL.trim().length > 0
+      ? config.GRPC_APPLICATION_URL.trim()
+      : '127.0.0.1:50055';
   const grpcEmployerUrl =
     typeof config.GRPC_EMPLOYER_URL === 'string' &&
     config.GRPC_EMPLOYER_URL.trim().length > 0
@@ -67,6 +73,7 @@ export function validateGatewayEnvironment(
               config.AUTH_REFRESH_COOKIE_SECURE.trim().toLowerCase()
             )
           : false,
+    GRPC_APPLICATION_URL: grpcApplicationUrl,
     GRPC_CANDIDATE_URL: grpcCandidateUrl,
     GRPC_EMPLOYER_URL: grpcEmployerUrl,
     GRPC_IAM_URL: grpcIamUrl,

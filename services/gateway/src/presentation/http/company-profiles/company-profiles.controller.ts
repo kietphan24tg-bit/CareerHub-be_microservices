@@ -5,14 +5,14 @@ import { Roles } from '../../../auth/decorators/roles.decorator';
 import type { GatewayAuthenticatedUser } from '../../../auth/types/gateway-auth.types';
 import { UpdateCompanyProfileRequestDto } from './dto/update-company-profile.request.dto';
 
-@Controller('company-profiles')
+@Controller(['employer/company-profile', 'company-profiles'])
 @Roles('employer')
 export class CompanyProfilesController {
   constructor(
     private readonly gatewayProfileService: GatewayProfileService
   ) {}
 
-  @Get('me')
+  @Get(['', 'me'])
   async getProfile(
     @CurrentUser() user: GatewayAuthenticatedUser,
     @Headers('x-request-id') requestId?: string
@@ -28,7 +28,7 @@ export class CompanyProfilesController {
     };
   }
 
-  @Patch('me')
+  @Patch(['', 'me'])
   async updateProfile(
     @CurrentUser() user: GatewayAuthenticatedUser,
     @Body() dto: UpdateCompanyProfileRequestDto,

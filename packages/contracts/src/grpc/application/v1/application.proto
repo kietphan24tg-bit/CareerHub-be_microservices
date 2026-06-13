@@ -1,0 +1,695 @@
+syntax = "proto3";
+
+package careerhub.application.v1;
+
+service ApplicationService {
+  rpc ApplyToJob (ApplyToJobRequest) returns (ApplyToJobResponse);
+  rpc WithdrawApplication (WithdrawApplicationRequest) returns (WithdrawApplicationResponse);
+  rpc UpdateApplicationStatus (UpdateApplicationStatusRequest) returns (UpdateApplicationStatusResponse);
+  rpc ListCandidateApplications (ListCandidateApplicationsRequest) returns (ListCandidateApplicationsResponse);
+  rpc GetCandidateApplicationById (GetCandidateApplicationByIdRequest) returns (GetCandidateApplicationByIdResponse);
+  rpc ListJobApplications (ListJobApplicationsRequest) returns (ListJobApplicationsResponse);
+  rpc GetEmployerApplicationById (GetEmployerApplicationByIdRequest) returns (GetEmployerApplicationByIdResponse);
+  rpc GetApplicationHistory (GetApplicationHistoryRequest) returns (GetApplicationHistoryResponse);
+  rpc GetApplicationCountsByJobIds (GetApplicationCountsByJobIdsRequest) returns (GetApplicationCountsByJobIdsResponse);
+  rpc ListEmployerInterviews (ListEmployerInterviewsRequest) returns (ListEmployerInterviewsResponse);
+  rpc CreateInterview (CreateInterviewRequest) returns (CreateInterviewResponse);
+  rpc UpdateInterview (UpdateInterviewRequest) returns (UpdateInterviewResponse);
+  rpc CancelInterview (CancelInterviewRequest) returns (CancelInterviewResponse);
+  rpc GetCandidateInterview (GetCandidateInterviewRequest) returns (GetCandidateInterviewResponse);
+  rpc ConfirmInterview (ConfirmInterviewRequest) returns (ConfirmInterviewResponse);
+  rpc DeclineInterview (DeclineInterviewRequest) returns (DeclineInterviewResponse);
+  rpc RequestInterviewReschedule (RequestInterviewRescheduleRequest) returns (RequestInterviewRescheduleResponse);
+  rpc ListBenefitCatalog (ListBenefitCatalogRequest) returns (ListBenefitCatalogResponse);
+  rpc CreateOffer (CreateOfferRequest) returns (CreateOfferResponse);
+  rpc SendOffer (SendOfferRequest) returns (SendOfferResponse);
+  rpc UpdateOffer (UpdateOfferRequest) returns (UpdateOfferResponse);
+  rpc SoftDeleteOffer (SoftDeleteOfferRequest) returns (SoftDeleteOfferResponse);
+  rpc ListEmployerOffersForApplication (ListEmployerOffersForApplicationRequest) returns (ListEmployerOffersForApplicationResponse);
+  rpc GetEmployerOffer (GetEmployerOfferRequest) returns (GetEmployerOfferResponse);
+  rpc ListCandidateOffersForApplication (ListCandidateOffersForApplicationRequest) returns (ListCandidateOffersForApplicationResponse);
+  rpc GetCandidateOffer (GetCandidateOfferRequest) returns (GetCandidateOfferResponse);
+  rpc AcceptOffer (AcceptOfferRequest) returns (AcceptOfferResponse);
+  rpc DeclineOffer (DeclineOfferRequest) returns (DeclineOfferResponse);
+}
+
+message PageMeta {
+  int32 page = 1;
+  int32 page_size = 2;
+  int32 total = 3;
+}
+
+message CandidateApplicationsSummaryMessage {
+  int32 all = 1;
+  int32 applied = 2;
+  int32 reviewed = 3;
+  int32 interview = 4;
+  int32 offer = 5;
+  int32 rejected = 6;
+  int32 withdrawn = 7;
+}
+
+message InterviewMessage {
+  string id = 1;
+  string application_id = 2;
+  string type = 3;
+  string round = 4;
+  string status = 5;
+  string date = 6;
+  string start_time = 7;
+  string end_time = 8;
+  string timezone = 9;
+  string notes_to_candidate = 10;
+  string platform = 11;
+  string meeting_link = 12;
+  string meeting_id = 13;
+  string passcode = 14;
+  string office_name = 15;
+  string full_address = 16;
+  string location_detail = 17;
+  string map_link = 18;
+  string caller_info = 19;
+  string contact_info = 20;
+  string phone_number = 21;
+  string candidate_response_note = 22;
+  string created_at = 23;
+  string updated_at = 24;
+  repeated string null_fields = 25;
+  int32 duration_minutes = 26;
+  string logistics_note = 27;
+  string location_lat = 28;
+  string location_lng = 29;
+  repeated InterviewerMessage interviewers = 30;
+  string candidate_proposed_date = 31;
+  string candidate_proposed_start_time = 32;
+  int32 candidate_proposed_duration_minutes = 33;
+  string candidate_proposed_timezone = 34;
+  string job_id = 35;
+  string candidate_identity_id = 36;
+  string employer_identity_id = 37;
+  string scheduled_by_identity_id = 38;
+}
+
+message OfferMessage {
+  string id = 1;
+  string application_id = 2;
+  string title = 3;
+  string seniority_label = 4;
+  string message = 5;
+  string bonus_details = 6;
+  string contract_document_url = 7;
+  string salary = 8;
+  string currency = 9;
+  string employment_type = 10;
+  string work_model = 11;
+  string start_date = 12;
+  string location = 13;
+  string status = 14;
+  string expires_at = 15;
+  string sent_at = 16;
+  string viewed_at = 17;
+  string responded_at = 18;
+  string created_at = 19;
+  string updated_at = 20;
+  repeated string null_fields = 21;
+  string department_team = 22;
+  string reporting_to = 23;
+  string probation_type = 24;
+  string probation_custom = 25;
+  string salary_period = 26;
+  string job_id = 27;
+  string candidate_identity_id = 28;
+  string employer_identity_id = 29;
+  string created_by_identity_id = 30;
+  string deleted_at = 31;
+  repeated OfferBenefitMessage benefits = 32;
+}
+
+message ApplicationMessage {
+  string id = 1;
+  string job_id = 2;
+  string candidate_identity_id = 3;
+  string employer_identity_id = 4;
+  string resume_id = 5;
+  string cover_letter = 6;
+  string status = 7;
+  string created_at = 8;
+  string updated_at = 9;
+  repeated string null_fields = 10;
+  InterviewMessage interview = 11;
+  OfferMessage offer = 12;
+}
+
+message ApplicationHistoryMessage {
+  string id = 1;
+  string application_id = 2;
+  string event_type = 3;
+  string from_status = 4;
+  string to_status = 5;
+  string actor_identity_id = 6;
+  string actor_type = 7;
+  string created_at = 8;
+  repeated string null_fields = 9;
+  string note = 10;
+}
+
+message ApplicationCountByJobMessage {
+  string job_id = 1;
+  int32 count = 2;
+}
+
+message ApplyToJobRequest {
+  string job_id = 1;
+  string candidate_identity_id = 2;
+  string resume_id = 3;
+  string cover_letter = 4;
+  string employer_identity_id = 5;
+  string request_id = 6;
+}
+
+message ApplyToJobResponse {
+  ApplicationMessage application = 1;
+}
+
+message WithdrawApplicationRequest {
+  string application_id = 1;
+  string candidate_identity_id = 2;
+  string request_id = 3;
+}
+
+message WithdrawApplicationResponse {
+  ApplicationMessage application = 1;
+}
+
+message UpdateApplicationStatusRequest {
+  string application_id = 1;
+  string employer_identity_id = 2;
+  string status = 3;
+  string request_id = 4;
+  string note = 5;
+}
+
+message UpdateApplicationStatusResponse {
+  ApplicationMessage application = 1;
+}
+
+message ListCandidateApplicationsRequest {
+  string candidate_identity_id = 1;
+  string status = 2;
+  string sort = 3;
+  int32 page = 4;
+  int32 page_size = 5;
+  string request_id = 6;
+}
+
+message ListCandidateApplicationsResponse {
+  repeated ApplicationMessage items = 1;
+  PageMeta meta = 2;
+  CandidateApplicationsSummaryMessage summary = 3;
+}
+
+message GetCandidateApplicationByIdRequest {
+  string application_id = 1;
+  string candidate_identity_id = 2;
+  string request_id = 3;
+}
+
+message GetCandidateApplicationByIdResponse {
+  ApplicationMessage application = 1;
+}
+
+message ListJobApplicationsRequest {
+  string employer_identity_id = 1;
+  string job_id = 2;
+  string status = 3;
+  int32 page = 4;
+  int32 page_size = 5;
+  string request_id = 6;
+}
+
+message ListJobApplicationsResponse {
+  repeated ApplicationMessage items = 1;
+  PageMeta meta = 2;
+}
+
+message GetEmployerApplicationByIdRequest {
+  string application_id = 1;
+  string employer_identity_id = 2;
+  string request_id = 3;
+}
+
+message GetEmployerApplicationByIdResponse {
+  ApplicationMessage application = 1;
+}
+
+message GetApplicationHistoryRequest {
+  string application_id = 1;
+  string request_id = 2;
+}
+
+message GetApplicationHistoryResponse {
+  repeated ApplicationHistoryMessage items = 1;
+}
+
+message GetApplicationCountsByJobIdsRequest {
+  repeated string job_ids = 1;
+  string request_id = 2;
+}
+
+message GetApplicationCountsByJobIdsResponse {
+  repeated ApplicationCountByJobMessage items = 1;
+}
+
+message InterviewerMessage {
+  string name = 1;
+  string role = 2;
+}
+
+message InterviewDetailMessage {
+  string id = 1;
+  string application_id = 2;
+  string job_id = 3;
+  string candidate_identity_id = 4;
+  string employer_identity_id = 5;
+  string scheduled_by_identity_id = 6;
+  string type = 7;
+  string round = 8;
+  string status = 9;
+  string date = 10;
+  string start_time = 11;
+  string end_time = 12;
+  int32 duration_minutes = 13;
+  string timezone = 14;
+  string notes_to_candidate = 15;
+  string logistics_note = 16;
+  string platform = 17;
+  string meeting_link = 18;
+  string meeting_id = 19;
+  string passcode = 20;
+  string office_name = 21;
+  string full_address = 22;
+  string location_detail = 23;
+  string location_lat = 24;
+  string location_lng = 25;
+  string map_link = 26;
+  string caller_info = 27;
+  string contact_info = 28;
+  string phone_number = 29;
+  string candidate_response_note = 30;
+  string candidate_proposed_date = 31;
+  string candidate_proposed_start_time = 32;
+  int32 candidate_proposed_duration_minutes = 33;
+  string candidate_proposed_timezone = 34;
+  repeated InterviewerMessage interviewers = 35;
+  string created_at = 36;
+  string updated_at = 37;
+  repeated string null_fields = 38;
+}
+
+message OfferBenefitMessage {
+  string id = 1;
+  string offer_id = 2;
+  string catalog_id = 3;
+  string type = 4;
+  string name = 5;
+  string description = 6;
+  bool has_monetary_value = 7;
+  string amount = 8;
+  string currency = 9;
+  string frequency = 10;
+  int32 annual_leave_days = 11;
+  string created_at = 12;
+  string updated_at = 13;
+  repeated string null_fields = 14;
+}
+
+message BenefitCatalogMessage {
+  string id = 1;
+  string code = 2;
+  string label = 3;
+  string description = 4;
+  bool has_monetary_value_default = 5;
+  bool requires_amount = 6;
+  bool requires_frequency = 7;
+  bool requires_annual_leave_days = 8;
+  bool is_selectable = 9;
+  int32 sort_order = 10;
+  repeated string null_fields = 11;
+}
+
+message OfferDetailMessage {
+  string id = 1;
+  string application_id = 2;
+  string job_id = 3;
+  string candidate_identity_id = 4;
+  string employer_identity_id = 5;
+  string created_by_identity_id = 6;
+  string title = 7;
+  string seniority_label = 8;
+  string department_team = 9;
+  string reporting_to = 10;
+  string message = 11;
+  string bonus_details = 12;
+  string contract_document_url = 13;
+  string salary = 14;
+  string salary_period = 15;
+  string currency = 16;
+  string employment_type = 17;
+  string work_model = 18;
+  string start_date = 19;
+  string location = 20;
+  string probation_type = 21;
+  string probation_custom = 22;
+  string status = 23;
+  string expires_at = 24;
+  string sent_at = 25;
+  string viewed_at = 26;
+  string responded_at = 27;
+  string deleted_at = 28;
+  string created_at = 29;
+  string updated_at = 30;
+  repeated OfferBenefitMessage benefits = 31;
+  repeated string null_fields = 32;
+}
+
+message CreateInterviewInputMessage {
+  string type = 1;
+  string round = 2;
+  string date = 3;
+  string start_time = 4;
+  int32 duration_minutes = 5;
+  string timezone = 6;
+  string notes_to_candidate = 7;
+  string logistics_note = 8;
+  repeated InterviewerMessage interviewers = 9;
+  string platform = 10;
+  string meeting_link = 11;
+  string meeting_id = 12;
+  string passcode = 13;
+  string office_name = 14;
+  string full_address = 15;
+  string location_detail = 16;
+  string location_lat = 17;
+  string location_lng = 18;
+  string map_link = 19;
+  string caller_info = 20;
+  string contact_info = 21;
+  string phone_number = 22;
+}
+
+message UpdateInterviewInputMessage {
+  string type = 1;
+  string round = 2;
+  string date = 3;
+  string start_time = 4;
+  int32 duration_minutes = 5;
+  string timezone = 6;
+  string notes_to_candidate = 7;
+  string logistics_note = 8;
+  repeated InterviewerMessage interviewers = 9;
+  string platform = 10;
+  string meeting_link = 11;
+  string meeting_id = 12;
+  string passcode = 13;
+  string office_name = 14;
+  string full_address = 15;
+  string location_detail = 16;
+  string location_lat = 17;
+  string location_lng = 18;
+  string map_link = 19;
+  string caller_info = 20;
+  string contact_info = 21;
+  string phone_number = 22;
+}
+
+message CancelInterviewInputMessage {
+  string reason = 1;
+}
+
+message CandidateInterviewResponseInputMessage {
+  string candidate_response_note = 1;
+}
+
+message CandidateRescheduleRequestInputMessage {
+  string candidate_response_note = 1;
+  string proposed_date = 2;
+  string proposed_start_time = 3;
+  int32 proposed_duration_minutes = 4;
+  string proposed_timezone = 5;
+}
+
+message OfferBenefitInputMessage {
+  string catalog_id = 1;
+  string type = 2;
+  string name = 3;
+  string description = 4;
+  bool has_monetary_value = 5;
+  string amount = 6;
+  string currency = 7;
+  string frequency = 8;
+  int32 annual_leave_days = 9;
+}
+
+message CreateOfferInputMessage {
+  string title = 1;
+  string seniority_label = 2;
+  string department_team = 3;
+  string reporting_to = 4;
+  string message = 5;
+  string bonus_details = 6;
+  string contract_document_url = 7;
+  string salary = 8;
+  string salary_period = 9;
+  string currency = 10;
+  string employment_type = 11;
+  string work_model = 12;
+  string start_date = 13;
+  string location = 14;
+  string offer_expires_at = 15;
+  string probation_type = 16;
+  string probation_custom = 17;
+  repeated OfferBenefitInputMessage benefits = 18;
+}
+
+message UpdateOfferInputMessage {
+  string title = 1;
+  string seniority_label = 2;
+  string department_team = 3;
+  string reporting_to = 4;
+  string message = 5;
+  string bonus_details = 6;
+  string contract_document_url = 7;
+  string salary = 8;
+  string salary_period = 9;
+  string currency = 10;
+  string employment_type = 11;
+  string work_model = 12;
+  string start_date = 13;
+  string location = 14;
+  string offer_expires_at = 15;
+  string probation_type = 16;
+  string probation_custom = 17;
+  repeated OfferBenefitInputMessage benefits = 18;
+}
+
+message CandidateOfferDecisionInputMessage {
+  string note = 1;
+}
+
+message ListEmployerInterviewsRequest {
+  string employer_identity_id = 1;
+  string request_id = 2;
+}
+
+message ListEmployerInterviewsResponse {
+  repeated InterviewDetailMessage items = 1;
+}
+
+message CreateInterviewRequest {
+  string employer_identity_id = 1;
+  string application_id = 2;
+  CreateInterviewInputMessage input = 3;
+  string request_id = 4;
+}
+
+message CreateInterviewResponse {
+  InterviewDetailMessage interview = 1;
+}
+
+message UpdateInterviewRequest {
+  string employer_identity_id = 1;
+  string interview_id = 2;
+  UpdateInterviewInputMessage input = 3;
+  string request_id = 4;
+}
+
+message UpdateInterviewResponse {
+  InterviewDetailMessage interview = 1;
+}
+
+message CancelInterviewRequest {
+  string employer_identity_id = 1;
+  string interview_id = 2;
+  CancelInterviewInputMessage input = 3;
+  string request_id = 4;
+}
+
+message CancelInterviewResponse {
+  InterviewDetailMessage interview = 1;
+}
+
+message GetCandidateInterviewRequest {
+  string candidate_identity_id = 1;
+  string application_id = 2;
+  string request_id = 3;
+}
+
+message GetCandidateInterviewResponse {
+  InterviewDetailMessage interview = 1;
+}
+
+message ConfirmInterviewRequest {
+  string candidate_identity_id = 1;
+  string interview_id = 2;
+  CandidateInterviewResponseInputMessage input = 3;
+  string request_id = 4;
+}
+
+message ConfirmInterviewResponse {
+  InterviewDetailMessage interview = 1;
+}
+
+message DeclineInterviewRequest {
+  string candidate_identity_id = 1;
+  string interview_id = 2;
+  CandidateInterviewResponseInputMessage input = 3;
+  string request_id = 4;
+}
+
+message DeclineInterviewResponse {
+  InterviewDetailMessage interview = 1;
+}
+
+message RequestInterviewRescheduleRequest {
+  string candidate_identity_id = 1;
+  string interview_id = 2;
+  CandidateRescheduleRequestInputMessage input = 3;
+  string request_id = 4;
+}
+
+message RequestInterviewRescheduleResponse {
+  InterviewDetailMessage interview = 1;
+}
+
+message ListBenefitCatalogRequest {
+  string request_id = 1;
+}
+
+message ListBenefitCatalogResponse {
+  repeated BenefitCatalogMessage items = 1;
+}
+
+message CreateOfferRequest {
+  string employer_identity_id = 1;
+  string application_id = 2;
+  CreateOfferInputMessage input = 3;
+  string request_id = 4;
+}
+
+message CreateOfferResponse {
+  OfferDetailMessage offer = 1;
+}
+
+message SendOfferRequest {
+  string employer_identity_id = 1;
+  string offer_id = 2;
+  string request_id = 3;
+}
+
+message SendOfferResponse {
+  OfferDetailMessage offer = 1;
+}
+
+message UpdateOfferRequest {
+  string employer_identity_id = 1;
+  string offer_id = 2;
+  UpdateOfferInputMessage input = 3;
+  string request_id = 4;
+}
+
+message UpdateOfferResponse {
+  OfferDetailMessage offer = 1;
+}
+
+message SoftDeleteOfferRequest {
+  string employer_identity_id = 1;
+  string offer_id = 2;
+  string request_id = 3;
+}
+
+message SoftDeleteOfferResponse {
+  bool deleted = 1;
+  string id = 2;
+}
+
+message ListEmployerOffersForApplicationRequest {
+  string employer_identity_id = 1;
+  string application_id = 2;
+  string request_id = 3;
+}
+
+message ListEmployerOffersForApplicationResponse {
+  repeated OfferDetailMessage items = 1;
+}
+
+message GetEmployerOfferRequest {
+  string employer_identity_id = 1;
+  string offer_id = 2;
+  string request_id = 3;
+}
+
+message GetEmployerOfferResponse {
+  OfferDetailMessage offer = 1;
+}
+
+message ListCandidateOffersForApplicationRequest {
+  string candidate_identity_id = 1;
+  string application_id = 2;
+  string request_id = 3;
+}
+
+message ListCandidateOffersForApplicationResponse {
+  repeated OfferDetailMessage items = 1;
+}
+
+message GetCandidateOfferRequest {
+  string candidate_identity_id = 1;
+  string offer_id = 2;
+  string request_id = 3;
+}
+
+message GetCandidateOfferResponse {
+  OfferDetailMessage offer = 1;
+}
+
+message AcceptOfferRequest {
+  string candidate_identity_id = 1;
+  string offer_id = 2;
+  CandidateOfferDecisionInputMessage input = 3;
+  string request_id = 4;
+}
+
+message AcceptOfferResponse {
+  OfferDetailMessage offer = 1;
+}
+
+message DeclineOfferRequest {
+  string candidate_identity_id = 1;
+  string offer_id = 2;
+  CandidateOfferDecisionInputMessage input = 3;
+  string request_id = 4;
+}
+
+message DeclineOfferResponse {
+  OfferDetailMessage offer = 1;
+}

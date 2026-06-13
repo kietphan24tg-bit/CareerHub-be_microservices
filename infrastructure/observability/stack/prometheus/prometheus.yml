@@ -74,3 +74,12 @@ scrape_configs:
         labels:
           service: careerhub-job-service
           group: application
+
+  - job_name: careerhub-application-service
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - host.docker.internal:3005
+        labels:
+          service: careerhub-application-service
+          group: application

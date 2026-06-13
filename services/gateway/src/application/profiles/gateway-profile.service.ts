@@ -6,7 +6,7 @@ import type {
 import { CandidateGrpcClient } from '../../infrastructure/transport/grpc/candidate-grpc.client';
 import { EmployerGrpcClient } from '../../infrastructure/transport/grpc/employer-grpc.client';
 
-type GatewayCandidateProfile = {
+export type GatewayCandidateProfile = {
   address: string | null;
   avatarUrl: string | null;
   bio: string | null;
@@ -24,7 +24,7 @@ type GatewayCandidateProfile = {
   yearsExperience: number | null;
 };
 
-type GatewayEmployerProfile = {
+export type GatewayEmployerProfile = {
   address: string | null;
   companyName: string;
   companySize: string | null;
@@ -94,7 +94,9 @@ function mapNullableNumber(
   return hasNullField(nullFields, fieldName) ? null : value;
 }
 
-function toGatewayCandidateProfile(profile: CandidateProfile): GatewayCandidateProfile {
+export function toGatewayCandidateProfile(
+  profile: CandidateProfile
+): GatewayCandidateProfile {
   const nullFields = new Set(profile.null_fields ?? []);
 
   return {
@@ -128,7 +130,9 @@ function toGatewayCandidateProfile(profile: CandidateProfile): GatewayCandidateP
   };
 }
 
-function toGatewayEmployerProfile(profile: EmployerProfile): GatewayEmployerProfile {
+export function toGatewayEmployerProfile(
+  profile: EmployerProfile
+): GatewayEmployerProfile {
   const nullFields = new Set(profile.null_fields ?? []);
 
   return {

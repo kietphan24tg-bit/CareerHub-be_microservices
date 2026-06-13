@@ -1,4 +1,6 @@
+import type { JobMessage } from '@careerhub/contracts';
 import { Injectable } from '@nestjs/common';
+import { ApplicationGrpcClient } from '../../infrastructure/transport/grpc/application-grpc.client';
 import { EmployerGrpcClient } from '../../infrastructure/transport/grpc/employer-grpc.client';
 import { JobGrpcClient } from '../../infrastructure/transport/grpc/job-grpc.client';
 import {
@@ -19,7 +21,8 @@ type EmployerCompanyContext = {
 export class GatewayJobsService {
   constructor(
     private readonly jobGrpcClient: JobGrpcClient,
-    private readonly employerGrpcClient: EmployerGrpcClient
+    private readonly employerGrpcClient: EmployerGrpcClient,
+    private readonly applicationGrpcClient: ApplicationGrpcClient
   ) {}
 
   async listPublicJobs(input: {
@@ -84,9 +87,13 @@ export class GatewayJobsService {
       },
       input.requestId
     );
+    const enrichedItems = await this.enrichJobApplicationCounts(
+      response.items ?? [],
+      input.requestId
+    );
 
     return {
-      items: (response.items ?? []).map(toGatewayHttpJob),
+      items: enrichedItems.map(toGatewayHttpJob),
       meta: response.meta ? toGatewayHttpPageMeta(response.meta) : undefined
     };
   }
@@ -104,7 +111,8 @@ export class GatewayJobsService {
       input.requestId
     );
 
-    return toGatewayHttpJob(response.job);
+    const [job] = await this.enrichJobApplicationCounts([response.job], input.requestId);
+    return toGatewayHttpJob(job);
   }
 
   async createEmployerJob(input: {
@@ -159,43 +167,44 @@ export class GatewayJobsService {
 
   async updateEmployerJob(input: {
     benefits?: string[];
-    category?: string;
-    city?: string;
-    country?: string;
-    currency?: string;
-    description?: string;
-    employmentType?: string;
-    expiresAt?: string;
+    category?: string | null;
+    city?: string | null;
+    country?: string | null;
+    currency?: string | null;
+    description?: string | null;
+    employmentType?: string | null;
+    expiresAt?: string | null;
     identityId: string;
     isRemote?: boolean;
     jobId: string;
-    level?: string;
+    level?: string | null;
     requestId?: string;
     requirements?: string[];
     responsibilities?: string[];
-    salaryMax?: number;
-    salaryMin?: number;
+    salaryMax?: number | null;
+    salaryMin?: number | null;
     title?: string;
   }): Promise<GatewayHttpJob> {
-    const updatedFields = this.collectUpdatedFields(input);
+    const { clearFields, updatedFields } = this.collectFieldChanges(input);
     const response = await this.jobGrpcClient.updateJob(
       {
         benefits: input.benefits,
-        category: input.category,
-        city: input.city,
-        country: input.country,
-        currency: input.currency,
-        description: input.description,
+        category: input.category ?? undefined,
+        city: input.city ?? undefined,
+        clear_fields: clearFields,
+        country: input.country ?? undefined,
+        currency: input.currency ?? undefined,
+        description: input.description ?? undefined,
         employer_identity_id: input.identityId,
-        employment_type: input.employmentType,
-        expires_at: input.expiresAt,
+        employment_type: input.employmentType ?? undefined,
+        expires_at: input.expiresAt ?? undefined,
         is_remote: input.isRemote,
         job_id: input.jobId,
-        level: input.level,
+        level: input.level ?? undefined,
         requirements: input.requirements,
         responsibilities: input.responsibilities,
-        salary_max: input.salaryMax,
-        salary_min: input.salaryMin,
+        salary_max: input.salaryMax ?? undefined,
+        salary_min: input.salaryMin ?? undefined,
         title: input.title,
         updated_fields: updatedFields
       },
@@ -278,7 +287,7 @@ export class GatewayJobsService {
     };
   }
 
-  private collectUpdatedFields(input: Record<string, unknown>) {
+  private collectFieldChanges(input: Record<string, unknown>) {
     const fieldMap: Record<string, string> = {
       benefits: 'benefits',
       category: 'category',
@@ -297,8 +306,51 @@ export class GatewayJobsService {
       title: 'title'
     };
 
-    return Object.entries(fieldMap)
-      .filter(([inputKey]) => input[inputKey] !== undefined)
-      .map(([, grpcField]) => grpcField);
+    const updatedFields: string[] = [];
+    const clearFields: string[] = [];
+
+    for (const [inputKey, grpcField] of Object.entries(fieldMap)) {
+      const value = input[inputKey];
+
+      if (value === undefined) {
+        continue;
+      }
+
+      if (value === null) {
+        clearFields.push(grpcField);
+        continue;
+      }
+
+      updatedFields.push(grpcField);
+    }
+
+    return {
+      clearFields,
+      updatedFields
+    };
+  }
+
+  private async enrichJobApplicationCounts(
+    jobs: JobMessage[],
+    requestId?: string
+  ): Promise<JobMessage[]> {
+    if (jobs.length === 0) {
+      return jobs;
+    }
+
+    const response = await this.applicationGrpcClient.getApplicationCountsByJobIds(
+      {
+        job_ids: jobs.map((job) => job.id)
+      },
+      requestId
+    );
+    const countsByJobId = new Map(
+      (response.items ?? []).map((item) => [item.job_id, item.count])
+    );
+
+    return jobs.map((job) => ({
+      ...job,
+      application_count: countsByJobId.get(job.id) ?? 0
+    }));
   }
 }

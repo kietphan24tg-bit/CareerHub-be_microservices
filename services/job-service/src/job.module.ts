@@ -8,6 +8,7 @@ import {
   CloseJobCommandHandler,
   CreateJobCommandHandler,
   GetEmployerJobByIdQueryHandler,
+  GetJobForApplicationQueryHandler,
   GetPublicJobBySlugQueryHandler,
   JOB_PORT_TOKENS,
   JobExistsQueryHandler,
@@ -115,6 +116,12 @@ import { JobGrpcController } from './presentation';
       inject: [JOB_PORT_TOKENS.jobRepository],
       useFactory: (jobRepository: PrismaJobRepository) =>
         new GetEmployerJobByIdQueryHandler(jobRepository)
+    },
+    {
+      provide: GetJobForApplicationQueryHandler,
+      inject: [JOB_PORT_TOKENS.jobRepository],
+      useFactory: (jobRepository: PrismaJobRepository) =>
+        new GetJobForApplicationQueryHandler(jobRepository)
     },
     {
       provide: ListJobsByIdsQueryHandler,

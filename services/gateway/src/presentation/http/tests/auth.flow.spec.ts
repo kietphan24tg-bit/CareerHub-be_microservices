@@ -37,6 +37,7 @@ const gatewayRuntimeConfig = {
   authRefreshCookieDomain: undefined,
   authRefreshCookieName: 'refresh_token',
   authRefreshCookieSecure: false,
+  grpcApplicationUrl: '127.0.0.1:50055',
   grpcCandidateUrl: '127.0.0.1:50052',
   grpcEmployerUrl: '127.0.0.1:50053',
   grpcIamUrl: '127.0.0.1:50051',
@@ -45,12 +46,31 @@ const gatewayRuntimeConfig = {
 };
 
 const gatewayAuthService = {
-  async getCurrentIdentity(input: { identityId: string }) {
+  async getCurrentUser(input: { identityId: string }) {
     return {
-      email: 'candidate@example.com',
-      id: input.identityId,
-      role: 'candidate',
-      status: 'active'
+      companyProfile: null,
+      profile: {
+        address: null,
+        avatarUrl: null,
+        bio: null,
+        createdAt: '2026-06-01T00:00:00.000Z',
+        fullName: 'Candidate Flow',
+        githubUrl: null,
+        headline: null,
+        id: 'profile-1',
+        linkedinUrl: null,
+        phone: null,
+        portfolioUrl: null,
+        resumeId: null,
+        updatedAt: '2026-06-01T00:00:00.000Z',
+        userId: input.identityId,
+        yearsExperience: null
+      },
+      user: {
+        email: 'candidate@example.com',
+        role: 'candidate',
+        userId: input.identityId
+      }
     };
   },
   async login(input: { email: string }) {
@@ -72,6 +92,7 @@ const gatewayAuthService = {
   async refresh(input: { refreshToken: string }) {
     return {
       accessToken: `access-token-refreshed:${input.refreshToken}`,
+      rememberMe: false,
       refreshToken: 'refresh-token-2',
       user: {
         email: 'candidate@example.com',
@@ -129,6 +150,7 @@ test('refresh reads cookie and rotates refresh token', async () => {
   assert.equal(result.data.accessToken, 'access-token-refreshed:refresh-token-1');
   assert.equal(response.cookieCalls.length, 1);
   assert.equal(response.cookieCalls[0]?.value, 'refresh-token-2');
+  assert.equal(response.cookieCalls[0]?.options.maxAge, undefined);
 });
 
 test('logout clears cookie and reports loggedOut', async () => {
@@ -194,6 +216,6 @@ test('me resolves current identity through gateway auth service', async () => {
   );
 
   assert.equal(result.message, 'Current user loaded successfully');
-  assert.equal(result.data.user.id, 'identity-flow-1');
-  assert.equal(result.data.user.status, 'active');
+  assert.equal(result.data.user.userId, 'identity-flow-1');
+  assert.equal(result.data.profile?.userId, 'identity-flow-1');
 });

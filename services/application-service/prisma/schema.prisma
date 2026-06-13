@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Application {
+  id                  String               @id @db.VarChar(64)
+  jobId               String               @map("job_id") @db.VarChar(64)
+  candidateIdentityId String               @map("candidate_identity_id") @db.VarChar(64)
+  employerIdentityId  String               @map("employer_identity_id") @db.VarChar(64)
+  resumeId            String               @map("resume_id") @db.VarChar(64)
+  coverLetter         String?              @map("cover_letter")
+  status              String               @default("applied")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  histories           ApplicationHistory[]
+  interviews          Interview[]
+  offers              JobOffer[]
+
+  @@unique([jobId, candidateIdentityId])
+  @@index([candidateIdentityId])
+  @@index([employerIdentityId])
+  @@index([jobId])
+  @@index([status])
+  @@map("applications")
+}
+
+model ApplicationHistory {
+  id              String      @id @db.VarChar(64)
+  applicationId   String      @map("application_id") @db.VarChar(64)
+  eventType       String      @default("status_change") @map("event_type")
+  fromStatus      String?     @map("from_status")
+  note            String?     @db.Text
+  toStatus        String      @map("to_status")
+  actorIdentityId String?     @map("actor_identity_id") @db.VarChar(64)
+  actorType       String      @default("system") @map("actor_type")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  application     Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, createdAt])
+  @@map("application_histories")
+}
+
+model Interview {
+  id                               String      @id @db.VarChar(64)
+  applicationId                    String      @map("application_id") @db.VarChar(64)
+  jobId                            String      @map("job_id") @db.VarChar(64)
+  candidateIdentityId              String      @map("candidate_identity_id") @db.VarChar(64)
+  employerIdentityId               String      @map("employer_identity_id") @db.VarChar(64)
+  scheduledByIdentityId            String      @map("scheduled_by_identity_id") @db.VarChar(64)
+  type                             String      @default("online")
+  round                            String
+  status                           String      @default("scheduled")
+  date                             String?     @db.VarChar(32)
+  startTime                        String?     @map("start_time") @db.VarChar(32)
+  endTime                          String?     @map("end_time") @db.VarChar(32)
+  durationMinutes                  Int?        @map("duration_minutes")
+  timezone                         String?     @db.VarChar(64)
+  interviewerName                  String?     @map("interviewer_name") @db.VarChar(255)
+  interviewerRole                  String?     @map("interviewer_role") @db.VarChar(255)
+  interviewers                     Json?
+  notesToCandidate                 String?     @map("notes_to_candidate")
+  logisticsNote                    String?     @map("logistics_note")
+  platform                         String?     @db.VarChar(128)
+  meetingLink                      String?     @map("meeting_link")
+  meetingId                        String?     @map("meeting_id") @db.VarChar(128)
+  passcode                         String?     @db.VarChar(128)
+  officeName                       String?     @map("office_name") @db.VarChar(255)
+  fullAddress                      String?     @map("full_address")
+  locationDetail                   String?     @map("location_detail") @db.VarChar(255)
+  locationLat                      String?     @map("location_lat") @db.VarChar(64)
+  locationLng                      String?     @map("location_lng") @db.VarChar(64)
+  mapLink                          String?     @map("map_link")
+  callerInfo                       String?     @map("caller_info")
+  contactInfo                      String?     @map("contact_info")
+  phoneNumber                      String?     @map("phone_number") @db.VarChar(64)
+  candidateResponseNote            String?     @map("candidate_response_note")
+  candidateProposedDate            String?     @map("candidate_proposed_date") @db.VarChar(32)
+  candidateProposedStartTime       String?     @map("candidate_proposed_start_time") @db.VarChar(32)
+  candidateProposedDurationMinutes Int?        @map("candidate_proposed_duration_minutes")
+  candidateProposedTimezone        String?     @map("candidate_proposed_timezone") @db.VarChar(64)
+  createdAt                        DateTime    @default(now()) @map("created_at")
+  updatedAt                        DateTime    @updatedAt @map("updated_at")
+  application                      Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, createdAt])
+  @@index([employerIdentityId])
+  @@index([status])
+  @@map("interviews")
+}
+
+model JobOffer {
+  id                  String         @id @db.VarChar(64)
+  applicationId       String         @unique @map("application_id") @db.VarChar(64)
+  jobId               String         @map("job_id") @db.VarChar(64)
+  candidateIdentityId String         @map("candidate_identity_id") @db.VarChar(64)
+  employerIdentityId  String         @map("employer_identity_id") @db.VarChar(64)
+  title               String         @db.VarChar(255)
+  seniorityLabel      String?        @map("seniority_label") @db.VarChar(255)
+  departmentTeam      String?        @map("department_team") @db.VarChar(255)
+  reportingTo         String?        @map("reporting_to") @db.VarChar(255)
+  message             String?
+  bonusDetails        String?        @map("bonus_details")
+  contractDocumentUrl String?        @map("contract_document_url")
+  salary              String?        @db.VarChar(64)
+  salaryPeriod        String?        @map("salary_period") @db.VarChar(64)
+  currency            String?        @db.VarChar(32)
+  employmentType      String?        @map("employment_type") @db.VarChar(64)
+  workModel           String?        @map("work_model") @db.VarChar(64)
+  startDate           String?        @map("start_date") @db.VarChar(32)
+  location            String?        @db.VarChar(255)
+  probationType       String?        @map("probation_type") @db.VarChar(64)
+  probationCustom     String?        @map("probation_custom") @db.VarChar(255)
+  status              String         @default("draft")
+  expiresAt           DateTime?      @map("expires_at")
+  sentAt              DateTime?      @map("sent_at")
+  viewedAt            DateTime?      @map("viewed_at")
+  respondedAt         DateTime?      @map("responded_at")
+  createdByIdentityId String         @map("created_by_identity_id") @db.VarChar(64)
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+  deletedAt           DateTime?      @map("deleted_at")
+  application         Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  benefits            OfferBenefit[]
+
+  @@index([applicationId, createdAt])
+  @@index([employerIdentityId])
+  @@index([status])
+  @@map("job_offers")
+}
+
+model OfferBenefit {
+  id               String   @id @db.VarChar(64)
+  offerId          String   @map("offer_id") @db.VarChar(64)
+  catalogId        String?  @map("catalog_id") @db.VarChar(64)
+  type             String   @db.VarChar(64)
+  name             String?  @db.VarChar(255)
+  description      String?
+  hasMonetaryValue Boolean  @default(false) @map("has_monetary_value")
+  amount           String?  @db.VarChar(64)
+  currency         String?  @db.VarChar(32)
+  frequency        String?  @db.VarChar(64)
+  annualLeaveDays  Int?     @map("annual_leave_days")
+  metadata         Json?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  offer            JobOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@index([offerId])
+  @@map("offer_benefits")
+}
+
+model BenefitCatalog {
+  id                       String   @id @db.VarChar(64)
+  code                     String   @unique @db.VarChar(64)
+  label                    String   @db.VarChar(255)
+  description              String?
+  hasMonetaryValueDefault  Boolean  @default(false) @map("has_monetary_value_default")
+  requiresAmount           Boolean  @default(false) @map("requires_amount")
+  requiresFrequency        Boolean  @default(false) @map("requires_frequency")
+  requiresAnnualLeaveDays  Boolean  @default(false) @map("requires_annual_leave_days")
+  isActive                 Boolean  @default(true) @map("is_active")
+  isSelectable             Boolean  @default(true) @map("is_selectable")
+  sortOrder                Int      @default(0) @map("sort_order")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive])
+  @@index([isSelectable])
+  @@index([sortOrder])
+  @@map("benefit_catalogs")
+}

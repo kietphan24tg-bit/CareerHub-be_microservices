@@ -31,6 +31,20 @@ test('maps grpc invalid argument error to bad request with clean message', () =>
   });
 });
 
+test('maps duplicate application rpc code to conflict', () => {
+  const exception = mapRpcErrorToHttpException({
+    code: 'DUPLICATE_APPLICATION',
+    message: 'Application already exists for job job-1 and candidate candidate-1.'
+  });
+
+  assert.equal(exception.getStatus(), HttpStatus.CONFLICT);
+  assert.deepEqual(exception.getResponse(), {
+    code: 'DUPLICATE_APPLICATION',
+    details: undefined,
+    message: 'Application already exists for job job-1 and candidate candidate-1.'
+  });
+});
+
 test('maps grpc unknown invalid refresh token error to unauthorized', () => {
   const exception = mapRpcErrorToHttpException({
     code: 'UNKNOWN',

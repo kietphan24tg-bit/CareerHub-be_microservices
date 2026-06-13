@@ -7,8 +7,8 @@ import { JOB_LOOKUP_PORT, type JobLookupPort } from './ports/job-lookup.port';
 export type GatewaySavedJob = {
   id: string;
   jobId: string;
+  job: GatewayJobSummary | null;
   savedAt: string;
-  job?: GatewayJobSummary | null;
 };
 
 @Injectable()
@@ -34,6 +34,7 @@ export class GatewaySavedJobsService {
     const savedJobs = (response.saved_jobs ?? []).map((savedJob) => ({
       id: savedJob.id,
       jobId: savedJob.job_id,
+      job: null,
       savedAt: savedJob.saved_at
     }));
 
@@ -69,6 +70,7 @@ export class GatewaySavedJobsService {
       {
         id: response.saved_job.id,
         jobId: response.saved_job.job_id,
+        job: null,
         savedAt: response.saved_job.saved_at
       }
     ]);
@@ -91,7 +93,7 @@ export class GatewaySavedJobsService {
   }
 
   private async enrichSavedJobs(
-    savedJobs: Array<Pick<GatewaySavedJob, 'id' | 'jobId' | 'savedAt'>>
+    savedJobs: GatewaySavedJob[]
   ): Promise<GatewaySavedJob[]> {
     if (savedJobs.length === 0) {
       return [];
@@ -103,7 +105,10 @@ export class GatewaySavedJobsService {
     const hasEnrichedJobs = [...jobLookup.values()].some((job) => job !== null);
 
     if (!hasEnrichedJobs) {
-      return savedJobs;
+      return savedJobs.map((savedJob) => ({
+        ...savedJob,
+        job: null
+      }));
     }
 
     return savedJobs.map((savedJob) => ({

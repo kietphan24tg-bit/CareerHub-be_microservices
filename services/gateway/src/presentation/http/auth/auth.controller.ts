@@ -152,7 +152,7 @@ export class AuthController {
       requestId
     });
 
-    this.setRefreshCookie(response, result.refreshToken, true);
+    this.setRefreshCookie(response, result.refreshToken, result.rememberMe === true);
 
     return {
       data: {
@@ -231,12 +231,10 @@ export class AuthController {
     @Headers('x-request-id') requestId?: string
   ) {
     return {
-      data: {
-        user: await this.gatewayAuthService.getCurrentIdentity({
-          identityId: user.id,
-          requestId
-        })
-      },
+      data: await this.gatewayAuthService.getCurrentUser({
+        identityId: user.id,
+        requestId
+      }),
       message: 'Current user loaded successfully'
     };
   }

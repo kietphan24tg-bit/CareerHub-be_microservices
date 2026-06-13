@@ -270,20 +270,6 @@ export class PrismaJobRepository implements JobRepository {
     return record ? mapRecord(record) : null;
   }
 
-  async getStatus(
-    jobId: string,
-    employerIdentityId: string
-  ): Promise<{ status: JobStatus } | null> {
-    const record = await this.prismaService.prisma.job.findFirst({
-      where: {
-        employerIdentityId,
-        id: jobId
-      }
-    });
-
-    return record ? { status: record.status as JobStatus } : null;
-  }
-
   async listEmployer(
     filter: ListEmployerJobsFilter
   ): Promise<{ items: JobRecord[]; total: number }> {
@@ -337,12 +323,15 @@ export class PrismaJobRepository implements JobRepository {
     return Boolean(record && record.id !== excludeJobId);
   }
 
-  async transitionStatus(
+  async saveStatus(
     jobId: string,
     employerIdentityId: string,
-    nextStatus: JobStatus,
-    allowedStatuses: JobStatus[]
+    expectedStatus: JobStatus,
+    nextStatus: JobStatus
   ): Promise<JobRecord | null> {
+    // Optimistic-lock: chỉ ghi khi status trong DB vẫn đúng bằng trạng thái
+    // mà aggregate đã đọc. Đây là guard chống sửa đồng thời (concern hạ tầng),
+    // KHÔNG phải luật nghiệp vụ — luật chuyển trạng thái nằm ở Job aggregate.
     const updated = await this.prismaService.prisma.job.updateMany({
       data: {
         status: nextStatus,
@@ -351,9 +340,7 @@ export class PrismaJobRepository implements JobRepository {
       where: {
         employerIdentityId,
         id: jobId,
-        status: {
-          in: allowedStatuses
-        }
+        status: expectedStatus
       }
     });
 
