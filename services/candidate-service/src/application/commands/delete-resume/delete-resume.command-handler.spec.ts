@@ -35,33 +35,6 @@ function createWriteTransaction(
     async execute(work) {
       return work({
         candidateProfileRepository,
-        outboxRepository: {
-          async claimPending() {
-            return null;
-          },
-          async create() {},
-          async deleteProcessedBatch() {
-            return 0;
-          },
-          async findPendingBatch() {
-            return [];
-          },
-          async markFailed() {},
-          async markProcessed() {},
-          async requeueRetryableFailed() {
-            return 0;
-          },
-          async requeueStaleProcessing() {
-            return 0;
-          },
-          async summarizeBacklog() {
-            return {
-              failed: 0,
-              pending: 0,
-              processing: 0
-            };
-          }
-        },
         resumeRepository
       });
     }

@@ -14,7 +14,10 @@ import { UniqueEntityID } from '@careerhub/shared-kernel';
 import { ResumeAggregate } from '../../../domain/resume/resume.aggregate';
 import { createEmptyResumeContent } from '../../../domain/resume/resume-content.types';
 import { ResumeOwner, ResumeTitle } from '../../../domain/resume/value-objects';
+import { CandidateProfileOperationsService } from '../../services/candidate-profile-operations.service';
 import { UpdateCandidateProfileCommandHandler } from './update-candidate-profile.command-handler';
+
+const candidateProfileOperations = new CandidateProfileOperationsService();
 
 function buildOwnedResume(resumeId: string, identityId: string) {
   return ResumeAggregate.reconstitute({
@@ -84,33 +87,6 @@ function createWriteTransaction(
     async execute(work) {
       return work({
         candidateProfileRepository,
-        outboxRepository: {
-          async claimPending() {
-            return null;
-          },
-          async create() {},
-          async deleteProcessedBatch() {
-            return 0;
-          },
-          async findPendingBatch() {
-            return [];
-          },
-          async markFailed() {},
-          async markProcessed() {},
-          async requeueRetryableFailed() {
-            return 0;
-          },
-          async requeueStaleProcessing() {
-            return 0;
-          },
-          async summarizeBacklog() {
-            return {
-              failed: 0,
-              pending: 0,
-              processing: 0
-            };
-          }
-        },
         resumeRepository
       });
     }
@@ -137,7 +113,8 @@ test('updates candidate profile successfully', async () => {
       },
       async save() {},
       async update() {}
-    })
+    }),
+    candidateProfileOperations
   );
 
   const result = await handler.execute({
@@ -171,7 +148,8 @@ test('throws when updated candidate profile does not exist', async () => {
       },
       async save() {},
       async update() {}
-    })
+    }),
+    candidateProfileOperations
   );
 
   await assert.rejects(
@@ -202,7 +180,8 @@ test('throws when candidate update payload is empty', async () => {
       },
       async save() {},
       async update() {}
-    })
+    }),
+    candidateProfileOperations
   );
 
   await assert.rejects(
@@ -234,7 +213,8 @@ test('throws when resume id does not belong to candidate', async () => {
       },
       async save() {},
       async update() {}
-    })
+    }),
+    candidateProfileOperations
   );
 
   await assert.rejects(
@@ -276,7 +256,8 @@ test('syncs isUsing when resume id is set on profile', async () => {
 
   const handler = new UpdateCandidateProfileCommandHandler(
     repository,
-    createWriteTransaction(repository, resumeRepository)
+    createWriteTransaction(repository, resumeRepository),
+    candidateProfileOperations
   );
 
   const result = await handler.execute({
@@ -314,7 +295,8 @@ test('clears isUsing when resume id is cleared on profile', async () => {
 
   const handler = new UpdateCandidateProfileCommandHandler(
     repository,
-    createWriteTransaction(repository, resumeRepository)
+    createWriteTransaction(repository, resumeRepository),
+    candidateProfileOperations
   );
 
   const result = await handler.execute({

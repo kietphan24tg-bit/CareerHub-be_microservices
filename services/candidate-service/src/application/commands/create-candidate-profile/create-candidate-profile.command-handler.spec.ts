@@ -3,7 +3,10 @@ import test from 'node:test';
 import { ValidationError } from '@careerhub/shared-kernel';
 import { CandidateProfileAlreadyExistsError } from '../../errors/candidate-profile-already-exists.error';
 import type { CreateCandidateProfileRecord } from '../../ports';
+import { CandidateProfileOperationsService } from '../../services/candidate-profile-operations.service';
 import { CreateCandidateProfileCommandHandler } from './create-candidate-profile.command-handler';
+
+const candidateProfileOperations = new CandidateProfileOperationsService();
 
 test('creates a candidate profile successfully', async () => {
   const savedProfiles: CreateCandidateProfileRecord[] = [];
@@ -30,7 +33,8 @@ test('creates a candidate profile successfully', async () => {
       generate() {
         return 'candidate-profile-1';
       }
-    }
+    },
+    candidateProfileOperations
   );
 
   const result = await handler.execute({
@@ -68,7 +72,8 @@ test('fails when profile already exists for identity', async () => {
       generate() {
         return 'candidate-profile-2';
       }
-    }
+    },
+    candidateProfileOperations
   );
 
   await assert.rejects(
@@ -104,7 +109,8 @@ test('fails when required fields are blank', async () => {
       generate() {
         return 'candidate-profile-3';
       }
-    }
+    },
+    candidateProfileOperations
   );
 
   await assert.rejects(

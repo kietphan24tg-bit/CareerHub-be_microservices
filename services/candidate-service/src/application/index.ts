@@ -6,3 +6,4 @@ export * from './errors/resume-template-not-found.error';
 export * from './mappers/resume-response.mapper';
 export * from './ports';
 export * from './queries';
+export * from './services';

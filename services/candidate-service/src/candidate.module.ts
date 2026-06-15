@@ -8,6 +8,7 @@ import { Module } from '@nestjs/common';
 import { CandidateProfileAlreadyExistsError } from './application/errors/candidate-profile-already-exists.error';
 import {
   CANDIDATE_PORT_TOKENS,
+  CandidateProfileOperationsService,
   CreateCandidateProfileCommandHandler,
   CreateOrGetTemplateDraftCommandHandler,
   CreateResumeCommandHandler,
@@ -25,15 +26,12 @@ import {
   UpdateCandidateProfileCommandHandler,
   UpdateResumeCommandHandler
 } from './application';
-import { getCandidateRuntimeConfig, validateCandidateEnvironment } from './config';
+import { validateCandidateEnvironment } from './config';
 import {
   CandidatePrismaService,
   CANDIDATE_METRICS_TOKENS,
-  CandidateOutboxProcessor,
-  CandidateOutboxPublisher,
   CANDIDATE_PRISMA_TOKENS,
   createCandidatePrismaClient,
-  PrismaCandidateOutboxRepository,
   PrismaCandidateWriteTransaction,
   PrismaCandidateProfileRepository,
   PrismaResumeRepository,
@@ -70,12 +68,6 @@ import { CandidateGrpcController, CandidateResumeGrpcController } from './presen
         new PrismaCandidateProfileRepository(prismaService.prisma)
     },
     {
-      provide: CANDIDATE_PORT_TOKENS.outboxRepository,
-      inject: [CANDIDATE_PRISMA_TOKENS.service],
-      useFactory: (prismaService: CandidatePrismaService) =>
-        new PrismaCandidateOutboxRepository(prismaService.prisma)
-    },
-    {
       provide: CANDIDATE_PORT_TOKENS.savedJobRepository,
       inject: [CANDIDATE_PRISMA_TOKENS.service],
       useFactory: (prismaService: CandidatePrismaService) =>
@@ -103,19 +95,23 @@ import { CandidateGrpcController, CandidateResumeGrpcController } from './presen
       provide: CANDIDATE_PORT_TOKENS.idGenerator,
       useClass: UuidIdGenerator
     },
+    CandidateProfileOperationsService,
     {
       provide: CreateCandidateProfileCommandHandler,
       inject: [
         CANDIDATE_PORT_TOKENS.candidateProfileRepository,
-        CANDIDATE_PORT_TOKENS.idGenerator
+        CANDIDATE_PORT_TOKENS.idGenerator,
+        CandidateProfileOperationsService
       ],
       useFactory: (
         candidateProfileRepository: PrismaCandidateProfileRepository,
-        idGenerator: UuidIdGenerator
+        idGenerator: UuidIdGenerator,
+        candidateProfileOperations: CandidateProfileOperationsService
       ) =>
         new CreateCandidateProfileCommandHandler(
           candidateProfileRepository,
-          idGenerator
+          idGenerator,
+          candidateProfileOperations
         )
     },
     {
@@ -140,15 +136,18 @@ import { CandidateGrpcController, CandidateResumeGrpcController } from './presen
       provide: UpdateCandidateProfileCommandHandler,
       inject: [
         CANDIDATE_PORT_TOKENS.candidateProfileRepository,
-        CANDIDATE_PORT_TOKENS.writeTransaction
+        CANDIDATE_PORT_TOKENS.writeTransaction,
+        CandidateProfileOperationsService
       ],
       useFactory: (
         candidateProfileRepository: PrismaCandidateProfileRepository,
-        writeTransaction: PrismaCandidateWriteTransaction
+        writeTransaction: PrismaCandidateWriteTransaction,
+        candidateProfileOperations: CandidateProfileOperationsService
       ) =>
         new UpdateCandidateProfileCommandHandler(
           candidateProfileRepository,
-          writeTransaction
+          writeTransaction,
+          candidateProfileOperations
         )
     },
     {
@@ -268,9 +267,7 @@ import { CandidateGrpcController, CandidateResumeGrpcController } from './presen
           resumeRepository,
           resumeTemplateRepository
         )
-    },
-    CandidateOutboxPublisher,
-    CandidateOutboxProcessor
+    }
   ]
 })
 export class CandidateModule {}

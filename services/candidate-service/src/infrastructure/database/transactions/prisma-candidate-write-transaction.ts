@@ -1,6 +1,5 @@
 import type { CandidateWriteTransaction } from '../../../application';
 import { PrismaCandidateProfileRepository } from '../repositories/prisma-candidate-profile.repository';
-import { PrismaCandidateOutboxRepository } from '../repositories/prisma-outbox.repository';
 import { PrismaResumeRepository } from '../repositories/prisma-resume.repository';
 import { CandidatePrismaService } from '../prisma/candidate-prisma.service';
 
@@ -13,7 +12,6 @@ export class PrismaCandidateWriteTransaction implements CandidateWriteTransactio
     return (await this.prismaService.transaction(async (prismaClient) =>
       work({
         candidateProfileRepository: new PrismaCandidateProfileRepository(prismaClient),
-        outboxRepository: new PrismaCandidateOutboxRepository(prismaClient),
         resumeRepository: new PrismaResumeRepository(prismaClient)
       })
     )) as T;

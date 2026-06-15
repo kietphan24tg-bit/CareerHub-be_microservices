@@ -2,7 +2,6 @@ export * from './prisma/candidate-prisma.constants';
 export * from './prisma/candidate-prisma.service';
 export * from './prisma/candidate-prisma.types';
 export * from './repositories/prisma-candidate-profile.repository';
-export * from './repositories/prisma-outbox.repository';
 export * from './repositories/prisma-resume.repository';
 export * from './repositories/prisma-resume-template.repository';
 export * from './repositories/prisma-saved-job.repository';
