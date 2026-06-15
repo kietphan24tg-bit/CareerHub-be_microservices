@@ -1,5 +1,3 @@
-import type { ExecutionContext } from '@nestjs/common';
-import { RmqContext } from '@nestjs/microservices';
 import {
     ROOT_CONTEXT,
     context as otelContext,
@@ -14,15 +12,6 @@ export type RabbitMqHeaders = Record<string, unknown>;
 
 export type RabbitMqMessageProperties = {
     headers?: RabbitMqHeaders;
-};
-
-export type RabbitMqMessage = {
-    fields?: {
-        consumerTag?: string;
-        exchange?: string;
-        routingKey?: string;
-    };
-    properties?: RabbitMqMessageProperties;
 };
 
 const rabbitMqHeaderGetter: TextMapGetter<RabbitMqHeaders> = {
@@ -100,64 +89,4 @@ export function extractTraceContextFromRabbitMqProperties(
         properties.headers,
         rabbitMqHeaderGetter
     );
-}
-
-export function getRabbitMqContextFromExecutionContext(
-    context: ExecutionContext
-): RmqContext | undefined {
-    const rpcContext = context.switchToRpc().getContext<RmqContext | undefined>();
-
-    if (rpcContext instanceof RmqContext) {
-        return rpcContext;
-    }
-
-    const secondArgument = context.getArgByIndex<RmqContext | undefined>(1);
-
-    if (secondArgument instanceof RmqContext) {
-        return secondArgument;
-    }
-
-    return undefined;
-}
-
-export function getRabbitMqMessageFromExecutionContext(
-    context: ExecutionContext
-): RabbitMqMessage | undefined {
-    return getRabbitMqContextFromExecutionContext(context)?.getMessage() as
-        | RabbitMqMessage
-        | undefined;
-}
-
-export function getRabbitMqPatternFromExecutionContext(
-    context: ExecutionContext
-): string {
-    const rabbitMqContext = getRabbitMqContextFromExecutionContext(context);
-    const pattern = rabbitMqContext?.getPattern();
-
-    if (typeof pattern === 'string' && pattern.length > 0) {
-        return pattern;
-    }
-
-    const className = context.getClass().name || 'UnknownController';
-    const handlerName = context.getHandler().name || 'unknown';
-
-    return `${className}.${handlerName}`;
-}
-
-export function getRabbitMqExchangeFromExecutionContext(
-    context: ExecutionContext
-): string | undefined {
-    return getRabbitMqMessageFromExecutionContext(context)?.fields?.exchange;
-}
-
-export function getRabbitMqRoutingKeyFromExecutionContext(
-    context: ExecutionContext
-): string | undefined {
-    return getRabbitMqMessageFromExecutionContext(context)?.fields?.routingKey;
-}
-
-export function getRabbitMqPropertiesFromExecutionContext(
-    context: ExecutionContext
-): RabbitMqMessageProperties | undefined {
-    return getRabbitMqMessageFromExecutionContext(context)?.properties;
 }

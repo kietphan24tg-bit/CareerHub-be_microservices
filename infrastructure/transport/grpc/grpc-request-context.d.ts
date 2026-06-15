@@ -1,0 +1,12 @@
+import type { ExecutionContext } from '@nestjs/common';
+import { Metadata } from '@grpc/grpc-js';
+import { type Context } from '@opentelemetry/api';
+import { type RpcRequestEnvelope } from '../../runtime/request-context/request-id';
+export declare function createGrpcMetadata(requestId?: string): Metadata;
+export declare function getRequestIdFromGrpcMetadata(metadata: Metadata | undefined): string | undefined;
+export declare function createGrpcPayloadWithRequestId<TPayload>(payload: TPayload, requestId?: string): RpcRequestEnvelope<TPayload>;
+export declare function getRequestIdFromGrpcPayload(payload: unknown): string | undefined;
+export declare function getGrpcMetadataCarrier(metadata: Metadata): Record<string, string>;
+export declare function extractTraceContextFromGrpcMetadata(metadata: Metadata | undefined): Context;
+export declare function getGrpcMetadataFromExecutionContext(context: ExecutionContext): Metadata | undefined;
+export declare function getGrpcPatternFromExecutionContext(context: ExecutionContext): string;

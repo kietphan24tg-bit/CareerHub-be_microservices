@@ -4,19 +4,16 @@ export type HttpMetricRecord = {
     route: string;
     statusCode: number;
 };
-
 export type HttpErrorMetricRecord = {
     method: string;
     route: string;
     statusCode: number;
 };
-
 export type RpcMetricRecord = {
     durationMs: number;
     pattern: string;
     status: 'error' | 'success';
 };
-
 export type RmqMetricRecord = {
     durationMs: number;
     exchange?: string;
@@ -26,55 +23,44 @@ export type RmqMetricRecord = {
     service?: string;
     status: 'error' | 'success';
 };
-
 export type OutboxPublishMetricRecord = {
     eventName?: string;
     service: string;
     status: 'error' | 'success';
 };
-
 export type OutboxCleanupMetricRecord = {
     deletedCount: number;
     service: string;
 };
-
 export type OutboxBacklogMetricRecord = {
-  failed: number;
-  oldestPendingAgeSeconds?: number;
-  pending: number;
-  processing: number;
-  service: string;
+    failed: number;
+    oldestPendingAgeSeconds?: number;
+    pending: number;
+    processing: number;
+    service: string;
 };
-
 export type IntegrationConsumerMetricRecord = {
-  consumer: string;
-  eventName: string;
-  reason?: string;
-  service: string;
-  status: 'dead_lettered' | 'duplicate' | 'error' | 'processed';
+    consumer: string;
+    eventName: string;
+    reason?: string;
+    service: string;
+    status: 'dead_lettered' | 'duplicate' | 'error' | 'processed';
 };
-
 export type IntegrationConsumerDurationMetricRecord = {
-  consumer: string;
-  durationMs: number;
-  eventName: string;
-  reason?: string;
-  service: string;
-  status: 'dead_lettered' | 'duplicate' | 'error' | 'processed';
+    consumer: string;
+    durationMs: number;
+    eventName: string;
+    reason?: string;
+    service: string;
+    status: 'dead_lettered' | 'duplicate' | 'error' | 'processed';
 };
-
 export type RegisterCompensationMetricRecord = {
-  action:
-    | 'cancel_pending_identity'
-    | 'delete_profile'
-    | 'skip_already_active'
-    | 'skip_profile_exists';
-  flow: 'candidate' | 'employer';
-  reason: 'activation_failed' | 'profile_creation_failed';
-  service: string;
-  status: 'failed' | 'performed' | 'skipped';
+    action: 'cancel_pending_identity' | 'delete_profile' | 'skip_already_active' | 'skip_profile_exists';
+    flow: 'candidate' | 'employer';
+    reason: 'activation_failed' | 'profile_creation_failed';
+    service: string;
+    status: 'failed' | 'performed' | 'skipped';
 };
-
 export interface MetricsRegistry {
     recordHttpError(record: HttpErrorMetricRecord): void;
     recordHttpRequest(record: HttpMetricRecord): void;

@@ -40,6 +40,7 @@ This document defines the standard outbox flow for CareerHub services that own a
 - The worker stays embedded in the service process for now.
 - PostgreSQL `LISTEN/NOTIFY` is not used in the current implementation.
 - Cleanup and publish loops rely on database state transitions, not in-memory locks, for cross-instance safety.
+- `candidate-service` does not currently publish integration events; its unused outbox runtime was removed and candidate reads remain synchronous over gRPC.
 
 ## IAM Event Flows
 
@@ -59,3 +60,25 @@ Current runtime behavior:
 4. The raw reset token is not stored in the outbox payload or returned in HTTP/gRPC responses.
 
 See [password-reset.md](./password-reset.md) for SMTP and local verification details.
+
+## Application Notification Flows
+
+Producer: `application-service`
+
+Consumer: `communication-service` (`notifications.#` -> `communication.notifications`)
+
+Gateway is not a producer for these events.
+
+Covered actions:
+
+- apply to job
+- employer application status updates
+- interview create/update/cancel/confirm/decline/reschedule
+- offer send/update/withdraw/accept/decline
+
+Concurrency note:
+
+- interview and offer mutations use status-based compare-and-set updates inside the same transaction as outbox persistence
+- failed CAS means no history and no outbox row
+
+Payload contract details: [notification-events.md](./notification-events.md)
