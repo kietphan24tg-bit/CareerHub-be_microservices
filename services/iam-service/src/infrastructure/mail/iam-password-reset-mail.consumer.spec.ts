@@ -207,7 +207,7 @@ test('republishes password reset mail event for retry when mail send fails', asy
       throw new Error('smtp unavailable');
     }
   } as unknown as MailService;
-  const consumer = new IamPasswordResetMailConsumer(
+  const consumerInstance = new IamPasswordResetMailConsumer(
     mailService,
     new PasswordResetTokenFactory('secret'),
     createPasswordResetTokenRepository({
@@ -217,7 +217,13 @@ test('republishes password reset mail event for retry when mail send fails', asy
     }),
     createMetricsRegistry() as never,
     createConfigService()
-  ) as unknown as TestableConsumer;
+  );
+  // Set retryTopology directly since startConsumer is not called in unit tests
+  (consumerInstance as unknown as Record<string, unknown>)['retryTopology'] = {
+    mainExchange: 'events',
+    retryQueues: ['iam.password-reset-mail.retry.30s']
+  };
+  const consumer = consumerInstance as unknown as TestableConsumer;
   const channelCalls: string[] = [];
   const publishedHeaders: Array<Record<string, unknown> | undefined> = [];
   const channel = {
@@ -264,7 +270,7 @@ test('republishes password reset mail event for retry when mail send fails', asy
   assert.deepEqual(repositoryCalls, ['clearMailDeliveryClaim']);
 });
 
-test('acknowledges password reset mail event when retry count is exhausted', async () => {
+test('nacks password reset mail event to DLQ when retry count is exhausted', async () => {
   const repositoryCalls: string[] = [];
   const mailService = {
     async sendPasswordResetMail() {
@@ -314,7 +320,7 @@ test('acknowledges password reset mail event when retry count is exhausted', asy
 
   await consumer.handleMessage(channel, message);
 
-  assert.deepEqual(channelCalls, ['ack']);
+  assert.deepEqual(channelCalls, ['nack:false']);
   assert.deepEqual(repositoryCalls, ['clearMailDeliveryClaim']);
 });
 
@@ -391,7 +397,7 @@ test('acks unsupported password reset mail event payload without retrying', asyn
   assert.deepEqual(channelCalls, ['ack']);
 });
 
-test('acks password reset mail event when mail config is missing', async () => {
+test('nacks password reset mail event to DLQ when mail config is missing', async () => {
   const mailService = {
     async sendPasswordResetMail() {
       throw new MailConfigurationError('Mail transport is not configured');
@@ -431,7 +437,7 @@ test('acks password reset mail event when mail config is missing', async () => {
     })
   );
 
-  assert.deepEqual(channelCalls, ['ack']);
+  assert.deepEqual(channelCalls, ['nack']);
 });
 
 test('acks duplicate password reset mail event without sending mail again', async () => {
