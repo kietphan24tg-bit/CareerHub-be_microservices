@@ -3,4 +3,5 @@ import type { CandidateRescheduleRequestInput } from '../../../services/intervie
 export type RequestInterviewRescheduleCommand = CandidateRescheduleRequestInput & {
   candidateIdentityId: string;
   interviewId: string;
+  requestId?: string;
 };

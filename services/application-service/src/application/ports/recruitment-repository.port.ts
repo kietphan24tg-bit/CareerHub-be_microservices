@@ -236,6 +236,11 @@ export interface RecruitmentRepository {
     interviewId: string,
     data: UpdateInterviewData
   ): Promise<ApplicationInterviewRecord | null>;
+  updateInterviewIfStatus(
+    interviewId: string,
+    expectedStatuses: string[],
+    data: UpdateInterviewData
+  ): Promise<ApplicationInterviewRecord | null>;
 
   listBenefitCatalog(): Promise<BenefitCatalogRecord[]>;
   findOfferByApplicationId(applicationId: string): Promise<ApplicationOfferRecord | null>;
@@ -258,8 +263,31 @@ export interface RecruitmentRepository {
     data: UpdateOfferData,
     benefits?: CreateOfferBenefitData[] | null
   ): Promise<ApplicationOfferRecord | null>;
+  updateOfferIfStatus(
+    offerId: string,
+    expectedStatuses: string[],
+    data: UpdateOfferData,
+    benefits?: CreateOfferBenefitData[] | null
+  ): Promise<ApplicationOfferRecord | null>;
   replaceOfferBenefits(offerId: string, benefits: CreateOfferBenefitData[]): Promise<void>;
   softDeleteOffer(offerId: string, deletedAt: Date): Promise<boolean>;
+  softDeleteOfferIfStatus(
+    offerId: string,
+    expectedStatuses: string[],
+    deletedAt: Date
+  ): Promise<boolean>;
   expireOpenOffersForApplication(applicationId: string, now: Date): Promise<void>;
   expireOfferIfDue(offerId: string, now: Date): Promise<void>;
+  countOpenOffersByEmployer(employerIdentityId: string): Promise<number>;
+  countEmployerInterviewsForDate(
+    employerIdentityId: string,
+    localDate: string,
+    statuses: string[]
+  ): Promise<number>;
+  listEmployerInterviewsForDate(
+    employerIdentityId: string,
+    localDate: string,
+    statuses: string[],
+    limit: number
+  ): Promise<ApplicationInterviewRecord[]>;
 }

@@ -6,6 +6,8 @@
   type CloseJobResponse,
   type CreateJobRequest,
   type CreateJobResponse,
+  type GetEmployerDashboardJobsSummaryRequest,
+  type GetEmployerDashboardJobsSummaryResponse,
   type GetEmployerJobByIdRequest,
   type GetEmployerJobByIdResponse,
   type GetJobForApplicationRequest,
@@ -33,6 +35,7 @@ import {
   ArchiveJobCommandHandler,
   CloseJobCommandHandler,
   CreateJobCommandHandler,
+  GetEmployerDashboardJobsSummaryQueryHandler,
   GetEmployerJobByIdQueryHandler,
   GetJobForApplicationQueryHandler,
   GetPublicJobBySlugQueryHandler,
@@ -55,6 +58,7 @@ export class JobGrpcController {
     private readonly archiveJobCommandHandler: ArchiveJobCommandHandler,
     private readonly closeJobCommandHandler: CloseJobCommandHandler,
     private readonly createJobCommandHandler: CreateJobCommandHandler,
+    private readonly getEmployerDashboardJobsSummaryQueryHandler: GetEmployerDashboardJobsSummaryQueryHandler,
     private readonly getEmployerJobByIdQueryHandler: GetEmployerJobByIdQueryHandler,
     private readonly getJobForApplicationQueryHandler: GetJobForApplicationQueryHandler,
     private readonly getPublicJobBySlugQueryHandler: GetPublicJobBySlugQueryHandler,
@@ -380,6 +384,34 @@ export class JobGrpcController {
 
       return {
         exists
+      };
+    } catch (error) {
+      throw mapErrorToJobGrpcException(error);
+    }
+  }
+
+  @GrpcMethod(JOB_GRPC_SERVICE_NAME, 'GetEmployerDashboardJobsSummary')
+  async getEmployerDashboardJobsSummary(
+    request: GetEmployerDashboardJobsSummaryRequest
+  ): Promise<GetEmployerDashboardJobsSummaryResponse> {
+    try {
+      const summary = await this.getEmployerDashboardJobsSummaryQueryHandler.execute({
+        employerIdentityId: request.employer_identity_id
+      });
+
+      return {
+        active_jobs: summary.activeJobs,
+        priority_jobs: summary.priorityJobs.map((job) => ({
+          category: job.category ?? '',
+          city: job.city ?? '',
+          country: job.country ?? '',
+          expires_at: job.expiresAt?.toISOString() ?? '',
+          id: job.id,
+          is_remote: job.isRemote,
+          slug: job.slug,
+          status: job.status,
+          title: job.title
+        }))
       };
     } catch (error) {
       throw mapErrorToJobGrpcException(error);

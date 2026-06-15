@@ -143,4 +143,77 @@ export interface ApplicationRepository {
   transitionStatusWithHistory(
     data: TransitionApplicationStatusWithHistoryData
   ): Promise<ApplicationRecord | null>;
+  countByEmployer(employerIdentityId: string): Promise<number>;
+  listEmployerDashboardPipeline(
+    employerIdentityId: string,
+    limit: number
+  ): Promise<
+    Array<{
+      applicationId: string;
+      appliedAt: Date;
+      candidateIdentityId: string;
+      jobId: string;
+      status: ApplicationStatus;
+      updatedAt: Date;
+    }>
+  >;
+  listEmployerDashboardRecentActivities(
+    employerIdentityId: string,
+    limit: number
+  ): Promise<
+    Array<{
+      applicationId: string;
+      candidateIdentityId: string;
+      createdAt: Date;
+      eventType: string;
+      id: string;
+      jobId: string;
+      newStatus: string | null;
+      note: string | null;
+      oldStatus: string | null;
+    }>
+  >;
+  listRecruiterNotesByApplication(applicationId: string): Promise<
+    Array<{
+      applicationId: string;
+      authorIdentityId: string;
+      body: string;
+      createdAt: Date;
+      id: string;
+      updatedAt: Date;
+    }>
+  >;
+  findRecruiterNoteById(noteId: string): Promise<{
+    applicationId: string;
+    authorIdentityId: string;
+    body: string;
+    createdAt: Date;
+    id: string;
+    updatedAt: Date;
+  } | null>;
+  createRecruiterNote(data: {
+    applicationId: string;
+    authorIdentityId: string;
+    body: string;
+    id: string;
+  }): Promise<{
+    applicationId: string;
+    authorIdentityId: string;
+    body: string;
+    createdAt: Date;
+    id: string;
+    updatedAt: Date;
+  }>;
+  updateRecruiterNote(
+    noteId: string,
+    body: string
+  ): Promise<{
+    applicationId: string;
+    authorIdentityId: string;
+    body: string;
+    createdAt: Date;
+    id: string;
+    updatedAt: Date;
+  } | null>;
+  deleteRecruiterNote(noteId: string): Promise<boolean>;
 }

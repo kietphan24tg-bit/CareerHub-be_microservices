@@ -5,6 +5,10 @@ export class SendOfferCommandHandler {
   constructor(private readonly offerOperations: OfferOperations) {}
 
   execute(command: SendOfferCommand) {
-    return this.offerOperations.sendOffer(command.employerIdentityId, command.offerId);
+    return this.offerOperations.sendOffer(
+      command.employerIdentityId,
+      command.offerId,
+      command.requestId
+    );
   }
 }

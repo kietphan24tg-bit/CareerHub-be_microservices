@@ -3,4 +3,5 @@ import type { UpdateInterviewInput } from '../../../services/interview-operation
 export type UpdateInterviewCommand = UpdateInterviewInput & {
   employerIdentityId: string;
   interviewId: string;
+  requestId?: string;
 };

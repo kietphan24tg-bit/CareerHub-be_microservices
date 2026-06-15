@@ -369,4 +369,31 @@ export class PrismaJobRepository implements JobRepository {
 
     return mapRecord(record);
   }
+
+  async countPublishedByEmployer(employerIdentityId: string): Promise<number> {
+    return this.prismaService.prisma.job.count({
+      where: {
+        employerIdentityId,
+        status: 'published'
+      }
+    });
+  }
+
+  async listEmployerDashboardPriorityJobs(
+    employerIdentityId: string,
+    limit: number
+  ): Promise<JobRecord[]> {
+    const records = await this.prismaService.prisma.job.findMany({
+      orderBy: [{ expiresAt: 'asc' }, { updatedAt: 'desc' }, { id: 'desc' }],
+      take: limit,
+      where: {
+        employerIdentityId,
+        status: {
+          not: 'archived'
+        }
+      }
+    });
+
+    return records.map(mapRecord);
+  }
 }

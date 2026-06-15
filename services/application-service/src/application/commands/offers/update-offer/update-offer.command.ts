@@ -3,4 +3,5 @@ import type { UpdateOfferInput } from '../../../services/offer-operations.servic
 export type UpdateOfferCommand = UpdateOfferInput & {
   employerIdentityId: string;
   offerId: string;
+  requestId?: string;
 };

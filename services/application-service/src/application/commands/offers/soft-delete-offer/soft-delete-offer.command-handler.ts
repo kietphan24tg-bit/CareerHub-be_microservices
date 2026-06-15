@@ -5,6 +5,10 @@ export class SoftDeleteOfferCommandHandler {
   constructor(private readonly offerOperations: OfferOperations) {}
 
   execute(command: SoftDeleteOfferCommand) {
-    return this.offerOperations.softDeleteOffer(command.employerIdentityId, command.offerId);
+    return this.offerOperations.softDeleteOffer(
+      command.employerIdentityId,
+      command.offerId,
+      command.requestId
+    );
   }
 }

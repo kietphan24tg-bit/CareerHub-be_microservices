@@ -1,4 +1,6 @@
 import { ValidationError } from '@careerhub/shared-kernel';
+import { ApplicationNotificationEventFactory } from '../notifications/application-notification-event.factory';
+import { persistNotificationOutbox } from '../outbox/application-outbox-event.mapper';
 import { ApplicationNotFoundError } from '../errors/application-not-found.error';
 import { DuplicateApplicationError } from '../errors/duplicate-application.error';
 import { ForbiddenApplicationAccessError } from '../errors/forbidden-application-access.error';
@@ -7,6 +9,7 @@ import type {
   ApplicationRecord,
   ApplicationRepository,
   ApplicationStatus,
+  ApplicationWriteTransaction,
   IdGenerator
 } from '../ports';
 import { APPLICATION_STATUS_VALUES } from '../ports';
@@ -44,6 +47,8 @@ function isApplicationStatus(value: string): value is ApplicationStatus {
 export class ApplicationOperations {
   constructor(
     private readonly applicationRepository: ApplicationRepository,
+    private readonly writeTransaction: ApplicationWriteTransaction,
+    private readonly notificationEventFactory: ApplicationNotificationEventFactory,
     private readonly idGenerator: IdGenerator
   ) {}
 
@@ -52,6 +57,7 @@ export class ApplicationOperations {
     coverLetter?: string | null;
     employerIdentityId: string;
     jobId: string;
+    requestId?: string;
     resumeId: string;
   }): Promise<ApplicationRecord> {
     const jobId = normalizeRequired(input.jobId, 'Job id is required');
@@ -76,8 +82,8 @@ export class ApplicationOperations {
 
     const applicationId = this.idGenerator.generate();
 
-    return this.applicationRepository.createWithHistory(
-      {
+    return this.writeTransaction.execute(async (context) => {
+      const application = await context.applicationRepository.create({
         candidateIdentityId,
         coverLetter: input.coverLetter?.trim() || null,
         employerIdentityId,
@@ -85,8 +91,9 @@ export class ApplicationOperations {
         jobId,
         resumeId,
         status: 'applied'
-      },
-      {
+      });
+
+      await context.applicationRepository.createHistory({
         actorIdentityId: candidateIdentityId,
         actorType: 'candidate',
         applicationId,
@@ -95,8 +102,20 @@ export class ApplicationOperations {
         id: this.idGenerator.generate(),
         note: 'Candidate applied to the job.',
         toStatus: 'applied'
-      }
-    );
+      });
+
+      const notificationEvent = this.notificationEventFactory.buildApplicationReceivedEvent({
+        actorIdentityId: candidateIdentityId,
+        application,
+        requestId: input.requestId
+      });
+
+      await persistNotificationOutbox(context.outboxRepository, notificationEvent, {
+        createOutboxId: () => this.idGenerator.generate()
+      });
+
+      return application;
+    });
   }
 
   async withdrawApplication(input: {
@@ -150,6 +169,7 @@ export class ApplicationOperations {
     applicationId: string;
     employerIdentityId: string;
     note?: string | null;
+    requestId?: string;
     status: string;
   }): Promise<ApplicationRecord> {
     const applicationId = normalizeRequired(input.applicationId, 'Application id is required');
@@ -162,6 +182,8 @@ export class ApplicationOperations {
       throw new ValidationError('Application status is invalid');
     }
 
+    const nextStatus = input.status;
+
     const application = await this.applicationRepository.findById(applicationId);
 
     if (!application) {
@@ -172,34 +194,50 @@ export class ApplicationOperations {
       throw new ForbiddenApplicationAccessError(application.id);
     }
 
-    this.assertEmployerTransition(application.status, input.status);
+    this.assertEmployerTransition(application.status, nextStatus);
 
     const note =
       typeof input.note === 'string' && input.note.trim().length > 0
         ? input.note.trim()
-        : `Employer moved application from ${application.status} to ${input.status}.`;
+        : `Employer moved application from ${application.status} to ${nextStatus}.`;
 
-    const updated = await this.applicationRepository.transitionStatusWithHistory({
-      applicationId: application.id,
-      expectedStatus: application.status,
-      history: {
-        actorIdentityId: application.employerIdentityId,
-        actorType: 'employer',
+    const oldStatus = application.status;
+
+    return this.writeTransaction.execute(async (context) => {
+      const updated = await context.applicationRepository.transitionStatusWithHistory({
         applicationId: application.id,
-        eventType: 'status_change',
-        fromStatus: application.status,
-        id: this.idGenerator.generate(),
-        note,
-        toStatus: input.status
-      },
-      status: input.status
+        expectedStatus: application.status,
+        history: {
+          actorIdentityId: application.employerIdentityId,
+          actorType: 'employer',
+          applicationId: application.id,
+          eventType: 'status_change',
+          fromStatus: application.status,
+          id: this.idGenerator.generate(),
+          note,
+          toStatus: nextStatus
+        },
+        status: nextStatus
+      });
+
+      if (!updated) {
+        throw new InvalidApplicationStatusTransitionError(application.status, nextStatus);
+      }
+
+      const notificationEvent =
+        this.notificationEventFactory.buildApplicationStatusChangedEvent({
+          application: updated,
+          newStatus: nextStatus,
+          oldStatus,
+          requestId: input.requestId
+        });
+
+      await persistNotificationOutbox(context.outboxRepository, notificationEvent, {
+        createOutboxId: () => this.idGenerator.generate()
+      });
+
+      return updated;
     });
-
-    if (!updated) {
-      throw new InvalidApplicationStatusTransitionError(application.status, input.status);
-    }
-
-    return updated;
   }
 
   private assertEmployerTransition(

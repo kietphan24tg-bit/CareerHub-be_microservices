@@ -16,6 +16,7 @@ service JobService {
   rpc ListJobsByIds (ListJobsByIdsRequest) returns (ListJobsByIdsResponse);
   rpc JobExists (JobExistsRequest) returns (JobExistsResponse);
   rpc GetJobForApplication (GetJobForApplicationRequest) returns (GetJobForApplicationResponse);
+  rpc GetEmployerDashboardJobsSummary (GetEmployerDashboardJobsSummaryRequest) returns (GetEmployerDashboardJobsSummaryResponse);
 }
 
 message PageMeta {
@@ -256,4 +257,26 @@ message GetJobForApplicationResponse {
   string status = 3;
   string expires_at = 4;
   repeated string null_fields = 5;
+}
+
+message EmployerDashboardPriorityJobMessage {
+  string id = 1;
+  string title = 2;
+  string slug = 3;
+  string status = 4;
+  string category = 5;
+  string city = 6;
+  string country = 7;
+  bool is_remote = 8;
+  string expires_at = 9;
+}
+
+message GetEmployerDashboardJobsSummaryRequest {
+  string employer_identity_id = 1;
+  string request_id = 2;
+}
+
+message GetEmployerDashboardJobsSummaryResponse {
+  int32 active_jobs = 1;
+  repeated EmployerDashboardPriorityJobMessage priority_jobs = 2;
 }

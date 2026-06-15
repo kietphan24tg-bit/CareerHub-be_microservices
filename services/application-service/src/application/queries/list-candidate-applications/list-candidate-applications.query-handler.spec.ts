@@ -66,6 +66,30 @@ test('list candidate applications returns grouped summary with shortlisted rolle
     },
     async transitionStatusWithHistory() {
       throw new Error('unused');
+    },
+    async countByEmployer() {
+      throw new Error('unused');
+    },
+    async listEmployerDashboardPipeline() {
+      throw new Error('unused');
+    },
+    async listEmployerDashboardRecentActivities() {
+      throw new Error('unused');
+    },
+    async listRecruiterNotesByApplication() {
+      throw new Error('unused');
+    },
+    async findRecruiterNoteById() {
+      throw new Error('unused');
+    },
+    async createRecruiterNote() {
+      throw new Error('unused');
+    },
+    async updateRecruiterNote() {
+      throw new Error('unused');
+    },
+    async deleteRecruiterNote() {
+      throw new Error('unused');
     }
   });
 

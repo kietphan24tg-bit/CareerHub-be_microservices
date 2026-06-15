@@ -3,5 +3,6 @@ export type ApplyToJobCommand = {
   coverLetter?: string;
   employerIdentityId: string;
   jobId: string;
+  requestId?: string;
   resumeId: string;
 };

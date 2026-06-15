@@ -5,9 +5,15 @@ import {
 } from '@careerhub/infrastructure';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import type { ApplicationPrismaClient } from './application-prisma.types';
+import type { ApplicationPrismaClient, ApplicationPrismaRepositoryClient } from './application-prisma.types';
 
-export class ApplicationPrismaService extends PrismaLifecycleService<ApplicationPrismaClient> {}
+export class ApplicationPrismaService extends PrismaLifecycleService<ApplicationPrismaClient> {
+  async transaction<T>(
+    work: (client: ApplicationPrismaRepositoryClient) => Promise<T>
+  ): Promise<T> {
+    return this.prisma.$transaction(work);
+  }
+}
 
 function resolveGeneratedPrismaModulePath(): string {
   const distRelativePath = join(

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { InvalidApplicationStatusTransitionError } from '../errors/invalid-application-status-transition.error';
+import { ApplicationNotificationEventFactory } from '../notifications/application-notification-event.factory';
 import type {
   ApplicationRecord,
   ApplicationRepository,
@@ -36,25 +37,87 @@ function makeIdGenerator() {
   };
 }
 
-test('application operations applies with application and history in one repository call', async () => {
-  const createWithHistoryCalls: Array<{
+function makeOperations(
+  applicationRepository: Partial<ApplicationRepository>,
+  options?: {
+    outboxCreates?: unknown[];
+    transitionCalls?: TransitionApplicationStatusWithHistoryData[];
+  }
+) {
+  const createCalls: Array<{
     application: CreateApplicationData;
     history: CreateApplicationHistoryData;
   }> = [];
-  const operations = new ApplicationOperations(
-    {
-      async createWithHistory(
-        application: CreateApplicationData,
-        history: CreateApplicationHistoryData
-      ) {
-        createWithHistoryCalls.push({ application, history });
-        return makeApplication('applied');
+  const outboxCreates = options?.outboxCreates ?? [];
+  const transitionCalls = options?.transitionCalls ?? [];
+
+  const contextRepository = {
+    async create(application: CreateApplicationData) {
+      createCalls.push({
+        application,
+        history: {
+          actorIdentityId: '',
+          actorType: 'candidate',
+          applicationId: application.id,
+          eventType: 'status_change',
+          fromStatus: null,
+          id: 'history-placeholder',
+          note: '',
+          toStatus: application.status
+        }
+      });
+      return makeApplication(application.status);
+    },
+    async createHistory(history: CreateApplicationHistoryData) {
+      const last = createCalls[createCalls.length - 1];
+      if (last) {
+        last.history = history;
+      }
+    },
+    async transitionStatusWithHistory(data: TransitionApplicationStatusWithHistoryData) {
+      transitionCalls.push(data);
+      return applicationRepository.transitionStatusWithHistory
+        ? applicationRepository.transitionStatusWithHistory(data)
+        : makeApplication(data.status);
+    }
+  };
+
+  return {
+    createCalls,
+    operations: new ApplicationOperations(
+      applicationRepository as ApplicationRepository,
+      {
+        async execute(work) {
+          return work({
+            applicationRepository: contextRepository as never,
+            outboxRepository: {
+              async create(record: unknown) {
+                outboxCreates.push(record);
+              }
+            } as never,
+            recruitmentRepository: {} as never
+          });
+        }
       },
+      new ApplicationNotificationEventFactory({
+        createSourceEventId: () => 'source-event-1'
+      }),
+      makeIdGenerator()
+    ),
+    outboxCreates,
+    transitionCalls
+  };
+}
+
+test('application operations applies with application, history, and outbox in one transaction', async () => {
+  const outboxCreates: unknown[] = [];
+  const { createCalls, operations } = makeOperations(
+    {
       async findByJobAndCandidate() {
         return null;
       }
-    } as never,
-    makeIdGenerator()
+    },
+    { outboxCreates }
   );
 
   const result = await operations.applyToJob({
@@ -66,16 +129,18 @@ test('application operations applies with application and history in one reposit
   });
 
   assert.equal(result.status, 'applied');
-  const createWithHistoryData = createWithHistoryCalls[0];
-  assert.equal(createWithHistoryData?.application.id, 'application-1');
-  assert.equal(createWithHistoryData?.application.coverLetter, 'Cover letter');
-  assert.equal(createWithHistoryData?.history.eventType, 'status_change');
-  assert.equal(createWithHistoryData?.history.toStatus, 'applied');
+  const createData = createCalls[0];
+  assert.equal(createData?.application.id, 'application-1');
+  assert.equal(createData?.application.coverLetter, 'Cover letter');
+  assert.equal(createData?.history.eventType, 'status_change');
+  assert.equal(createData?.history.toStatus, 'applied');
+  assert.equal(outboxCreates.length, 1);
 });
 
-test('application operations updates employer status with atomic history', async () => {
+test('application operations updates employer status with atomic history and outbox', async () => {
   const transitionCalls: TransitionApplicationStatusWithHistoryData[] = [];
-  const operations = new ApplicationOperations(
+  const outboxCreates: unknown[] = [];
+  const { operations } = makeOperations(
     {
       async findById() {
         return makeApplication('applied');
@@ -84,8 +149,8 @@ test('application operations updates employer status with atomic history', async
         transitionCalls.push(data);
         return makeApplication('reviewed');
       }
-    } as never,
-    makeIdGenerator()
+    },
+    { outboxCreates, transitionCalls }
   );
 
   const result = await operations.updateEmployerStatus({
@@ -102,17 +167,15 @@ test('application operations updates employer status with atomic history', async
     transitionData?.history.note,
     'Employer moved application from applied to reviewed.'
   );
+  assert.equal(outboxCreates.length, 1);
 });
 
 test('application operations rejects invalid employer lifecycle jump', async () => {
-  const operations = new ApplicationOperations(
-    {
-      async findById() {
-        return makeApplication('applied');
-      }
-    } as never,
-    makeIdGenerator()
-  );
+  const { operations } = makeOperations({
+    async findById() {
+      return makeApplication('applied');
+    }
+  });
 
   await assert.rejects(
     () =>
@@ -137,6 +200,14 @@ test('application operations withdraws with atomic history', async () => {
         return makeApplication('withdrawn');
       }
     } as never,
+    {
+      async execute<T>(work: () => Promise<T>) {
+        return work();
+      }
+    } as never,
+    new ApplicationNotificationEventFactory({
+      createSourceEventId: () => 'source-event-1'
+    }),
     makeIdGenerator()
   );
 

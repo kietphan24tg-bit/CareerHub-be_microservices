@@ -2,7 +2,11 @@ import {
 
   createPrismaModule,
 
-  createRuntimeConfigModule
+  createRuntimeConfigModule,
+
+  InMemoryMetricsRegistry,
+
+  type MetricsRegistry
 
 } from '@careerhub/infrastructure';
 
@@ -26,9 +30,15 @@ import {
 
   CreateOfferCommandHandler,
 
+  CreateRecruiterNoteCommandHandler,
+
   DeclineInterviewCommandHandler,
 
   DeclineOfferCommandHandler,
+
+  DeleteRecruiterNoteCommandHandler,
+
+  EmployerDashboardOperations,
 
   GetApplicationCountsByJobIdsQueryHandler,
 
@@ -43,6 +53,8 @@ import {
   GetCandidateOfferQueryHandler,
 
   GetEmployerApplicationByIdQueryHandler,
+
+  GetEmployerDashboardRecruitmentDataQueryHandler,
 
   GetEmployerOfferQueryHandler,
 
@@ -60,7 +72,11 @@ import {
 
   ListJobApplicationsQueryHandler,
 
+  ListRecruiterNotesQueryHandler,
+
   OfferOperations,
+
+  RecruiterNoteOperations,
 
   RequestInterviewRescheduleCommandHandler,
 
@@ -74,9 +90,16 @@ import {
 
   UpdateOfferCommandHandler,
 
+  UpdateRecruiterNoteCommandHandler,
+
   WithdrawApplicationCommandHandler
 
 } from './application';
+
+import {
+  ApplicationNotificationEventFactory,
+  createDefaultApplicationNotificationEventFactory
+} from './application/notifications/application-notification-event.factory';
 
 import { validateApplicationEnvironment } from './config';
 
@@ -84,11 +107,21 @@ import {
 
   ApplicationPrismaService,
 
+  APPLICATION_METRICS_TOKENS,
+
   APPLICATION_PRISMA_TOKENS,
+
+  ApplicationOutboxProcessor,
+
+  ApplicationOutboxPublisher,
 
   createApplicationPrismaClient,
 
+  PrismaApplicationOutboxRepository,
+
   PrismaApplicationRepository,
+
+  PrismaApplicationWriteTransaction,
 
   PrismaRecruitmentRepository
 
@@ -134,13 +167,21 @@ import { ApplicationGrpcController } from './presentation';
 
     {
 
+      provide: APPLICATION_METRICS_TOKENS.registry,
+
+      useFactory: (): MetricsRegistry => new InMemoryMetricsRegistry()
+
+    },
+
+    {
+
       provide: APPLICATION_PORT_TOKENS.applicationRepository,
 
       inject: [APPLICATION_PRISMA_TOKENS.service],
 
       useFactory: (prismaService: ApplicationPrismaService) =>
 
-        new PrismaApplicationRepository(prismaService)
+        new PrismaApplicationRepository(prismaService.prisma)
 
     },
 
@@ -152,9 +193,45 @@ import { ApplicationGrpcController } from './presentation';
 
       useFactory: (prismaService: ApplicationPrismaService) =>
 
-        new PrismaRecruitmentRepository(prismaService)
+        new PrismaRecruitmentRepository(prismaService.prisma)
 
     },
+
+    {
+
+      provide: APPLICATION_PORT_TOKENS.outboxRepository,
+
+      inject: [APPLICATION_PRISMA_TOKENS.service],
+
+      useFactory: (prismaService: ApplicationPrismaService) =>
+
+        new PrismaApplicationOutboxRepository(prismaService.prisma)
+
+    },
+
+    {
+
+      provide: APPLICATION_PORT_TOKENS.writeTransaction,
+
+      inject: [APPLICATION_PRISMA_TOKENS.service],
+
+      useFactory: (prismaService: ApplicationPrismaService) =>
+
+        new PrismaApplicationWriteTransaction(prismaService)
+
+    },
+
+    {
+
+      provide: ApplicationNotificationEventFactory,
+
+      useFactory: () => createDefaultApplicationNotificationEventFactory()
+
+    },
+
+    ApplicationOutboxPublisher,
+
+    ApplicationOutboxProcessor,
 
     {
 
@@ -174,6 +251,10 @@ import { ApplicationGrpcController } from './presentation';
 
         APPLICATION_PORT_TOKENS.recruitmentRepository,
 
+        APPLICATION_PORT_TOKENS.writeTransaction,
+
+        ApplicationNotificationEventFactory,
+
         APPLICATION_PORT_TOKENS.idGenerator
 
       ],
@@ -184,9 +265,20 @@ import { ApplicationGrpcController } from './presentation';
 
         recruitmentRepository: PrismaRecruitmentRepository,
 
+        writeTransaction: PrismaApplicationWriteTransaction,
+
+        notificationEventFactory: ApplicationNotificationEventFactory,
+
         idGenerator: UuidIdGenerator
 
-      ) => new InterviewOperations(applicationRepository, recruitmentRepository, idGenerator)
+      ) =>
+        new InterviewOperations(
+          applicationRepository,
+          recruitmentRepository,
+          writeTransaction,
+          notificationEventFactory,
+          idGenerator
+        )
 
     },
 
@@ -200,6 +292,10 @@ import { ApplicationGrpcController } from './presentation';
 
         APPLICATION_PORT_TOKENS.recruitmentRepository,
 
+        APPLICATION_PORT_TOKENS.writeTransaction,
+
+        ApplicationNotificationEventFactory,
+
         APPLICATION_PORT_TOKENS.idGenerator
 
       ],
@@ -210,9 +306,20 @@ import { ApplicationGrpcController } from './presentation';
 
         recruitmentRepository: PrismaRecruitmentRepository,
 
+        writeTransaction: PrismaApplicationWriteTransaction,
+
+        notificationEventFactory: ApplicationNotificationEventFactory,
+
         idGenerator: UuidIdGenerator
 
-      ) => new OfferOperations(applicationRepository, recruitmentRepository, idGenerator)
+      ) =>
+        new OfferOperations(
+          applicationRepository,
+          recruitmentRepository,
+          writeTransaction,
+          notificationEventFactory,
+          idGenerator
+        )
 
     },
 
@@ -224,6 +331,10 @@ import { ApplicationGrpcController } from './presentation';
 
         APPLICATION_PORT_TOKENS.applicationRepository,
 
+        APPLICATION_PORT_TOKENS.writeTransaction,
+
+        ApplicationNotificationEventFactory,
+
         APPLICATION_PORT_TOKENS.idGenerator
 
       ],
@@ -232,9 +343,19 @@ import { ApplicationGrpcController } from './presentation';
 
         applicationRepository: PrismaApplicationRepository,
 
+        writeTransaction: PrismaApplicationWriteTransaction,
+
+        notificationEventFactory: ApplicationNotificationEventFactory,
+
         idGenerator: UuidIdGenerator
 
-      ) => new ApplicationOperations(applicationRepository, idGenerator)
+      ) =>
+        new ApplicationOperations(
+          applicationRepository,
+          writeTransaction,
+          notificationEventFactory,
+          idGenerator
+        )
 
     },
 
@@ -583,6 +704,110 @@ import { ApplicationGrpcController } from './presentation';
       useFactory: (offerOperations: OfferOperations) =>
 
         new GetCandidateOfferQueryHandler(offerOperations)
+
+    },
+
+    {
+
+      provide: EmployerDashboardOperations,
+
+      inject: [
+
+        APPLICATION_PORT_TOKENS.applicationRepository,
+
+        APPLICATION_PORT_TOKENS.recruitmentRepository
+
+      ],
+
+      useFactory: (
+
+        applicationRepository: PrismaApplicationRepository,
+
+        recruitmentRepository: PrismaRecruitmentRepository
+
+      ) => new EmployerDashboardOperations(applicationRepository, recruitmentRepository)
+
+    },
+
+    {
+
+      provide: RecruiterNoteOperations,
+
+      inject: [
+
+        APPLICATION_PORT_TOKENS.applicationRepository,
+
+        APPLICATION_PORT_TOKENS.idGenerator
+
+      ],
+
+      useFactory: (
+
+        applicationRepository: PrismaApplicationRepository,
+
+        idGenerator: UuidIdGenerator
+
+      ) => new RecruiterNoteOperations(applicationRepository, idGenerator)
+
+    },
+
+    {
+
+      provide: GetEmployerDashboardRecruitmentDataQueryHandler,
+
+      inject: [EmployerDashboardOperations],
+
+      useFactory: (employerDashboardOperations: EmployerDashboardOperations) =>
+
+        new GetEmployerDashboardRecruitmentDataQueryHandler(employerDashboardOperations)
+
+    },
+
+    {
+
+      provide: ListRecruiterNotesQueryHandler,
+
+      inject: [RecruiterNoteOperations],
+
+      useFactory: (recruiterNoteOperations: RecruiterNoteOperations) =>
+
+        new ListRecruiterNotesQueryHandler(recruiterNoteOperations)
+
+    },
+
+    {
+
+      provide: CreateRecruiterNoteCommandHandler,
+
+      inject: [RecruiterNoteOperations],
+
+      useFactory: (recruiterNoteOperations: RecruiterNoteOperations) =>
+
+        new CreateRecruiterNoteCommandHandler(recruiterNoteOperations)
+
+    },
+
+    {
+
+      provide: UpdateRecruiterNoteCommandHandler,
+
+      inject: [RecruiterNoteOperations],
+
+      useFactory: (recruiterNoteOperations: RecruiterNoteOperations) =>
+
+        new UpdateRecruiterNoteCommandHandler(recruiterNoteOperations)
+
+    },
+
+    {
+
+      provide: DeleteRecruiterNoteCommandHandler,
+
+      inject: [RecruiterNoteOperations],
+
+      useFactory: (recruiterNoteOperations: RecruiterNoteOperations) =>
+
+        new DeleteRecruiterNoteCommandHandler(recruiterNoteOperations)
 
     }
 

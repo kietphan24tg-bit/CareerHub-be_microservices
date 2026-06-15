@@ -3,10 +3,13 @@ import { InterviewApplicationStateInvalidError } from '../errors/interview-appli
 import { InterviewNotFoundError } from '../errors/interview-not-found.error';
 import { InterviewResponseStateInvalidError } from '../errors/interview-response-state-invalid.error';
 import { InterviewStateInvalidError } from '../errors/interview-state-invalid.error';
+import { ApplicationNotificationEventFactory } from '../notifications/application-notification-event.factory';
+import { persistNotificationOutbox } from '../outbox/application-outbox-event.mapper';
 import type {
   ApplicationInterviewRecord,
   ApplicationRepository,
   ApplicationStatus,
+  ApplicationWriteTransaction,
   IdGenerator,
   RecruitmentRepository
 } from '../ports';
@@ -83,6 +86,8 @@ export class InterviewOperations {
   constructor(
     private readonly applicationRepository: ApplicationRepository,
     private readonly recruitmentRepository: RecruitmentRepository,
+    private readonly writeTransaction: ApplicationWriteTransaction,
+    private readonly notificationEventFactory: ApplicationNotificationEventFactory,
     private readonly idGenerator: IdGenerator
   ) {}
 
@@ -93,7 +98,7 @@ export class InterviewOperations {
   async createInterview(
     employerIdentityId: string,
     applicationId: string,
-    input: CreateInterviewInput
+    input: CreateInterviewInput & { requestId?: string }
   ): Promise<ApplicationInterviewRecord> {
     const application = await this.applicationRepository.findByIdAndEmployer(
       applicationId.trim(),
@@ -109,75 +114,88 @@ export class InterviewOperations {
     }
 
     const schedule = normalizeInterviewSchedule(input);
+    const normalizedEmployerIdentityId = employerIdentityId.trim();
 
-    if (application.status !== 'interview') {
-      await this.applicationRepository.updateStatus(application.id, 'interview');
-      await this.applicationRepository.createHistory({
-        actorIdentityId: employerIdentityId.trim(),
+    return this.writeTransaction.execute(async (context) => {
+      if (application.status !== 'interview') {
+        await context.applicationRepository.updateStatus(application.id, 'interview');
+        await context.applicationRepository.createHistory({
+          actorIdentityId: normalizedEmployerIdentityId,
+          actorType: 'employer',
+          applicationId: application.id,
+          eventType: 'status_change',
+          fromStatus: application.status,
+          id: this.idGenerator.generate(),
+          note: 'Application moved to interview stage automatically when the first interview was scheduled.',
+          toStatus: 'interview'
+        });
+      }
+
+      const interview = await context.recruitmentRepository.createInterview({
+        applicationId: application.id,
+        callerInfo: normalizeNullableString(input.callerInfo),
+        candidateIdentityId: application.candidateIdentityId,
+        contactInfo: normalizeNullableString(input.contactInfo),
+        date: schedule.date,
+        durationMinutes: schedule.durationMinutes,
+        employerIdentityId: application.employerIdentityId,
+        endTime: schedule.endTime,
+        fullAddress: normalizeNullableString(input.fullAddress),
+        id: this.idGenerator.generate(),
+        interviewers: normalizeInterviewers(input.interviewers),
+        jobId: application.jobId,
+        locationDetail: normalizeNullableString(input.locationDetail),
+        locationLat: normalizeDecimal(input.locationLat),
+        locationLng: normalizeDecimal(input.locationLng),
+        logisticsNote: normalizeNullableString(input.logisticsNote),
+        mapLink: normalizeNullableString(input.mapLink),
+        meetingId: normalizeNullableString(input.meetingId),
+        meetingLink: normalizeNullableString(input.meetingLink),
+        notesToCandidate: normalizeNullableString(input.notesToCandidate),
+        officeName: normalizeNullableString(input.officeName),
+        passcode: normalizeNullableString(input.passcode),
+        phoneNumber: normalizeNullableString(input.phoneNumber),
+        platform: normalizeNullableString(input.platform),
+        round: normalizeRequiredString(input.round, 'Interview round is required.'),
+        scheduledByIdentityId: normalizedEmployerIdentityId,
+        startTime: schedule.startTime,
+        status: INTERVIEW_STATUS.scheduled,
+        timezone: normalizeNullableString(input.timezone),
+        type: normalizeInterviewType(input.type)
+      });
+
+      const historyStatus = lifecycleHistoryStatus('interview');
+      await context.applicationRepository.createHistory({
+        actorIdentityId: normalizedEmployerIdentityId,
         actorType: 'employer',
         applicationId: application.id,
-        eventType: 'status_change',
-        fromStatus: application.status,
+        eventType: 'interview_scheduled',
+        fromStatus: historyStatus.fromStatus,
         id: this.idGenerator.generate(),
-        note: 'Application moved to interview stage automatically when the first interview was scheduled.',
-        toStatus: 'interview'
+        note: 'Employer scheduled the first interview.',
+        toStatus: historyStatus.toStatus
       });
-    }
 
-    const interview = await this.recruitmentRepository.createInterview({
-      applicationId: application.id,
-      callerInfo: normalizeNullableString(input.callerInfo),
-      candidateIdentityId: application.candidateIdentityId,
-      contactInfo: normalizeNullableString(input.contactInfo),
-      date: schedule.date,
-      durationMinutes: schedule.durationMinutes,
-      employerIdentityId: application.employerIdentityId,
-      endTime: schedule.endTime,
-      fullAddress: normalizeNullableString(input.fullAddress),
-      id: this.idGenerator.generate(),
-      interviewers: normalizeInterviewers(input.interviewers),
-      jobId: application.jobId,
-      locationDetail: normalizeNullableString(input.locationDetail),
-      locationLat: normalizeDecimal(input.locationLat),
-      locationLng: normalizeDecimal(input.locationLng),
-      logisticsNote: normalizeNullableString(input.logisticsNote),
-      mapLink: normalizeNullableString(input.mapLink),
-      meetingId: normalizeNullableString(input.meetingId),
-      meetingLink: normalizeNullableString(input.meetingLink),
-      notesToCandidate: normalizeNullableString(input.notesToCandidate),
-      officeName: normalizeNullableString(input.officeName),
-      passcode: normalizeNullableString(input.passcode),
-      phoneNumber: normalizeNullableString(input.phoneNumber),
-      platform: normalizeNullableString(input.platform),
-      round: normalizeRequiredString(input.round, 'Interview round is required.'),
-      scheduledByIdentityId: employerIdentityId.trim(),
-      startTime: schedule.startTime,
-      status: INTERVIEW_STATUS.scheduled,
-      timezone: normalizeNullableString(input.timezone),
-      type: normalizeInterviewType(input.type)
+      const notificationEvent = this.notificationEventFactory.buildInterviewScheduledEvent({
+        actorIdentityId: normalizedEmployerIdentityId,
+        interview,
+        requestId: input.requestId
+      });
+
+      if (notificationEvent) {
+        await persistNotificationOutbox(context.outboxRepository, notificationEvent, {
+          createOutboxId: () => this.idGenerator.generate()
+        });
+      }
+
+      return interview;
     });
-
-    const historyStatus = lifecycleHistoryStatus(
-      application.status === 'interview' ? 'interview' : 'interview'
-    );
-    await this.applicationRepository.createHistory({
-      actorIdentityId: employerIdentityId.trim(),
-      actorType: 'employer',
-      applicationId: application.id,
-      eventType: 'interview_scheduled',
-      fromStatus: historyStatus.fromStatus,
-      id: this.idGenerator.generate(),
-      note: 'Employer scheduled the first interview.',
-      toStatus: historyStatus.toStatus
-    });
-
-    return interview;
   }
 
   async updateInterview(
     employerIdentityId: string,
     interviewId: string,
-    input: UpdateInterviewInput
+    input: UpdateInterviewInput & { requestId?: string }
   ): Promise<ApplicationInterviewRecord> {
     const interview = await this.recruitmentRepository.findInterviewByIdAndEmployer(
       interviewId.trim(),
@@ -192,78 +210,99 @@ export class InterviewOperations {
 
     const updatedSchedule = normalizeInterviewSchedule(input, interview);
     const slotChanged = hasInterviewSlotChange(interview, input, updatedSchedule);
+    const normalizedEmployerIdentityId = employerIdentityId.trim();
 
-    const updated = await this.recruitmentRepository.updateInterview(interview.id, {
-      callerInfo: pickNullableString(input.callerInfo, interview.callerInfo),
-      candidateProposedDate: slotChanged ? null : interview.candidateProposedDate,
-      candidateProposedDurationMinutes: slotChanged
-        ? null
-        : interview.candidateProposedDurationMinutes,
-      candidateProposedStartTime: slotChanged ? null : interview.candidateProposedStartTime,
-      candidateProposedTimezone: slotChanged ? null : interview.candidateProposedTimezone,
-      contactInfo: pickNullableString(input.contactInfo, interview.contactInfo),
-      date: updatedSchedule.date,
-      durationMinutes: updatedSchedule.durationMinutes,
-      endTime: updatedSchedule.endTime,
-      fullAddress: pickNullableString(input.fullAddress, interview.fullAddress),
-      interviewers:
-        input.interviewers === undefined
-          ? interview.interviewers
-          : normalizeInterviewers(input.interviewers),
-      locationDetail: pickNullableString(input.locationDetail, interview.locationDetail),
-      locationLat:
-        input.locationLat === undefined
-          ? interview.locationLat
-          : normalizeDecimal(input.locationLat),
-      locationLng:
-        input.locationLng === undefined
-          ? interview.locationLng
-          : normalizeDecimal(input.locationLng),
-      logisticsNote: pickNullableString(input.logisticsNote, interview.logisticsNote),
-      mapLink: pickNullableString(input.mapLink, interview.mapLink),
-      meetingId: pickNullableString(input.meetingId, interview.meetingId),
-      meetingLink: pickNullableString(input.meetingLink, interview.meetingLink),
-      notesToCandidate: pickNullableString(input.notesToCandidate, interview.notesToCandidate),
-      officeName: pickNullableString(input.officeName, interview.officeName),
-      passcode: pickNullableString(input.passcode, interview.passcode),
-      phoneNumber: pickNullableString(input.phoneNumber, interview.phoneNumber),
-      platform: pickNullableString(input.platform, interview.platform),
-      round:
-        input.round === undefined
-          ? interview.round
-          : normalizeRequiredString(input.round, 'Interview round is required.'),
-      startTime: updatedSchedule.startTime,
-      status: slotChanged ? INTERVIEW_STATUS.rescheduled : interview.status,
-      timezone: pickNullableString(input.timezone, interview.timezone),
-      type: input.type === undefined ? interview.type : normalizeInterviewType(input.type)
+    return this.writeTransaction.execute(async (context) => {
+      const updated = await context.recruitmentRepository.updateInterviewIfStatus(
+        interview.id,
+        [interview.status],
+        {
+        callerInfo: pickNullableString(input.callerInfo, interview.callerInfo),
+        candidateProposedDate: slotChanged ? null : interview.candidateProposedDate,
+        candidateProposedDurationMinutes: slotChanged
+          ? null
+          : interview.candidateProposedDurationMinutes,
+        candidateProposedStartTime: slotChanged ? null : interview.candidateProposedStartTime,
+        candidateProposedTimezone: slotChanged ? null : interview.candidateProposedTimezone,
+        contactInfo: pickNullableString(input.contactInfo, interview.contactInfo),
+        date: updatedSchedule.date,
+        durationMinutes: updatedSchedule.durationMinutes,
+        endTime: updatedSchedule.endTime,
+        fullAddress: pickNullableString(input.fullAddress, interview.fullAddress),
+        interviewers:
+          input.interviewers === undefined
+            ? interview.interviewers
+            : normalizeInterviewers(input.interviewers),
+        locationDetail: pickNullableString(input.locationDetail, interview.locationDetail),
+        locationLat:
+          input.locationLat === undefined
+            ? interview.locationLat
+            : normalizeDecimal(input.locationLat),
+        locationLng:
+          input.locationLng === undefined
+            ? interview.locationLng
+            : normalizeDecimal(input.locationLng),
+        logisticsNote: pickNullableString(input.logisticsNote, interview.logisticsNote),
+        mapLink: pickNullableString(input.mapLink, interview.mapLink),
+        meetingId: pickNullableString(input.meetingId, interview.meetingId),
+        meetingLink: pickNullableString(input.meetingLink, interview.meetingLink),
+        notesToCandidate: pickNullableString(input.notesToCandidate, interview.notesToCandidate),
+        officeName: pickNullableString(input.officeName, interview.officeName),
+        passcode: pickNullableString(input.passcode, interview.passcode),
+        phoneNumber: pickNullableString(input.phoneNumber, interview.phoneNumber),
+        platform: pickNullableString(input.platform, interview.platform),
+        round:
+          input.round === undefined
+            ? interview.round
+            : normalizeRequiredString(input.round, 'Interview round is required.'),
+        startTime: updatedSchedule.startTime,
+        status: slotChanged ? INTERVIEW_STATUS.rescheduled : interview.status,
+        timezone: pickNullableString(input.timezone, interview.timezone),
+        type: input.type === undefined ? interview.type : normalizeInterviewType(input.type)
+      });
+
+      if (!updated) {
+        throw new InterviewStateInvalidError();
+      }
+
+      const application = await context.applicationRepository.findById(interview.applicationId);
+      const historyStatus = lifecycleHistoryStatus(application?.status ?? 'interview');
+      await context.applicationRepository.createHistory({
+        actorIdentityId: normalizedEmployerIdentityId,
+        actorType: 'employer',
+        applicationId: interview.applicationId,
+        eventType: 'interview_status_changed',
+        fromStatus: historyStatus.fromStatus,
+        id: this.idGenerator.generate(),
+        note: slotChanged
+          ? 'Employer rescheduled the interview.'
+          : 'Employer updated interview details.',
+        toStatus: historyStatus.toStatus
+      });
+
+      const notificationEvent =
+        this.notificationEventFactory.buildInterviewStatusChangedEvent({
+          action: 'updated',
+          actorIdentityId: normalizedEmployerIdentityId,
+          interview: updated,
+          recipientRole: 'candidate',
+          requestId: input.requestId
+        });
+
+      if (notificationEvent) {
+        await persistNotificationOutbox(context.outboxRepository, notificationEvent, {
+          createOutboxId: () => this.idGenerator.generate()
+        });
+      }
+
+      return updated;
     });
-
-    if (!updated) {
-      throw new InterviewNotFoundError(interviewId);
-    }
-
-    const application = await this.applicationRepository.findById(interview.applicationId);
-    const historyStatus = lifecycleHistoryStatus(application?.status ?? 'interview');
-    await this.applicationRepository.createHistory({
-      actorIdentityId: employerIdentityId.trim(),
-      actorType: 'employer',
-      applicationId: interview.applicationId,
-      eventType: 'interview_status_changed',
-      fromStatus: historyStatus.fromStatus,
-      id: this.idGenerator.generate(),
-      note: slotChanged
-        ? 'Employer rescheduled the interview.'
-        : 'Employer updated interview details.',
-      toStatus: historyStatus.toStatus
-    });
-
-    return updated;
   }
 
   async cancelInterview(
     employerIdentityId: string,
     interviewId: string,
-    input: CancelInterviewInput
+    input: CancelInterviewInput & { requestId?: string }
   ): Promise<ApplicationInterviewRecord> {
     const interview = await this.recruitmentRepository.findInterviewByIdAndEmployer(
       interviewId.trim(),
@@ -275,30 +314,51 @@ export class InterviewOperations {
     }
 
     this.ensureEmployerMutable(interview.status);
+    const normalizedEmployerIdentityId = employerIdentityId.trim();
 
-    const updated = await this.recruitmentRepository.updateInterview(interview.id, {
-      candidateResponseNote: normalizeNullableString(input.reason),
-      status: INTERVIEW_STATUS.cancelled
+    return this.writeTransaction.execute(async (context) => {
+      const updated = await context.recruitmentRepository.updateInterviewIfStatus(
+        interview.id,
+        [interview.status],
+        {
+        candidateResponseNote: normalizeNullableString(input.reason),
+        status: INTERVIEW_STATUS.cancelled
+      });
+
+      if (!updated) {
+        throw new InterviewStateInvalidError();
+      }
+
+      const application = await context.applicationRepository.findById(interview.applicationId);
+      const historyStatus = lifecycleHistoryStatus(application?.status ?? 'interview');
+      await context.applicationRepository.createHistory({
+        actorIdentityId: normalizedEmployerIdentityId,
+        actorType: 'employer',
+        applicationId: interview.applicationId,
+        eventType: 'interview_status_changed',
+        fromStatus: historyStatus.fromStatus,
+        id: this.idGenerator.generate(),
+        note: `Employer cancelled the interview. Reason: ${input.reason.trim()}`,
+        toStatus: historyStatus.toStatus
+      });
+
+      const notificationEvent =
+        this.notificationEventFactory.buildInterviewStatusChangedEvent({
+          action: 'cancelled',
+          actorIdentityId: normalizedEmployerIdentityId,
+          interview: updated,
+          recipientRole: 'candidate',
+          requestId: input.requestId
+        });
+
+      if (notificationEvent) {
+        await persistNotificationOutbox(context.outboxRepository, notificationEvent, {
+          createOutboxId: () => this.idGenerator.generate()
+        });
+      }
+
+      return updated;
     });
-
-    if (!updated) {
-      throw new InterviewNotFoundError(interviewId);
-    }
-
-    const application = await this.applicationRepository.findById(interview.applicationId);
-    const historyStatus = lifecycleHistoryStatus(application?.status ?? 'interview');
-    await this.applicationRepository.createHistory({
-      actorIdentityId: employerIdentityId.trim(),
-      actorType: 'employer',
-      applicationId: interview.applicationId,
-      eventType: 'interview_status_changed',
-      fromStatus: historyStatus.fromStatus,
-      id: this.idGenerator.generate(),
-      note: `Employer cancelled the interview. Reason: ${input.reason.trim()}`,
-      toStatus: historyStatus.toStatus
-    });
-
-    return updated;
   }
 
   async getCandidateInterview(
@@ -320,7 +380,7 @@ export class InterviewOperations {
   async confirmInterview(
     candidateIdentityId: string,
     interviewId: string,
-    input: CandidateInterviewResponseInput
+    input: CandidateInterviewResponseInput & { requestId?: string }
   ): Promise<ApplicationInterviewRecord> {
     const interview = await this.recruitmentRepository.findInterviewByIdAndCandidate(
       interviewId.trim(),
@@ -332,36 +392,57 @@ export class InterviewOperations {
     }
 
     this.ensureCandidateRespondable(interview.status);
+    const normalizedCandidateIdentityId = candidateIdentityId.trim();
 
-    const updated = await this.recruitmentRepository.updateInterview(interview.id, {
-      candidateResponseNote: normalizeNullableString(input.candidateResponseNote),
-      status: INTERVIEW_STATUS.confirmed
+    return this.writeTransaction.execute(async (context) => {
+      const updated = await context.recruitmentRepository.updateInterviewIfStatus(
+        interview.id,
+        [interview.status],
+        {
+        candidateResponseNote: normalizeNullableString(input.candidateResponseNote),
+        status: INTERVIEW_STATUS.confirmed
+      });
+
+      if (!updated) {
+        throw new InterviewResponseStateInvalidError();
+      }
+
+      const application = await context.applicationRepository.findById(interview.applicationId);
+      const historyStatus = lifecycleHistoryStatus(application?.status ?? 'interview');
+      await context.applicationRepository.createHistory({
+        actorIdentityId: normalizedCandidateIdentityId,
+        actorType: 'candidate',
+        applicationId: interview.applicationId,
+        eventType: 'interview_status_changed',
+        fromStatus: historyStatus.fromStatus,
+        id: this.idGenerator.generate(),
+        note: 'Candidate confirmed interview attendance.',
+        toStatus: historyStatus.toStatus
+      });
+
+      const notificationEvent =
+        this.notificationEventFactory.buildInterviewStatusChangedEvent({
+          action: 'confirmed',
+          actorIdentityId: normalizedCandidateIdentityId,
+          interview: updated,
+          recipientRole: 'employer',
+          requestId: input.requestId
+        });
+
+      if (notificationEvent) {
+        await persistNotificationOutbox(context.outboxRepository, notificationEvent, {
+          createOutboxId: () => this.idGenerator.generate()
+        });
+      }
+
+      return updated;
     });
-
-    if (!updated) {
-      throw new InterviewNotFoundError(interviewId);
-    }
-
-    const application = await this.applicationRepository.findById(interview.applicationId);
-    const historyStatus = lifecycleHistoryStatus(application?.status ?? 'interview');
-    await this.applicationRepository.createHistory({
-      actorIdentityId: candidateIdentityId.trim(),
-      actorType: 'candidate',
-      applicationId: interview.applicationId,
-      eventType: 'interview_status_changed',
-      fromStatus: historyStatus.fromStatus,
-      id: this.idGenerator.generate(),
-      note: 'Candidate confirmed interview attendance.',
-      toStatus: historyStatus.toStatus
-    });
-
-    return updated;
   }
 
   async declineInterview(
     candidateIdentityId: string,
     interviewId: string,
-    input: CandidateInterviewResponseInput
+    input: CandidateInterviewResponseInput & { requestId?: string }
   ): Promise<ApplicationInterviewRecord> {
     const interview = await this.recruitmentRepository.findInterviewByIdAndCandidate(
       interviewId.trim(),
@@ -373,36 +454,57 @@ export class InterviewOperations {
     }
 
     this.ensureCandidateRespondable(interview.status);
+    const normalizedCandidateIdentityId = candidateIdentityId.trim();
 
-    const updated = await this.recruitmentRepository.updateInterview(interview.id, {
-      candidateResponseNote: normalizeNullableString(input.candidateResponseNote),
-      status: INTERVIEW_STATUS.cancelled
+    return this.writeTransaction.execute(async (context) => {
+      const updated = await context.recruitmentRepository.updateInterviewIfStatus(
+        interview.id,
+        [interview.status],
+        {
+        candidateResponseNote: normalizeNullableString(input.candidateResponseNote),
+        status: INTERVIEW_STATUS.cancelled
+      });
+
+      if (!updated) {
+        throw new InterviewResponseStateInvalidError();
+      }
+
+      const application = await context.applicationRepository.findById(interview.applicationId);
+      const historyStatus = lifecycleHistoryStatus(application?.status ?? 'interview');
+      await context.applicationRepository.createHistory({
+        actorIdentityId: normalizedCandidateIdentityId,
+        actorType: 'candidate',
+        applicationId: interview.applicationId,
+        eventType: 'interview_status_changed',
+        fromStatus: historyStatus.fromStatus,
+        id: this.idGenerator.generate(),
+        note: 'Candidate declined the interview.',
+        toStatus: historyStatus.toStatus
+      });
+
+      const notificationEvent =
+        this.notificationEventFactory.buildInterviewStatusChangedEvent({
+          action: 'declined',
+          actorIdentityId: normalizedCandidateIdentityId,
+          interview: updated,
+          recipientRole: 'employer',
+          requestId: input.requestId
+        });
+
+      if (notificationEvent) {
+        await persistNotificationOutbox(context.outboxRepository, notificationEvent, {
+          createOutboxId: () => this.idGenerator.generate()
+        });
+      }
+
+      return updated;
     });
-
-    if (!updated) {
-      throw new InterviewNotFoundError(interviewId);
-    }
-
-    const application = await this.applicationRepository.findById(interview.applicationId);
-    const historyStatus = lifecycleHistoryStatus(application?.status ?? 'interview');
-    await this.applicationRepository.createHistory({
-      actorIdentityId: candidateIdentityId.trim(),
-      actorType: 'candidate',
-      applicationId: interview.applicationId,
-      eventType: 'interview_status_changed',
-      fromStatus: historyStatus.fromStatus,
-      id: this.idGenerator.generate(),
-      note: 'Candidate declined the interview.',
-      toStatus: historyStatus.toStatus
-    });
-
-    return updated;
   }
 
   async requestReschedule(
     candidateIdentityId: string,
     interviewId: string,
-    input: CandidateRescheduleRequestInput
+    input: CandidateRescheduleRequestInput & { requestId?: string }
   ): Promise<ApplicationInterviewRecord> {
     const interview = await this.recruitmentRepository.findInterviewByIdAndCandidate(
       interviewId.trim(),
@@ -414,34 +516,55 @@ export class InterviewOperations {
     }
 
     this.ensureCandidateRespondable(interview.status);
+    const normalizedCandidateIdentityId = candidateIdentityId.trim();
 
-    const updated = await this.recruitmentRepository.updateInterview(interview.id, {
-      candidateProposedDate: toDateOnly(input.proposedDate),
-      candidateProposedDurationMinutes: input.proposedDurationMinutes ?? null,
-      candidateProposedStartTime: toTimeOnly(input.proposedStartTime),
-      candidateProposedTimezone: normalizeNullableString(input.proposedTimezone),
-      candidateResponseNote: normalizeNullableString(input.candidateResponseNote),
-      status: INTERVIEW_STATUS.rescheduled
+    return this.writeTransaction.execute(async (context) => {
+      const updated = await context.recruitmentRepository.updateInterviewIfStatus(
+        interview.id,
+        [interview.status],
+        {
+        candidateProposedDate: toDateOnly(input.proposedDate),
+        candidateProposedDurationMinutes: input.proposedDurationMinutes ?? null,
+        candidateProposedStartTime: toTimeOnly(input.proposedStartTime),
+        candidateProposedTimezone: normalizeNullableString(input.proposedTimezone),
+        candidateResponseNote: normalizeNullableString(input.candidateResponseNote),
+        status: INTERVIEW_STATUS.rescheduled
+      });
+
+      if (!updated) {
+        throw new InterviewResponseStateInvalidError();
+      }
+
+      const application = await context.applicationRepository.findById(interview.applicationId);
+      const historyStatus = lifecycleHistoryStatus(application?.status ?? 'interview');
+      await context.applicationRepository.createHistory({
+        actorIdentityId: normalizedCandidateIdentityId,
+        actorType: 'candidate',
+        applicationId: interview.applicationId,
+        eventType: 'interview_status_changed',
+        fromStatus: historyStatus.fromStatus,
+        id: this.idGenerator.generate(),
+        note: 'Candidate requested interview reschedule.',
+        toStatus: historyStatus.toStatus
+      });
+
+      const notificationEvent =
+        this.notificationEventFactory.buildInterviewStatusChangedEvent({
+          action: 'requested_reschedule',
+          actorIdentityId: normalizedCandidateIdentityId,
+          interview: updated,
+          recipientRole: 'employer',
+          requestId: input.requestId
+        });
+
+      if (notificationEvent) {
+        await persistNotificationOutbox(context.outboxRepository, notificationEvent, {
+          createOutboxId: () => this.idGenerator.generate()
+        });
+      }
+
+      return updated;
     });
-
-    if (!updated) {
-      throw new InterviewNotFoundError(interviewId);
-    }
-
-    const application = await this.applicationRepository.findById(interview.applicationId);
-    const historyStatus = lifecycleHistoryStatus(application?.status ?? 'interview');
-    await this.applicationRepository.createHistory({
-      actorIdentityId: candidateIdentityId.trim(),
-      actorType: 'candidate',
-      applicationId: interview.applicationId,
-      eventType: 'interview_status_changed',
-      fromStatus: historyStatus.fromStatus,
-      id: this.idGenerator.generate(),
-      note: 'Candidate requested interview reschedule.',
-      toStatus: historyStatus.toStatus
-    });
-
-    return updated;
   }
 
   private ensureEmployerMutable(status: string): void {

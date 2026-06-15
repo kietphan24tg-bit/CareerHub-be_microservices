@@ -1,4 +1,5 @@
 import type { PrismaClientLike } from '@careerhub/infrastructure';
+import type { OutboxRecord } from '@careerhub/contracts';
 
 export type ApplicationPersistenceRecord = {
   candidateIdentityId: string;
@@ -177,7 +178,7 @@ export type ApplicationModelDelegate = {
   }): Promise<ApplicationPersistenceRecord | null>;
   findMany(args: {
     where?: ApplicationWhereInput;
-    orderBy?: Record<string, 'asc' | 'desc'>;
+    orderBy?: Record<string, 'asc' | 'desc'> | Array<Record<string, 'asc' | 'desc'>>;
     skip?: number;
     take?: number;
   }): Promise<ApplicationPersistenceRecord[]>;
@@ -196,11 +197,40 @@ export type ApplicationHistoryModelDelegate = {
   }): Promise<ApplicationHistoryPersistenceRecord>;
   findMany(args: {
     where?: ApplicationWhereInput;
-    orderBy?: Record<string, 'asc' | 'desc'>;
+    orderBy?: Record<string, 'asc' | 'desc'> | Array<Record<string, 'asc' | 'desc'>>;
+    take?: number;
   }): Promise<ApplicationHistoryPersistenceRecord[]>;
 };
 
+export type RecruiterNotePersistenceRecord = {
+  applicationId: string;
+  authorIdentityId: string;
+  body: string;
+  createdAt: Date;
+  id: string;
+  updatedAt: Date;
+};
+
+export type RecruiterNoteCreateInput = Omit<RecruiterNotePersistenceRecord, 'createdAt' | 'updatedAt'>;
+
+export type RecruiterNoteModelDelegate = {
+  create(args: { data: RecruiterNoteCreateInput }): Promise<RecruiterNotePersistenceRecord>;
+  deleteMany(args: { where?: ApplicationWhereInput }): Promise<{ count: number }>;
+  findFirst(args: {
+    where?: ApplicationWhereInput;
+  }): Promise<RecruiterNotePersistenceRecord | null>;
+  findMany(args: {
+    where?: ApplicationWhereInput;
+    orderBy?: Record<string, 'asc' | 'desc'> | Array<Record<string, 'asc' | 'desc'>>;
+  }): Promise<RecruiterNotePersistenceRecord[]>;
+  updateMany(args: {
+    data: { body: string; updatedAt?: Date };
+    where?: ApplicationWhereInput;
+  }): Promise<{ count: number }>;
+};
+
 export type InterviewModelDelegate = {
+  count(args: { where?: ApplicationWhereInput }): Promise<number>;
   create(args: { data: InterviewCreateInput }): Promise<InterviewPersistenceRecord>;
   findFirst(args: {
     where?: ApplicationWhereInput;
@@ -209,6 +239,7 @@ export type InterviewModelDelegate = {
   findMany(args: {
     where?: ApplicationWhereInput;
     orderBy?: Record<string, 'asc' | 'desc'> | Record<string, 'asc' | 'desc'>[];
+    take?: number;
   }): Promise<InterviewPersistenceRecord[]>;
   updateMany(args: {
     data: InterviewUpdateInput;
@@ -217,6 +248,7 @@ export type InterviewModelDelegate = {
 };
 
 export type OfferModelDelegate = {
+  count(args: { where?: ApplicationWhereInput }): Promise<number>;
   create(args: { data: OfferCreateInput }): Promise<OfferPersistenceRecord>;
   findFirst(args: {
     where?: ApplicationWhereInput;
@@ -255,7 +287,63 @@ export type ApplicationTransactionClient = {
   interview: InterviewModelDelegate;
   jobOffer: OfferModelDelegate;
   offerBenefit: OfferBenefitModelDelegate;
+  outbox: OutboxModelDelegate;
+  recruiterNote: RecruiterNoteModelDelegate;
 };
+
+export type OutboxPersistenceRecord = {
+  eventName: string;
+  id: string;
+  lastError: string | null;
+  nextRetryAt: Date | null;
+  occurredAt: Date;
+  payload: OutboxRecord['payload'];
+  processingAt: Date | null;
+  processedAt: Date | null;
+  retryCount: number;
+  status: OutboxRecord['status'];
+};
+
+export type PrismaOutboxCreateInput = {
+  eventName: string;
+  id: string;
+  lastError?: string | null;
+  nextRetryAt?: Date | null;
+  occurredAt: Date;
+  payload: OutboxRecord['payload'];
+  processingAt?: Date | null;
+  processedAt?: Date | null;
+  retryCount: number;
+  status: OutboxRecord['status'];
+};
+
+export type OutboxModelDelegate = {
+  count(args: { where?: ApplicationWhereInput }): Promise<number>;
+  create(args: { data: PrismaOutboxCreateInput }): Promise<OutboxPersistenceRecord>;
+  deleteMany(args: { where?: ApplicationWhereInput }): Promise<{ count: number }>;
+  findFirst(args: {
+    orderBy?: { occurredAt: 'asc' | 'desc' };
+    select?: { occurredAt?: boolean; id?: boolean };
+    where?: ApplicationWhereInput;
+  }): Promise<Partial<OutboxPersistenceRecord> | null>;
+  findMany(args: {
+    orderBy?: { occurredAt: 'asc' | 'desc' };
+    select?: { id?: boolean };
+    take?: number;
+    where?: ApplicationWhereInput;
+  }): Promise<OutboxPersistenceRecord[]>;
+  findUnique(args: { where: { id: string } }): Promise<OutboxPersistenceRecord | null>;
+  update(args: {
+    data: Partial<OutboxPersistenceRecord>;
+    where: { id: string };
+  }): Promise<OutboxPersistenceRecord>;
+  updateMany(args: {
+    data: Partial<OutboxPersistenceRecord>;
+    where?: ApplicationWhereInput;
+  }): Promise<{ count: number }>;
+};
+
+export type ApplicationPrismaRepositoryClient = ApplicationTransactionClient;
 
 export type ApplicationPrismaClient = PrismaClientLike &
   ApplicationTransactionClient & {

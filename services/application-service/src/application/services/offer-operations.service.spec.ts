@@ -7,6 +7,7 @@ import { OfferExpirationRequiredError } from '../errors/offer-expiration-require
 import { OfferSendStateInvalidError } from '../errors/offer-send-state-invalid.error';
 import { OfferStateInvalidError } from '../errors/offer-state-invalid.error';
 import type { ApplicationOfferRecord, ApplicationRecord } from '../ports';
+import { ApplicationNotificationEventFactory } from '../notifications/application-notification-event.factory';
 import { OfferOperations } from './offer-operations.service';
 
 const baseApplication: ApplicationRecord = {
@@ -125,8 +126,15 @@ function createOperations(overrides: {
     async loadOfferWithBenefits(offerId: string) {
       return offerId === 'offer-1' ? { ...baseOffer, status: 'sent', sentAt: new Date() } : null;
     },
-    async updateOffer(_id: string, data: Record<string, unknown>) {
+    async updateOfferIfStatus(
+      _id: string,
+      _expectedStatuses: string[],
+      data: Record<string, unknown>
+    ) {
       return { ...baseOffer, ...data } as ApplicationOfferRecord;
+    },
+    async softDeleteOfferIfStatus() {
+      return true;
     },
     ...overrides.recruitmentRepository
   };
@@ -134,6 +142,20 @@ function createOperations(overrides: {
   const operations = new OfferOperations(
     applicationRepository as never,
     recruitmentRepository as never,
+    {
+      async execute(work) {
+        return work({
+          applicationRepository: applicationRepository as never,
+          outboxRepository: {
+            async create() {}
+          } as never,
+          recruitmentRepository: recruitmentRepository as never
+        });
+      }
+    },
+    new ApplicationNotificationEventFactory({
+      createSourceEventId: () => 'source-event-1'
+    }),
     {
       generate() {
         idCounter += 1;
@@ -353,4 +375,30 @@ test('list employer offers for application expires open offers first', async () 
 
   assert.equal(expiredApplicationId, 'application-1');
   assert.equal(result.length, 1);
+});
+
+test('send offer fails when conditional update loses race', async () => {
+  const { histories, operations } = createOperations({
+    recruitmentRepository: {
+      async updateOfferIfStatus() {
+        return null;
+      }
+    }
+  });
+
+  await assert.rejects(() => operations.sendOffer('employer-1', 'offer-1'), OfferSendStateInvalidError);
+  assert.equal(histories.length, 0);
+});
+
+test('accept offer fails when conditional update loses race', async () => {
+  const { histories, operations } = createOperations({
+    recruitmentRepository: {
+      async updateOfferIfStatus() {
+        return null;
+      }
+    }
+  });
+
+  await assert.rejects(() => operations.acceptOffer('candidate-1', 'offer-1', {}), OfferAcceptStateInvalidError);
+  assert.equal(histories.length, 0);
 });

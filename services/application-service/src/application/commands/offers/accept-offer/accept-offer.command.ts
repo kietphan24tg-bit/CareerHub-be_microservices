@@ -3,4 +3,5 @@ import type { CandidateOfferDecisionInput } from '../../../services/offer-operat
 export type AcceptOfferCommand = CandidateOfferDecisionInput & {
   candidateIdentityId: string;
   offerId: string;
+  requestId?: string;
 };

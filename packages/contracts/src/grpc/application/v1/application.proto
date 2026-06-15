@@ -31,6 +31,11 @@ service ApplicationService {
   rpc GetCandidateOffer (GetCandidateOfferRequest) returns (GetCandidateOfferResponse);
   rpc AcceptOffer (AcceptOfferRequest) returns (AcceptOfferResponse);
   rpc DeclineOffer (DeclineOfferRequest) returns (DeclineOfferResponse);
+  rpc GetEmployerDashboardRecruitmentData (GetEmployerDashboardRecruitmentDataRequest) returns (GetEmployerDashboardRecruitmentDataResponse);
+  rpc ListRecruiterNotes (ListRecruiterNotesRequest) returns (ListRecruiterNotesResponse);
+  rpc CreateRecruiterNote (CreateRecruiterNoteRequest) returns (CreateRecruiterNoteResponse);
+  rpc UpdateRecruiterNote (UpdateRecruiterNoteRequest) returns (UpdateRecruiterNoteResponse);
+  rpc DeleteRecruiterNote (DeleteRecruiterNoteRequest) returns (DeleteRecruiterNoteResponse);
 }
 
 message PageMeta {
@@ -692,4 +697,107 @@ message DeclineOfferRequest {
 
 message DeclineOfferResponse {
   OfferDetailMessage offer = 1;
+}
+
+message EmployerDashboardPipelineItemMessage {
+  string application_id = 1;
+  string candidate_identity_id = 2;
+  string job_id = 3;
+  string status = 4;
+  string applied_at = 5;
+  string updated_at = 6;
+}
+
+message EmployerDashboardInterviewTodayItemMessage {
+  string id = 1;
+  string application_id = 2;
+  string job_id = 3;
+  string candidate_identity_id = 4;
+  string type = 5;
+  string status = 6;
+  string date = 7;
+  string start_time = 8;
+}
+
+message EmployerDashboardRecentActivityItemMessage {
+  string id = 1;
+  string application_id = 2;
+  string candidate_identity_id = 3;
+  string job_id = 4;
+  string event_type = 5;
+  string old_status = 6;
+  string new_status = 7;
+  string note = 8;
+  string created_at = 9;
+}
+
+message EmployerDashboardRecruitmentSummaryMessage {
+  int32 total_applicants = 1;
+  int32 interviews_today = 2;
+  int32 offers_open = 3;
+}
+
+message GetEmployerDashboardRecruitmentDataRequest {
+  string employer_identity_id = 1;
+  string local_date = 2;
+  string request_id = 3;
+}
+
+message GetEmployerDashboardRecruitmentDataResponse {
+  EmployerDashboardRecruitmentSummaryMessage summary = 1;
+  repeated EmployerDashboardPipelineItemMessage pipeline = 2;
+  repeated EmployerDashboardInterviewTodayItemMessage interviews_today = 3;
+  repeated EmployerDashboardRecentActivityItemMessage recent_activities = 4;
+}
+
+message RecruiterNoteMessage {
+  string id = 1;
+  string application_id = 2;
+  string author_identity_id = 3;
+  string body = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
+message ListRecruiterNotesRequest {
+  string employer_identity_id = 1;
+  string application_id = 2;
+  string request_id = 3;
+}
+
+message ListRecruiterNotesResponse {
+  repeated RecruiterNoteMessage items = 1;
+}
+
+message CreateRecruiterNoteRequest {
+  string employer_identity_id = 1;
+  string application_id = 2;
+  string body = 3;
+  string request_id = 4;
+}
+
+message CreateRecruiterNoteResponse {
+  RecruiterNoteMessage note = 1;
+}
+
+message UpdateRecruiterNoteRequest {
+  string employer_identity_id = 1;
+  string note_id = 2;
+  string body = 3;
+  string request_id = 4;
+}
+
+message UpdateRecruiterNoteResponse {
+  RecruiterNoteMessage note = 1;
+}
+
+message DeleteRecruiterNoteRequest {
+  string employer_identity_id = 1;
+  string note_id = 2;
+  string request_id = 3;
+}
+
+message DeleteRecruiterNoteResponse {
+  bool deleted = 1;
+  string id = 2;
 }

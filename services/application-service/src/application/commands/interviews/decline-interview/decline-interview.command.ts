@@ -3,4 +3,5 @@ import type { CandidateInterviewResponseInput } from '../../../services/intervie
 export type DeclineInterviewCommand = CandidateInterviewResponseInput & {
   candidateIdentityId: string;
   interviewId: string;
+  requestId?: string;
 };

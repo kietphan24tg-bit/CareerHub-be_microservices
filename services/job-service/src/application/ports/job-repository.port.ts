@@ -130,4 +130,9 @@ export interface JobRepository {
     employerIdentityId: string,
     patch: UpdateJobPatch
   ): Promise<JobRecord | null>;
+  countPublishedByEmployer(employerIdentityId: string): Promise<number>;
+  listEmployerDashboardPriorityJobs(
+    employerIdentityId: string,
+    limit: number
+  ): Promise<JobRecord[]>;
 }

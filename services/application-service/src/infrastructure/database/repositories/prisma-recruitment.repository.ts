@@ -11,8 +11,8 @@ import type {
   UpdateInterviewData,
   UpdateOfferData
 } from '../../../application/ports/recruitment-repository.port';
-import { ApplicationPrismaService } from '../prisma/application-prisma.service';
 import type {
+  ApplicationPrismaRepositoryClient,
   BenefitCatalogPersistenceRecord,
   InterviewPersistenceRecord,
   OfferBenefitPersistenceRecord,
@@ -144,10 +144,10 @@ function mapBenefitCatalogRecord(record: BenefitCatalogPersistenceRecord): Benef
 }
 
 export class PrismaRecruitmentRepository implements RecruitmentRepository {
-  constructor(private readonly prismaService: ApplicationPrismaService) {}
+  constructor(private readonly prismaClient: ApplicationPrismaRepositoryClient) {}
 
   async listEmployerInterviews(employerIdentityId: string): Promise<ApplicationInterviewRecord[]> {
-    const records = await this.prismaService.prisma.interview.findMany({
+    const records = await this.prismaClient.interview.findMany({
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
       where: { employerIdentityId }
     });
@@ -156,7 +156,7 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
   }
 
   async findInterviewById(interviewId: string): Promise<ApplicationInterviewRecord | null> {
-    const record = await this.prismaService.prisma.interview.findFirst({
+    const record = await this.prismaClient.interview.findFirst({
       where: { id: interviewId }
     });
 
@@ -167,7 +167,7 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
     interviewId: string,
     employerIdentityId: string
   ): Promise<ApplicationInterviewRecord | null> {
-    const record = await this.prismaService.prisma.interview.findFirst({
+    const record = await this.prismaClient.interview.findFirst({
       where: {
         employerIdentityId,
         id: interviewId
@@ -181,7 +181,7 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
     interviewId: string,
     candidateIdentityId: string
   ): Promise<ApplicationInterviewRecord | null> {
-    const record = await this.prismaService.prisma.interview.findFirst({
+    const record = await this.prismaClient.interview.findFirst({
       where: {
         candidateIdentityId,
         id: interviewId
@@ -195,7 +195,7 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
     applicationId: string,
     candidateIdentityId: string
   ): Promise<ApplicationInterviewRecord | null> {
-    const record = await this.prismaService.prisma.interview.findFirst({
+    const record = await this.prismaClient.interview.findFirst({
       orderBy: [{ createdAt: 'desc' }],
       where: {
         applicationId,
@@ -207,7 +207,7 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
   }
 
   async createInterview(data: CreateInterviewData): Promise<ApplicationInterviewRecord> {
-    const record = await this.prismaService.prisma.interview.create({
+    const record = await this.prismaClient.interview.create({
       data: {
         applicationId: data.applicationId,
         callerInfo: data.callerInfo,
@@ -256,12 +256,29 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
     interviewId: string,
     data: UpdateInterviewData
   ): Promise<ApplicationInterviewRecord | null> {
-    const result = await this.prismaService.prisma.interview.updateMany({
+    return this.updateInterviewIfStatus(interviewId, [], data);
+  }
+
+  async updateInterviewIfStatus(
+    interviewId: string,
+    expectedStatuses: string[],
+    data: UpdateInterviewData
+  ): Promise<ApplicationInterviewRecord | null> {
+    const result = await this.prismaClient.interview.updateMany({
       data: {
         ...data,
         updatedAt: new Date()
       },
-      where: { id: interviewId }
+      where: {
+        id: interviewId,
+        ...(expectedStatuses.length > 0
+          ? {
+              status: {
+                in: expectedStatuses
+              }
+            }
+          : {})
+      }
     });
 
     if (result.count === 0) {
@@ -272,7 +289,7 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
   }
 
   async listBenefitCatalog(): Promise<BenefitCatalogRecord[]> {
-    const records = await this.prismaService.prisma.benefitCatalog.findMany({
+    const records = await this.prismaClient.benefitCatalog.findMany({
       orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
       where: { isActive: true }
     });
@@ -281,7 +298,7 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
   }
 
   async findOfferByApplicationId(applicationId: string): Promise<ApplicationOfferRecord | null> {
-    const record = await this.prismaService.prisma.jobOffer.findFirst({
+    const record = await this.prismaClient.jobOffer.findFirst({
       where: {
         applicationId,
         deletedAt: null
@@ -297,7 +314,7 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
   }
 
   async findOfferById(offerId: string): Promise<ApplicationOfferRecord | null> {
-    const record = await this.prismaService.prisma.jobOffer.findFirst({
+    const record = await this.prismaClient.jobOffer.findFirst({
       where: {
         deletedAt: null,
         id: offerId
@@ -316,7 +333,7 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
     offerId: string,
     employerIdentityId: string
   ): Promise<ApplicationOfferRecord | null> {
-    const record = await this.prismaService.prisma.jobOffer.findFirst({
+    const record = await this.prismaClient.jobOffer.findFirst({
       where: {
         deletedAt: null,
         employerIdentityId,
@@ -336,7 +353,7 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
     offerId: string,
     candidateIdentityId: string
   ): Promise<ApplicationOfferRecord | null> {
-    const record = await this.prismaService.prisma.jobOffer.findFirst({
+    const record = await this.prismaClient.jobOffer.findFirst({
       where: {
         candidateIdentityId,
         deletedAt: null,
@@ -353,7 +370,7 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
   }
 
   async listOffersByApplicationId(applicationId: string): Promise<ApplicationOfferRecord[]> {
-    const records = await this.prismaService.prisma.jobOffer.findMany({
+    const records = await this.prismaClient.jobOffer.findMany({
       orderBy: [{ createdAt: 'desc' }],
       where: {
         applicationId,
@@ -374,7 +391,7 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
     data: CreateOfferData,
     benefits: CreateOfferBenefitData[]
   ): Promise<ApplicationOfferRecord> {
-    const record = await this.prismaService.prisma.jobOffer.create({
+    const record = await this.prismaClient.jobOffer.create({
       data: {
         applicationId: data.applicationId,
         bonusDetails: data.bonusDetails,
@@ -404,7 +421,7 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
     });
 
     if (benefits.length > 0) {
-      await this.prismaService.prisma.offerBenefit.createMany({
+      await this.prismaClient.offerBenefit.createMany({
         data: benefits.map((benefit) => ({
           amount: benefit.amount,
           annualLeaveDays: benefit.annualLeaveDays,
@@ -431,14 +448,30 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
     data: UpdateOfferData,
     benefits?: CreateOfferBenefitData[] | null
   ): Promise<ApplicationOfferRecord | null> {
-    const result = await this.prismaService.prisma.jobOffer.updateMany({
+    return this.updateOfferIfStatus(offerId, [], data, benefits);
+  }
+
+  async updateOfferIfStatus(
+    offerId: string,
+    expectedStatuses: string[],
+    data: UpdateOfferData,
+    benefits?: CreateOfferBenefitData[] | null
+  ): Promise<ApplicationOfferRecord | null> {
+    const result = await this.prismaClient.jobOffer.updateMany({
       data: {
         ...data,
         updatedAt: new Date()
       },
       where: {
         deletedAt: null,
-        id: offerId
+        id: offerId,
+        ...(expectedStatuses.length > 0
+          ? {
+              status: {
+                in: expectedStatuses
+              }
+            }
+          : {})
       }
     });
 
@@ -454,7 +487,7 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
   }
 
   async replaceOfferBenefits(offerId: string, benefits: CreateOfferBenefitData[]): Promise<void> {
-    await this.prismaService.prisma.offerBenefit.deleteMany({
+    await this.prismaClient.offerBenefit.deleteMany({
       where: { offerId }
     });
 
@@ -462,7 +495,7 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
       return;
     }
 
-    await this.prismaService.prisma.offerBenefit.createMany({
+    await this.prismaClient.offerBenefit.createMany({
       data: benefits.map((benefit) => ({
         amount: benefit.amount,
         annualLeaveDays: benefit.annualLeaveDays,
@@ -481,14 +514,29 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
   }
 
   async softDeleteOffer(offerId: string, deletedAt: Date): Promise<boolean> {
-    const result = await this.prismaService.prisma.jobOffer.updateMany({
+    return this.softDeleteOfferIfStatus(offerId, [], deletedAt);
+  }
+
+  async softDeleteOfferIfStatus(
+    offerId: string,
+    expectedStatuses: string[],
+    deletedAt: Date
+  ): Promise<boolean> {
+    const result = await this.prismaClient.jobOffer.updateMany({
       data: {
         deletedAt,
         updatedAt: deletedAt
       },
       where: {
         deletedAt: null,
-        id: offerId
+        id: offerId,
+        ...(expectedStatuses.length > 0
+          ? {
+              status: {
+                in: expectedStatuses
+              }
+            }
+          : {})
       }
     });
 
@@ -496,7 +544,7 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
   }
 
   async expireOpenOffersForApplication(applicationId: string, now: Date): Promise<void> {
-    await this.prismaService.prisma.jobOffer.updateMany({
+    await this.prismaClient.jobOffer.updateMany({
       data: {
         status: OFFER_STATUS.expired,
         updatedAt: now
@@ -515,7 +563,7 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
   }
 
   async expireOfferIfDue(offerId: string, now: Date): Promise<void> {
-    await this.prismaService.prisma.jobOffer.updateMany({
+    await this.prismaClient.jobOffer.updateMany({
       data: {
         status: OFFER_STATUS.expired,
         updatedAt: now
@@ -534,9 +582,58 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
   }
 
   private async loadOfferBenefits(offerId: string): Promise<OfferBenefitPersistenceRecord[]> {
-    return this.prismaService.prisma.offerBenefit.findMany({
+    return this.prismaClient.offerBenefit.findMany({
       orderBy: { id: 'asc' },
       where: { offerId }
     });
+  }
+
+  async countOpenOffersByEmployer(employerIdentityId: string): Promise<number> {
+    return this.prismaClient.jobOffer.count({
+      where: {
+        deletedAt: null,
+        employerIdentityId,
+        status: {
+          in: [OFFER_STATUS.sent, OFFER_STATUS.viewed]
+        }
+      }
+    });
+  }
+
+  async countEmployerInterviewsForDate(
+    employerIdentityId: string,
+    localDate: string,
+    statuses: string[]
+  ): Promise<number> {
+    return this.prismaClient.interview.count({
+      where: {
+        date: localDate,
+        employerIdentityId,
+        status: {
+          in: statuses
+        }
+      }
+    });
+  }
+
+  async listEmployerInterviewsForDate(
+    employerIdentityId: string,
+    localDate: string,
+    statuses: string[],
+    limit: number
+  ): Promise<ApplicationInterviewRecord[]> {
+    const records = await this.prismaClient.interview.findMany({
+      orderBy: [{ startTime: 'asc' }, { createdAt: 'desc' }, { id: 'desc' }],
+      take: limit,
+      where: {
+        date: localDate,
+        employerIdentityId,
+        status: {
+          in: statuses
+        }
+      }
+    });
+
+    return records.map(mapInterviewRecord);
   }
 }

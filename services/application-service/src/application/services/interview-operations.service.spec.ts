@@ -5,6 +5,7 @@ import { InterviewNotFoundError } from '../errors/interview-not-found.error';
 import { InterviewResponseStateInvalidError } from '../errors/interview-response-state-invalid.error';
 import { InterviewStateInvalidError } from '../errors/interview-state-invalid.error';
 import type { ApplicationInterviewRecord, ApplicationRecord } from '../ports';
+import { ApplicationNotificationEventFactory } from '../notifications/application-notification-event.factory';
 import { InterviewOperations } from './interview-operations.service';
 
 const baseApplication: ApplicationRecord = {
@@ -121,7 +122,11 @@ function createOperations(overrides: {
       }
       return null;
     },
-    async updateInterview(_id: string, data: Record<string, unknown>) {
+    async updateInterviewIfStatus(
+      _id: string,
+      _expectedStatuses: string[],
+      data: Record<string, unknown>
+    ) {
       return { ...baseInterview, ...data } as ApplicationInterviewRecord;
     },
     ...overrides.recruitmentRepository
@@ -130,6 +135,20 @@ function createOperations(overrides: {
   const operations = new InterviewOperations(
     applicationRepository as never,
     recruitmentRepository as never,
+    {
+      async execute(work) {
+        return work({
+          applicationRepository: applicationRepository as never,
+          outboxRepository: {
+            async create() {}
+          } as never,
+          recruitmentRepository: recruitmentRepository as never
+        });
+      }
+    },
+    new ApplicationNotificationEventFactory({
+      createSourceEventId: () => 'source-event-1'
+    }),
     {
       generate() {
         idCounter += 1;
@@ -288,4 +307,36 @@ test('list employer interviews returns repository rows', async () => {
 
   assert.equal(result.length, 1);
   assert.equal(result[0]?.id, 'interview-1');
+});
+
+test('cancel interview fails when conditional update loses race', async () => {
+  const { histories, operations } = createOperations({
+    recruitmentRepository: {
+      async updateInterviewIfStatus() {
+        return null;
+      }
+    }
+  });
+
+  await assert.rejects(
+    () => operations.cancelInterview('employer-1', 'interview-1', { reason: 'Conflict' }),
+    InterviewStateInvalidError
+  );
+  assert.equal(histories.length, 0);
+});
+
+test('update interview fails when conditional update loses race', async () => {
+  const { histories, operations } = createOperations({
+    recruitmentRepository: {
+      async updateInterviewIfStatus() {
+        return null;
+      }
+    }
+  });
+
+  await assert.rejects(
+    () => operations.updateInterview('employer-1', 'interview-1', { round: 'Final' }),
+    InterviewStateInvalidError
+  );
+  assert.equal(histories.length, 0);
 });

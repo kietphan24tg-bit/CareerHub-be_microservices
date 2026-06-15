@@ -12,10 +12,14 @@ import {
   type CreateInterviewResponse,
   type CreateOfferRequest,
   type CreateOfferResponse,
+  type CreateRecruiterNoteRequest,
+  type CreateRecruiterNoteResponse,
   type DeclineInterviewRequest,
   type DeclineInterviewResponse,
   type DeclineOfferRequest,
   type DeclineOfferResponse,
+  type DeleteRecruiterNoteRequest,
+  type DeleteRecruiterNoteResponse,
   type GetApplicationCountsByJobIdsRequest,
   type GetApplicationCountsByJobIdsResponse,
   type GetApplicationHistoryRequest,
@@ -28,6 +32,8 @@ import {
   type GetCandidateOfferResponse,
   type GetEmployerApplicationByIdRequest,
   type GetEmployerApplicationByIdResponse,
+  type GetEmployerDashboardRecruitmentDataRequest,
+  type GetEmployerDashboardRecruitmentDataResponse,
   type GetEmployerOfferRequest,
   type GetEmployerOfferResponse,
   type ListBenefitCatalogRequest,
@@ -42,6 +48,8 @@ import {
   type ListEmployerOffersForApplicationResponse,
   type ListJobApplicationsRequest,
   type ListJobApplicationsResponse,
+  type ListRecruiterNotesRequest,
+  type ListRecruiterNotesResponse,
   type RequestInterviewRescheduleRequest,
   type RequestInterviewRescheduleResponse,
   type SendOfferRequest,
@@ -54,6 +62,8 @@ import {
   type UpdateInterviewResponse,
   type UpdateOfferRequest,
   type UpdateOfferResponse,
+  type UpdateRecruiterNoteRequest,
+  type UpdateRecruiterNoteResponse,
   type WithdrawApplicationRequest,
   type WithdrawApplicationResponse
 } from '@careerhub/contracts';
@@ -66,8 +76,10 @@ import {
   ConfirmInterviewCommandHandler,
   CreateInterviewCommandHandler,
   CreateOfferCommandHandler,
+  CreateRecruiterNoteCommandHandler,
   DeclineInterviewCommandHandler,
   DeclineOfferCommandHandler,
+  DeleteRecruiterNoteCommandHandler,
   GetApplicationCountsByJobIdsQueryHandler,
   GetApplicationHistoryQueryHandler,
   GetApplicationRelatedDataQueryHandler,
@@ -75,6 +87,7 @@ import {
   GetCandidateInterviewQueryHandler,
   GetCandidateOfferQueryHandler,
   GetEmployerApplicationByIdQueryHandler,
+  GetEmployerDashboardRecruitmentDataQueryHandler,
   GetEmployerOfferQueryHandler,
   ListBenefitCatalogQueryHandler,
   ListCandidateApplicationsQueryHandler,
@@ -82,12 +95,14 @@ import {
   ListEmployerInterviewsQueryHandler,
   ListEmployerOffersForApplicationQueryHandler,
   ListJobApplicationsQueryHandler,
+  ListRecruiterNotesQueryHandler,
   RequestInterviewRescheduleCommandHandler,
   SendOfferCommandHandler,
   SoftDeleteOfferCommandHandler,
   UpdateApplicationStatusCommandHandler,
   UpdateInterviewCommandHandler,
   UpdateOfferCommandHandler,
+  UpdateRecruiterNoteCommandHandler,
   WithdrawApplicationCommandHandler,
   type ApplicationRecord,
   type ApplicationStatus
@@ -107,6 +122,10 @@ import {
   toGrpcInterviewDetailMessage,
   toGrpcOfferDetailMessage
 } from '../mappers/recruitment-message.mapper';
+import {
+  toGrpcEmployerDashboardRecruitmentDataResponse,
+  toGrpcRecruiterNoteMessage
+} from '../mappers/employer-dashboard-message.mapper';
 
 @Controller()
 export class ApplicationGrpcController {
@@ -117,8 +136,10 @@ export class ApplicationGrpcController {
     private readonly confirmInterviewCommandHandler: ConfirmInterviewCommandHandler,
     private readonly createInterviewCommandHandler: CreateInterviewCommandHandler,
     private readonly createOfferCommandHandler: CreateOfferCommandHandler,
+    private readonly createRecruiterNoteCommandHandler: CreateRecruiterNoteCommandHandler,
     private readonly declineInterviewCommandHandler: DeclineInterviewCommandHandler,
     private readonly declineOfferCommandHandler: DeclineOfferCommandHandler,
+    private readonly deleteRecruiterNoteCommandHandler: DeleteRecruiterNoteCommandHandler,
     private readonly getApplicationCountsByJobIdsQueryHandler: GetApplicationCountsByJobIdsQueryHandler,
     private readonly getApplicationHistoryQueryHandler: GetApplicationHistoryQueryHandler,
     private readonly getApplicationRelatedDataQueryHandler: GetApplicationRelatedDataQueryHandler,
@@ -126,6 +147,7 @@ export class ApplicationGrpcController {
     private readonly getCandidateInterviewQueryHandler: GetCandidateInterviewQueryHandler,
     private readonly getCandidateOfferQueryHandler: GetCandidateOfferQueryHandler,
     private readonly getEmployerApplicationByIdQueryHandler: GetEmployerApplicationByIdQueryHandler,
+    private readonly getEmployerDashboardRecruitmentDataQueryHandler: GetEmployerDashboardRecruitmentDataQueryHandler,
     private readonly getEmployerOfferQueryHandler: GetEmployerOfferQueryHandler,
     private readonly listBenefitCatalogQueryHandler: ListBenefitCatalogQueryHandler,
     private readonly listCandidateApplicationsQueryHandler: ListCandidateApplicationsQueryHandler,
@@ -133,12 +155,14 @@ export class ApplicationGrpcController {
     private readonly listEmployerInterviewsQueryHandler: ListEmployerInterviewsQueryHandler,
     private readonly listEmployerOffersForApplicationQueryHandler: ListEmployerOffersForApplicationQueryHandler,
     private readonly listJobApplicationsQueryHandler: ListJobApplicationsQueryHandler,
+    private readonly listRecruiterNotesQueryHandler: ListRecruiterNotesQueryHandler,
     private readonly requestInterviewRescheduleCommandHandler: RequestInterviewRescheduleCommandHandler,
     private readonly sendOfferCommandHandler: SendOfferCommandHandler,
     private readonly softDeleteOfferCommandHandler: SoftDeleteOfferCommandHandler,
     private readonly updateApplicationStatusCommandHandler: UpdateApplicationStatusCommandHandler,
     private readonly updateInterviewCommandHandler: UpdateInterviewCommandHandler,
     private readonly updateOfferCommandHandler: UpdateOfferCommandHandler,
+    private readonly updateRecruiterNoteCommandHandler: UpdateRecruiterNoteCommandHandler,
     private readonly withdrawApplicationCommandHandler: WithdrawApplicationCommandHandler
   ) {}
 
@@ -179,6 +203,7 @@ export class ApplicationGrpcController {
         coverLetter: request.cover_letter,
         employerIdentityId: request.employer_identity_id,
         jobId: request.job_id,
+        requestId: request.request_id,
         resumeId: request.resume_id
       });
 
@@ -217,6 +242,7 @@ export class ApplicationGrpcController {
         applicationId: request.application_id,
         employerIdentityId: request.employer_identity_id,
         note: request.note,
+        requestId: request.request_id,
         status: request.status as ApplicationStatus
       });
 
@@ -379,6 +405,7 @@ export class ApplicationGrpcController {
       const interview = await this.createInterviewCommandHandler.execute({
         applicationId: request.application_id,
         employerIdentityId: request.employer_identity_id,
+        requestId: request.request_id,
         ...fromGrpcCreateInterviewInput(request.input)
       });
 
@@ -398,6 +425,7 @@ export class ApplicationGrpcController {
       const interview = await this.updateInterviewCommandHandler.execute({
         employerIdentityId: request.employer_identity_id,
         interviewId: request.interview_id,
+        requestId: request.request_id,
         ...fromGrpcUpdateInterviewInput(request.input)
       });
 
@@ -417,7 +445,8 @@ export class ApplicationGrpcController {
       const interview = await this.cancelInterviewCommandHandler.execute({
         employerIdentityId: request.employer_identity_id,
         interviewId: request.interview_id,
-        reason: request.input.reason
+        reason: request.input.reason,
+        requestId: request.request_id
       });
 
       return {
@@ -454,7 +483,8 @@ export class ApplicationGrpcController {
       const interview = await this.confirmInterviewCommandHandler.execute({
         candidateIdentityId: request.candidate_identity_id,
         interviewId: request.interview_id,
-        candidateResponseNote: request.input?.candidate_response_note
+        candidateResponseNote: request.input?.candidate_response_note,
+        requestId: request.request_id
       });
 
       return {
@@ -473,7 +503,8 @@ export class ApplicationGrpcController {
       const interview = await this.declineInterviewCommandHandler.execute({
         candidateIdentityId: request.candidate_identity_id,
         interviewId: request.interview_id,
-        candidateResponseNote: request.input?.candidate_response_note
+        candidateResponseNote: request.input?.candidate_response_note,
+        requestId: request.request_id
       });
 
       return {
@@ -496,7 +527,8 @@ export class ApplicationGrpcController {
         proposedDate: request.input.proposed_date,
         proposedDurationMinutes: request.input.proposed_duration_minutes,
         proposedStartTime: request.input.proposed_start_time,
-        proposedTimezone: request.input.proposed_timezone
+        proposedTimezone: request.input.proposed_timezone,
+        requestId: request.request_id
       });
 
       return {
@@ -544,7 +576,8 @@ export class ApplicationGrpcController {
     try {
       const offer = await this.sendOfferCommandHandler.execute({
         employerIdentityId: request.employer_identity_id,
-        offerId: request.offer_id
+        offerId: request.offer_id,
+        requestId: request.request_id
       });
 
       return {
@@ -561,6 +594,7 @@ export class ApplicationGrpcController {
       const offer = await this.updateOfferCommandHandler.execute({
         employerIdentityId: request.employer_identity_id,
         offerId: request.offer_id,
+        requestId: request.request_id,
         ...fromGrpcUpdateOfferInput(request.input)
       });
 
@@ -579,7 +613,8 @@ export class ApplicationGrpcController {
     try {
       const result = await this.softDeleteOfferCommandHandler.execute({
         employerIdentityId: request.employer_identity_id,
-        offerId: request.offer_id
+        offerId: request.offer_id,
+        requestId: request.request_id
       });
 
       return {
@@ -669,7 +704,8 @@ export class ApplicationGrpcController {
       const offer = await this.acceptOfferCommandHandler.execute({
         candidateIdentityId: request.candidate_identity_id,
         offerId: request.offer_id,
-        note: request.input?.note
+        note: request.input?.note,
+        requestId: request.request_id
       });
 
       return {
@@ -686,12 +722,101 @@ export class ApplicationGrpcController {
       const offer = await this.declineOfferCommandHandler.execute({
         candidateIdentityId: request.candidate_identity_id,
         offerId: request.offer_id,
-        note: request.input?.note
+        note: request.input?.note,
+        requestId: request.request_id
       });
 
       return {
         offer: toGrpcOfferDetailMessage(offer)
       };
+    } catch (error) {
+      throw mapErrorToApplicationGrpcException(error);
+    }
+  }
+
+  @GrpcMethod(APPLICATION_GRPC_SERVICE_NAME, 'GetEmployerDashboardRecruitmentData')
+  async getEmployerDashboardRecruitmentData(
+    request: GetEmployerDashboardRecruitmentDataRequest
+  ): Promise<GetEmployerDashboardRecruitmentDataResponse> {
+    try {
+      const data = await this.getEmployerDashboardRecruitmentDataQueryHandler.execute({
+        employerIdentityId: request.employer_identity_id,
+        localDate: request.local_date
+      });
+
+      return toGrpcEmployerDashboardRecruitmentDataResponse(data);
+    } catch (error) {
+      throw mapErrorToApplicationGrpcException(error);
+    }
+  }
+
+  @GrpcMethod(APPLICATION_GRPC_SERVICE_NAME, 'ListRecruiterNotes')
+  async listRecruiterNotes(
+    request: ListRecruiterNotesRequest
+  ): Promise<ListRecruiterNotesResponse> {
+    try {
+      const items = await this.listRecruiterNotesQueryHandler.execute({
+        applicationId: request.application_id,
+        employerIdentityId: request.employer_identity_id
+      });
+
+      return {
+        items: items.map(toGrpcRecruiterNoteMessage)
+      };
+    } catch (error) {
+      throw mapErrorToApplicationGrpcException(error);
+    }
+  }
+
+  @GrpcMethod(APPLICATION_GRPC_SERVICE_NAME, 'CreateRecruiterNote')
+  async createRecruiterNote(
+    request: CreateRecruiterNoteRequest
+  ): Promise<CreateRecruiterNoteResponse> {
+    try {
+      const note = await this.createRecruiterNoteCommandHandler.execute({
+        applicationId: request.application_id,
+        body: request.body,
+        employerIdentityId: request.employer_identity_id
+      });
+
+      return {
+        note: toGrpcRecruiterNoteMessage(note)
+      };
+    } catch (error) {
+      throw mapErrorToApplicationGrpcException(error);
+    }
+  }
+
+  @GrpcMethod(APPLICATION_GRPC_SERVICE_NAME, 'UpdateRecruiterNote')
+  async updateRecruiterNote(
+    request: UpdateRecruiterNoteRequest
+  ): Promise<UpdateRecruiterNoteResponse> {
+    try {
+      const note = await this.updateRecruiterNoteCommandHandler.execute({
+        body: request.body,
+        employerIdentityId: request.employer_identity_id,
+        noteId: request.note_id
+      });
+
+      return {
+        note: toGrpcRecruiterNoteMessage(note)
+      };
+    } catch (error) {
+      throw mapErrorToApplicationGrpcException(error);
+    }
+  }
+
+  @GrpcMethod(APPLICATION_GRPC_SERVICE_NAME, 'DeleteRecruiterNote')
+  async deleteRecruiterNote(
+    request: DeleteRecruiterNoteRequest
+  ): Promise<DeleteRecruiterNoteResponse> {
+    try {
+      const result = await this.deleteRecruiterNoteCommandHandler.execute({
+        employerIdentityId: request.employer_identity_id,
+        noteId: request.note_id
+      });
+
+      return result;
     } catch (error) {
       throw mapErrorToApplicationGrpcException(error);
     }

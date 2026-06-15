@@ -14,13 +14,23 @@ import type {
   TransitionApplicationStatusWithHistoryData
 } from '../../../application';
 import { DuplicateApplicationError } from '../../../application/errors/duplicate-application.error';
-import { ApplicationPrismaService } from '../prisma/application-prisma.service';
 import type {
   ApplicationHistoryPersistenceRecord,
   ApplicationPersistenceRecord,
+  ApplicationPrismaRepositoryClient,
   InterviewPersistenceRecord,
   OfferPersistenceRecord
 } from '../prisma/application-prisma.types';
+
+function hasPrismaTransaction(
+  client: ApplicationPrismaRepositoryClient
+): client is ApplicationPrismaRepositoryClient & {
+  $transaction: <T>(
+    callback: (tx: ApplicationPrismaRepositoryClient) => Promise<T>
+  ) => Promise<T>;
+} {
+  return typeof (client as { $transaction?: unknown }).$transaction === 'function';
+}
 
 function mapRecord(record: ApplicationPersistenceRecord): ApplicationRecord {
   return {
@@ -144,11 +154,11 @@ function isUniqueConstraintViolation(error: unknown): boolean {
 }
 
 export class PrismaApplicationRepository implements ApplicationRepository {
-  constructor(private readonly prismaService: ApplicationPrismaService) {}
+  constructor(private readonly prismaClient: ApplicationPrismaRepositoryClient) {}
 
   async create(data: CreateApplicationData): Promise<ApplicationRecord> {
     try {
-      const record = await this.prismaService.prisma.application.create({
+      const record = await this.prismaClient.application.create({
         data: {
           candidateIdentityId: data.candidateIdentityId,
           coverLetter: data.coverLetter,
@@ -178,8 +188,8 @@ export class PrismaApplicationRepository implements ApplicationRepository {
     history: CreateApplicationHistoryData
   ): Promise<ApplicationRecord> {
     try {
-      const record = await this.prismaService.prisma.$transaction(async (tx) => {
-        const application = await tx.application.create({
+      const work = async (client: ApplicationPrismaRepositoryClient) => {
+        const application = await client.application.create({
           data: {
             candidateIdentityId: data.candidateIdentityId,
             coverLetter: data.coverLetter,
@@ -191,7 +201,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
           }
         });
 
-        await tx.applicationHistory.create({
+        await client.applicationHistory.create({
           data: {
             actorIdentityId: history.actorIdentityId,
             actorType: history.actorType,
@@ -205,7 +215,11 @@ export class PrismaApplicationRepository implements ApplicationRepository {
         });
 
         return application;
-      });
+      };
+
+      const record = hasPrismaTransaction(this.prismaClient)
+        ? await this.prismaClient.$transaction(work)
+        : await work(this.prismaClient);
 
       return mapRecord(record);
     } catch (error) {
@@ -223,7 +237,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
   async createHistory(
     data: CreateApplicationHistoryData
   ): Promise<ApplicationHistoryRecord> {
-    const record = await this.prismaService.prisma.applicationHistory.create({
+    const record = await this.prismaClient.applicationHistory.create({
       data: {
         actorIdentityId: data.actorIdentityId,
         actorType: data.actorType,
@@ -240,7 +254,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
   }
 
   async findById(applicationId: string): Promise<ApplicationRecord | null> {
-    const record = await this.prismaService.prisma.application.findUnique({
+    const record = await this.prismaClient.application.findUnique({
       where: { id: applicationId }
     });
 
@@ -251,7 +265,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
     applicationId: string,
     candidateIdentityId: string
   ): Promise<ApplicationRecord | null> {
-    const record = await this.prismaService.prisma.application.findFirst({
+    const record = await this.prismaClient.application.findFirst({
       where: {
         candidateIdentityId,
         id: applicationId
@@ -265,7 +279,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
     applicationId: string,
     employerIdentityId: string
   ): Promise<ApplicationRecord | null> {
-    const record = await this.prismaService.prisma.application.findFirst({
+    const record = await this.prismaClient.application.findFirst({
       where: {
         employerIdentityId,
         id: applicationId
@@ -279,7 +293,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
     jobId: string,
     candidateIdentityId: string
   ): Promise<ApplicationRecord | null> {
-    const record = await this.prismaService.prisma.application.findFirst({
+    const record = await this.prismaClient.application.findFirst({
       where: {
         candidateIdentityId,
         jobId
@@ -304,7 +318,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
     };
 
     const [items, total] = await Promise.all([
-      this.prismaService.prisma.application.findMany({
+      this.prismaClient.application.findMany({
         orderBy: {
           createdAt: filter.sort === 'oldest' ? 'asc' : 'desc'
         },
@@ -312,7 +326,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
         take: filter.pageSize,
         where
       }),
-      this.prismaService.prisma.application.count({ where })
+      this.prismaClient.application.count({ where })
     ]);
 
     return {
@@ -322,7 +336,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
   }
 
   async listHistory(applicationId: string): Promise<ApplicationHistoryRecord[]> {
-    const records = await this.prismaService.prisma.applicationHistory.findMany({
+    const records = await this.prismaClient.applicationHistory.findMany({
       orderBy: { createdAt: 'desc' },
       where: { applicationId }
     });
@@ -333,7 +347,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
   async countCandidateByStatus(
     candidateIdentityId: string
   ): Promise<CandidateApplicationStatusCount[]> {
-    const rows = await this.prismaService.prisma.application.findMany({
+    const rows = await this.prismaClient.application.findMany({
       where: {
         candidateIdentityId
       }
@@ -354,7 +368,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
   async findLatestInterviewByApplicationId(
     applicationId: string
   ): Promise<ApplicationInterviewRecord | null> {
-    const record = await this.prismaService.prisma.interview.findFirst({
+    const record = await this.prismaClient.interview.findFirst({
       orderBy: [{ date: 'desc' }, { startTime: 'desc' }, { createdAt: 'desc' }],
       where: { applicationId }
     });
@@ -365,7 +379,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
   async findLatestOfferByApplicationId(
     applicationId: string
   ): Promise<ApplicationOfferRecord | null> {
-    const record = await this.prismaService.prisma.jobOffer.findFirst({
+    const record = await this.prismaClient.jobOffer.findFirst({
       orderBy: [{ createdAt: 'desc' }],
       where: {
         applicationId,
@@ -383,7 +397,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
       return [];
     }
 
-    const records = await this.prismaService.prisma.interview.findMany({
+    const records = await this.prismaClient.interview.findMany({
       orderBy: [{ date: 'desc' }, { startTime: 'desc' }, { createdAt: 'desc' }],
       where: {
         applicationId: {
@@ -409,7 +423,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
       return [];
     }
 
-    const records = await this.prismaService.prisma.jobOffer.findMany({
+    const records = await this.prismaClient.jobOffer.findMany({
       orderBy: [{ createdAt: 'desc' }],
       where: {
         applicationId: {
@@ -439,13 +453,13 @@ export class PrismaApplicationRepository implements ApplicationRepository {
     };
 
     const [items, total] = await Promise.all([
-      this.prismaService.prisma.application.findMany({
+      this.prismaClient.application.findMany({
         orderBy: { createdAt: 'desc' },
         skip: (filter.page - 1) * filter.pageSize,
         take: filter.pageSize,
         where
       }),
-      this.prismaService.prisma.application.count({ where })
+      this.prismaClient.application.count({ where })
     ]);
 
     return {
@@ -461,7 +475,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
       return [];
     }
 
-    const records = await this.prismaService.prisma.application.findMany({
+    const records = await this.prismaClient.application.findMany({
       where: {
         jobId: {
           in: jobIds
@@ -485,7 +499,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
     applicationId: string,
     status: ApplicationStatus
   ): Promise<ApplicationRecord | null> {
-    const result = await this.prismaService.prisma.application.updateMany({
+    const result = await this.prismaClient.application.updateMany({
       data: {
         status,
         updatedAt: new Date()
@@ -505,8 +519,8 @@ export class PrismaApplicationRepository implements ApplicationRepository {
   async transitionStatusWithHistory(
     data: TransitionApplicationStatusWithHistoryData
   ): Promise<ApplicationRecord | null> {
-    const record = await this.prismaService.prisma.$transaction(async (tx) => {
-      const result = await tx.application.updateMany({
+    const work = async (client: ApplicationPrismaRepositoryClient) => {
+      const result = await client.application.updateMany({
         data: {
           status: data.status,
           updatedAt: new Date()
@@ -521,7 +535,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
         return null;
       }
 
-      await tx.applicationHistory.create({
+      await client.applicationHistory.create({
         data: {
           actorIdentityId: data.history.actorIdentityId,
           actorType: data.history.actorType,
@@ -534,11 +548,159 @@ export class PrismaApplicationRepository implements ApplicationRepository {
         }
       });
 
-      return tx.application.findUnique({
+      return client.application.findUnique({
         where: { id: data.applicationId }
       });
-    });
+    };
+
+    const record = hasPrismaTransaction(this.prismaClient)
+      ? await this.prismaClient.$transaction(work)
+      : await work(this.prismaClient);
 
     return record ? mapRecord(record) : null;
+  }
+
+  async countByEmployer(employerIdentityId: string): Promise<number> {
+    return this.prismaClient.application.count({
+      where: { employerIdentityId }
+    });
+  }
+
+  async listEmployerDashboardPipeline(employerIdentityId: string, limit: number) {
+    const records = await this.prismaClient.application.findMany({
+      orderBy: { updatedAt: 'desc' },
+      take: limit,
+      where: { employerIdentityId }
+    });
+
+    return records.map((record) => ({
+      applicationId: record.id,
+      appliedAt: record.createdAt,
+      candidateIdentityId: record.candidateIdentityId,
+      jobId: record.jobId,
+      status: record.status as ApplicationStatus,
+      updatedAt: record.updatedAt
+    }));
+  }
+
+  async listEmployerDashboardRecentActivities(employerIdentityId: string, limit: number) {
+    const applications = await this.prismaClient.application.findMany({
+      where: { employerIdentityId }
+    });
+    const applicationLookup = new Map(
+      applications.map((application) => [application.id, application])
+    );
+    const applicationIds = applications.map((application) => application.id);
+
+    if (applicationIds.length === 0) {
+      return [];
+    }
+
+    const records = await this.prismaClient.applicationHistory.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      where: {
+        applicationId: {
+          in: applicationIds
+        }
+      }
+    });
+
+    return records.map((record) => {
+      const application = applicationLookup.get(record.applicationId);
+
+      return {
+        applicationId: record.applicationId,
+        candidateIdentityId: application?.candidateIdentityId ?? '',
+        createdAt: record.createdAt,
+        eventType: record.eventType,
+        id: record.id,
+        jobId: application?.jobId ?? '',
+        newStatus: record.toStatus,
+        note: record.note,
+        oldStatus: record.fromStatus
+      };
+    });
+  }
+
+  async listRecruiterNotesByApplication(applicationId: string) {
+    const records = await this.prismaClient.recruiterNote.findMany({
+      orderBy: { createdAt: 'desc' },
+      where: { applicationId }
+    });
+
+    return records.map((record) => ({
+      applicationId: record.applicationId,
+      authorIdentityId: record.authorIdentityId,
+      body: record.body,
+      createdAt: record.createdAt,
+      id: record.id,
+      updatedAt: record.updatedAt
+    }));
+  }
+
+  async findRecruiterNoteById(noteId: string) {
+    const record = await this.prismaClient.recruiterNote.findFirst({
+      where: { id: noteId }
+    });
+
+    if (!record) {
+      return null;
+    }
+
+    return {
+      applicationId: record.applicationId,
+      authorIdentityId: record.authorIdentityId,
+      body: record.body,
+      createdAt: record.createdAt,
+      id: record.id,
+      updatedAt: record.updatedAt
+    };
+  }
+
+  async createRecruiterNote(data: {
+    applicationId: string;
+    authorIdentityId: string;
+    body: string;
+    id: string;
+  }) {
+    const record = await this.prismaClient.recruiterNote.create({
+      data: {
+        applicationId: data.applicationId,
+        authorIdentityId: data.authorIdentityId,
+        body: data.body,
+        id: data.id
+      }
+    });
+
+    return {
+      applicationId: record.applicationId,
+      authorIdentityId: record.authorIdentityId,
+      body: record.body,
+      createdAt: record.createdAt,
+      id: record.id,
+      updatedAt: record.updatedAt
+    };
+  }
+
+  async updateRecruiterNote(noteId: string, body: string) {
+    const result = await this.prismaClient.recruiterNote.updateMany({
+      data: { body, updatedAt: new Date() },
+      where: { id: noteId }
+    });
+
+    if (result.count === 0) {
+      return null;
+    }
+
+    return this.findRecruiterNoteById(noteId);
+  }
+
+  async deleteRecruiterNote(noteId: string): Promise<boolean> {
+    const result = await this.prismaClient.recruiterNote.deleteMany({
+      where: { id: noteId }
+    });
+
+    return result.count > 0;
   }
 }

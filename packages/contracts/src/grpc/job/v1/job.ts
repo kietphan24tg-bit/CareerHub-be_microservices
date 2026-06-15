@@ -240,3 +240,25 @@ export type GetJobForApplicationResponse = {
   null_fields: string[];
   status: string;
 };
+
+export type EmployerDashboardPriorityJobMessage = {
+  category: string;
+  city: string;
+  country: string;
+  expires_at: string;
+  id: string;
+  is_remote: boolean;
+  slug: string;
+  status: string;
+  title: string;
+};
+
+export type GetEmployerDashboardJobsSummaryRequest = {
+  employer_identity_id: string;
+  request_id?: string;
+};
+
+export type GetEmployerDashboardJobsSummaryResponse = {
+  active_jobs: number;
+  priority_jobs: EmployerDashboardPriorityJobMessage[];
+};

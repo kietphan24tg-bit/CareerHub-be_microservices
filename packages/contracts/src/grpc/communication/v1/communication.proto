@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package careerhub.communication.v1;
+
+service CommunicationService {
+  rpc CreateNotification (CreateNotificationRequest) returns (CreateNotificationResponse);
+  rpc ListNotifications (ListNotificationsRequest) returns (ListNotificationsResponse);
+  rpc GetNotification (GetNotificationRequest) returns (GetNotificationResponse);
+  rpc MarkNotificationRead (MarkNotificationReadRequest) returns (MarkNotificationReadResponse);
+  rpc MarkAllNotificationsRead (MarkAllNotificationsReadRequest) returns (MarkAllNotificationsReadResponse);
+}
+
+message NotificationMessage {
+  string id = 1;
+  string identity_id = 2;
+  string type = 3;
+  string title = 4;
+  string message = 5;
+  string metadata_json = 6;
+  string read_at = 7;
+  string created_at = 8;
+}
+
+message CreateNotificationRequest {
+  string identity_id = 1;
+  string type = 2;
+  string title = 3;
+  string message = 4;
+  string metadata_json = 5;
+  string request_id = 6;
+}
+
+message CreateNotificationResponse {
+  NotificationMessage notification = 1;
+}
+
+message ListNotificationsRequest {
+  string identity_id = 1;
+  string request_id = 2;
+}
+
+message ListNotificationsResponse {
+  repeated NotificationMessage notifications = 1;
+  int32 unread_count = 2;
+}
+
+message GetNotificationRequest {
+  string identity_id = 1;
+  string notification_id = 2;
+  string request_id = 3;
+}
+
+message GetNotificationResponse {
+  NotificationMessage notification = 1;
+}
+
+message MarkNotificationReadRequest {
+  string identity_id = 1;
+  string notification_id = 2;
+  string request_id = 3;
+}
+
+message MarkNotificationReadResponse {
+  NotificationMessage notification = 1;
+}
+
+message MarkAllNotificationsReadRequest {
+  string identity_id = 1;
+  string request_id = 2;
+}
+
+message MarkAllNotificationsReadResponse {
+  int32 updated_count = 1;
+}

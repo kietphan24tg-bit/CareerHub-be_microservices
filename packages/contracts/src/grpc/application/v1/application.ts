@@ -579,3 +579,106 @@ export type DeclineOfferRequest = {
 export type DeclineOfferResponse = {
   offer: OfferDetailMessage;
 };
+
+export type EmployerDashboardPipelineItemMessage = {
+  application_id: string;
+  applied_at: string;
+  candidate_identity_id: string;
+  job_id: string;
+  status: string;
+  updated_at: string;
+};
+
+export type EmployerDashboardInterviewTodayItemMessage = {
+  application_id: string;
+  candidate_identity_id: string;
+  date: string;
+  id: string;
+  job_id: string;
+  start_time: string;
+  status: string;
+  type: string;
+};
+
+export type EmployerDashboardRecentActivityItemMessage = {
+  application_id: string;
+  candidate_identity_id: string;
+  created_at: string;
+  event_type: string;
+  id: string;
+  job_id: string;
+  new_status: string;
+  note: string;
+  old_status: string;
+};
+
+export type EmployerDashboardRecruitmentSummaryMessage = {
+  interviews_today: number;
+  offers_open: number;
+  total_applicants: number;
+};
+
+export type GetEmployerDashboardRecruitmentDataRequest = {
+  employer_identity_id: string;
+  local_date: string;
+  request_id?: string;
+};
+
+export type GetEmployerDashboardRecruitmentDataResponse = {
+  interviews_today: EmployerDashboardInterviewTodayItemMessage[];
+  pipeline: EmployerDashboardPipelineItemMessage[];
+  recent_activities: EmployerDashboardRecentActivityItemMessage[];
+  summary: EmployerDashboardRecruitmentSummaryMessage;
+};
+
+export type RecruiterNoteMessage = {
+  application_id: string;
+  author_identity_id: string;
+  body: string;
+  created_at: string;
+  id: string;
+  updated_at: string;
+};
+
+export type ListRecruiterNotesRequest = {
+  application_id: string;
+  employer_identity_id: string;
+  request_id?: string;
+};
+
+export type ListRecruiterNotesResponse = {
+  items: RecruiterNoteMessage[];
+};
+
+export type CreateRecruiterNoteRequest = {
+  application_id: string;
+  body: string;
+  employer_identity_id: string;
+  request_id?: string;
+};
+
+export type CreateRecruiterNoteResponse = {
+  note: RecruiterNoteMessage;
+};
+
+export type UpdateRecruiterNoteRequest = {
+  body: string;
+  employer_identity_id: string;
+  note_id: string;
+  request_id?: string;
+};
+
+export type UpdateRecruiterNoteResponse = {
+  note: RecruiterNoteMessage;
+};
+
+export type DeleteRecruiterNoteRequest = {
+  employer_identity_id: string;
+  note_id: string;
+  request_id?: string;
+};
+
+export type DeleteRecruiterNoteResponse = {
+  deleted: boolean;
+  id: string;
+};

@@ -3,4 +3,5 @@ import type { CreateInterviewInput } from '../../../services/interview-operation
 export type CreateInterviewCommand = CreateInterviewInput & {
   applicationId: string;
   employerIdentityId: string;
+  requestId?: string;
 };
