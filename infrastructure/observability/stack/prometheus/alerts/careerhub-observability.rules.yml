@@ -38,3 +38,32 @@ groups:
         annotations:
           summary: "Duplicate integration deliveries increased for {{ $labels.service }}"
           description: "The consumer is skipping more than five duplicate deliveries in ten minutes."
+
+      - alert: CareerHubIntegrationConsumerDeadLettered
+        expr: sum by (service, consumer) (increase(careerhub_integration_consumer_total{status="dead_lettered"}[5m])) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Integration consumer dead-lettered messages for {{ $labels.service }}"
+          description: "One or more valid messages were parked to DLQ in the last five minutes. Inspect logs by messageId/sourceEventId before replay."
+
+      - alert: CareerHubIntegrationConsumerDeadLetteredSustained
+        expr: sum by (service, consumer) (increase(careerhub_integration_consumer_total{status="dead_lettered"}[15m])) > 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sustained dead-letter activity for {{ $labels.service }}"
+          description: "More than three messages dead-lettered in fifteen minutes. Fix root cause before bulk DLQ replay."
+
+  - name: careerhub-rabbitmq-dlq
+    rules:
+      - alert: CareerHubRabbitMqDlqBacklogDetected
+        expr: max by (queue, vhost) ((rabbitmq_detailed_queue_messages{queue=~".*dlq\\.(communication\\.notifications|iam\\.password-reset-mail)$"}) or (lavinmq_detailed_queue_messages{queue=~".*dlq\\.(communication\\.notifications|iam\\.password-reset-mail)$"})) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "DLQ backlog detected on {{ $labels.queue }}"
+          description: "RabbitMQ reports one or more parked messages in {{ $labels.queue }} for at least five minutes. Inspect the DLQ, identify root cause, then replay after the fix."

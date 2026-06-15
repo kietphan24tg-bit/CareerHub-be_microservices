@@ -1,0 +1,25 @@
+{
+  "name": "@careerhub/broker-ops",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "communication-dlq": "dist/communication-dlq/cli.js",
+    "iam-email-dlq": "dist/iam-email-dlq/cli.js"
+  },
+  "dependencies": {
+    "@careerhub/contracts": "workspace:*",
+    "@careerhub/infrastructure": "workspace:*",
+    "amqplib": "^0.10.9"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.7"
+  },
+  "scripts": {
+    "build": "pnpm -C ../.. build:packages && tsc -p tsconfig.json",
+    "dlq:communication": "pnpm run build && node dist/communication-dlq/cli.js",
+    "dlq:iam-email": "pnpm run build && node dist/iam-email-dlq/cli.js",
+    "test": "tsc -p tsconfig.spec.json && node --test dist-test/**/*.spec.js"
+  }
+}

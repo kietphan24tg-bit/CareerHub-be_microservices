@@ -709,13 +709,346 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum by (service, consumer, status) (increase(careerhub_integration_consumer_total{service=~\"$service\"}[10m]))",
-          "legendFormat": "{{service}} {{consumer}} {{status}}",
+          "expr": "sum by (service, consumer, reason) (increase(careerhub_integration_consumer_total{service=~\"$service\"}[10m]))",
+          "legendFormat": "{{service}} {{consumer}} {{reason}}",
           "range": true,
           "refId": "A"
         }
       ],
       "title": "Integration Consumer Outcomes",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 80
+      },
+      "id": 19,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (service, consumer) (increase(careerhub_integration_consumer_total{service=~\"$service\", status=\"dead_lettered\"}[10m]))",
+          "legendFormat": "{{service}} {{consumer}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Integration Consumer Dead-Lettered",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 80
+      },
+      "id": 20,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "topk(5, sum by (event_name) (increase(careerhub_integration_consumer_total{service=~\"$service\", status=\"dead_lettered\"}[1h])))",
+          "legendFormat": "{{event_name}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Top Dead-Lettered Event Names",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 88
+      },
+      "id": 21,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (reason) (increase(careerhub_integration_consumer_total{service=~\"$service\", consumer=\"communication-notifications\"}[10m]))",
+          "legendFormat": "{{reason}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Notification Consumer Outcomes by Reason",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 88
+      },
+      "id": 22,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (service, consumer) (rate(careerhub_integration_consumer_duration_ms_sum{service=~\"$service\", consumer=\"communication-notifications\"}[5m])) / sum by (service, consumer) (rate(careerhub_integration_consumer_duration_ms_count{service=~\"$service\", consumer=\"communication-notifications\"}[5m]))",
+          "legendFormat": "{{service}} {{consumer}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Notification Consumer Latency (avg)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 96
+      },
+      "id": 23,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (reason) (increase(careerhub_integration_consumer_total{service=~\"$service\", consumer=\"iam-password-reset-mail\"}[10m]))",
+          "legendFormat": "{{reason}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Email Consumer Outcomes by Reason",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 96
+      },
+      "id": 24,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (service, consumer) (rate(careerhub_integration_consumer_duration_ms_sum{service=~\"$service\", consumer=\"iam-password-reset-mail\"}[5m])) / sum by (service, consumer) (rate(careerhub_integration_consumer_duration_ms_count{service=~\"$service\", consumer=\"iam-password-reset-mail\"}[5m]))",
+          "legendFormat": "{{service}} {{consumer}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Email Consumer Latency (avg)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 104
+      },
+      "id": 25,
+      "options": {
+        "displayMode": "gradient",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+        "expr": "sum by (queue) ((rabbitmq_detailed_queue_messages{queue=~\".*dlq\\\\.(communication\\\\.notifications|iam\\\\.password-reset-mail)$\"}) or (lavinmq_detailed_queue_messages{queue=~\".*dlq\\\\.(communication\\\\.notifications|iam\\\\.password-reset-mail)$\"}))",
+          "legendFormat": "{{queue}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "DLQ Current Backlog",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 104
+      },
+      "id": 26,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+        "expr": "sum by (queue) ((rabbitmq_detailed_queue_messages{queue=~\".*dlq\\\\.(communication\\\\.notifications|iam\\\\.password-reset-mail)$\"}) or (lavinmq_detailed_queue_messages{queue=~\".*dlq\\\\.(communication\\\\.notifications|iam\\\\.password-reset-mail)$\"}))",
+          "legendFormat": "{{queue}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "DLQ Backlog Trend",
       "type": "timeseries"
     }
   ],
@@ -765,5 +1098,5 @@
   "timezone": "",
   "title": "CareerHub Observability",
   "uid": "careerhub-observability",
-  "version": 3
+  "version": 5
 }

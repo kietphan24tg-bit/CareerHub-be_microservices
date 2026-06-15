@@ -1,0 +1,33 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "paths": {
+      "@careerhub/contracts": [
+        "../contracts/dist/index.d.ts"
+      ],
+      "@careerhub/contracts/*": [
+        "../contracts/dist/*"
+      ],
+      "@careerhub/infrastructure": [
+        "../../infrastructure/dist/index.d.ts"
+      ],
+      "@careerhub/infrastructure/*": [
+        "../../infrastructure/dist/*"
+      ],
+      "@careerhub/shared-kernel": [
+        "../shared-kernel/dist/index.d.ts"
+      ],
+      "@careerhub/shared-kernel/*": [
+        "../shared-kernel/dist/*"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "src/**/*.spec.ts"
+  ]
+}

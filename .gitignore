@@ -24,3 +24,4 @@ Thumbs.db
 *.tsbuildinfo
 
 tmp/logs/*.jsonl
+infrastructure/observability/stack/prometheus/prometheus.generated.yml

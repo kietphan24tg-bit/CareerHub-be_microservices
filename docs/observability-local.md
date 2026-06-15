@@ -16,6 +16,7 @@ Mỗi service nên giữ cùng một bộ cấu hình local cơ bản:
 ## Mỗi Thành Phần Dùng Để Làm Gì
 
 - `Prometheus`: đi scrape metrics từ endpoint `/metrics` của từng service
+- `Prometheus`: cũng scrape RabbitMQ queue metrics trực tiếp từ CloudAMQP Prometheus endpoint
 - `Loki`: lưu trữ logs
 - `Promtail`: đọc `tmp/logs/*.jsonl` rồi đẩy logs sang Loki
 - `Tempo`: nhận traces theo chuẩn OTLP từ các service
@@ -24,6 +25,7 @@ Mỗi service nên giữ cùng một bộ cấu hình local cơ bản:
 Luồng dữ liệu:
 
 - Metrics: service -> `/metrics` -> Prometheus -> Grafana
+- RabbitMQ queue depth: CloudAMQP `/metrics/detailed` -> Prometheus -> Grafana
 - Logs: service -> `tmp/logs/*.jsonl` -> Promtail -> Loki -> Grafana
 - Traces: service -> OTLP `:4318` -> Tempo -> Grafana
 
@@ -54,6 +56,16 @@ Nếu bạn thay đổi `HEALTH_*` hoặc `METRICS_PATH`, hãy cập nhật lạ
 
 Cấu hình stack nằm trong `infrastructure/observability/stack/`.
 
+Trước khi chạy stack observability, cần set các biến sau trên shell:
+
+```powershell
+$env:CLOUDAMQP_PROMETHEUS_URL="https://<cloudamqp-metrics-host>/metrics/detailed"
+$env:CLOUDAMQP_PROMETHEUS_USERNAME="<cloudamqp-prometheus-username>"
+$env:CLOUDAMQP_PROMETHEUS_PASSWORD="<cloudamqp-prometheus-password>"
+```
+
+`pnpm observability:up` sẽ render file Prometheus từ template trước khi start Docker stack.
+
 Khởi động stack observability local:
 
 ```powershell
@@ -76,6 +88,7 @@ Các endpoint:
 Kết nối hiện tại của stack:
 
 - Prometheus scrape từng service qua `/metrics`
+- Prometheus cũng scrape CloudAMQP qua `/metrics/detailed?family=queue_coarse_metrics`
 - Prometheus cũng scrape `prometheus`, `loki`, và `tempo` để theo dõi sức khỏe của stack
 - Promtail đọc `tmp/logs/*.jsonl`
 - Tempo nhận traces OTLP HTTP tại `:4318`

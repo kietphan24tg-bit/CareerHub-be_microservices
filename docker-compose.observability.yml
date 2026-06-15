@@ -10,7 +10,7 @@ services:
       - '9092:9090'
     restart: unless-stopped
     volumes:
-      - ./infrastructure/observability/stack/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infrastructure/observability/stack/prometheus/prometheus.generated.yml:/etc/prometheus/prometheus.yml:ro
 
   loki:
     image: grafana/loki:3.5.3

@@ -12,7 +12,7 @@
     "local:infra:down": "docker compose -f docker-compose.local.yml down",
     "local:infra:up": "docker compose -f docker-compose.local.yml up -d",
     "observability:down": "docker compose -f docker-compose.observability.yml down",
-    "observability:up": "docker compose -f docker-compose.observability.yml up -d",
+    "observability:up": "powershell -ExecutionPolicy Bypass -File scripts/render-prometheus-cloudamqp-config.ps1 && docker compose -f docker-compose.observability.yml up -d",
     "test:auth:smoke": "powershell -File scripts/auth-smoke.ps1",
     "test:candidate-phase:verify": "pnpm build:packages && pnpm --filter @careerhub/candidate-service run build && pnpm --filter @careerhub/candidate-service test && pnpm --filter @careerhub/gateway run build && pnpm --filter @careerhub/gateway test",
     "test:job-phase:verify": "pnpm build:packages && pnpm --filter @careerhub/job-service run build && pnpm --filter @careerhub/job-service test && pnpm --filter @careerhub/gateway run build && pnpm --filter @careerhub/gateway test",
@@ -24,7 +24,9 @@
     "test:resume-export-pdf:integration": "pnpm --filter @careerhub/gateway test:e2e:resume-export-pdf:live",
     "test:register-candidate:integration": "pnpm --filter @careerhub/gateway test:e2e:register-candidate:live",
     "test:password-reset:integration": "pnpm --filter @careerhub/gateway test:e2e:password-reset:live",
-    "test:password-reset:e2e": "pnpm --filter @careerhub/gateway test:e2e:live"
+    "test:password-reset:e2e": "pnpm --filter @careerhub/gateway test:e2e:live",
+    "ops:communication-dlq": "pnpm --filter @careerhub/broker-ops dlq:communication",
+    "ops:iam-email-dlq": "pnpm --filter @careerhub/broker-ops dlq:iam-email"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.13.4",
