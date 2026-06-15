@@ -11,6 +11,8 @@ import type {
   CloseJobResponse,
   CreateJobRequest,
   CreateJobResponse,
+  GetEmployerDashboardJobsSummaryRequest,
+  GetEmployerDashboardJobsSummaryResponse,
   GetEmployerJobByIdRequest,
   GetEmployerJobByIdResponse,
   GetJobForApplicationRequest,
@@ -128,6 +130,14 @@ type JobGrpcServiceClient = {
     request: UpdateJobRequest,
     metadata: Metadata,
     callback: (error: ServiceError | null, response: UpdateJobResponse) => void
+  ): ClientUnaryCall;
+  GetEmployerDashboardJobsSummary(
+    request: GetEmployerDashboardJobsSummaryRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: GetEmployerDashboardJobsSummaryResponse
+    ) => void
   ): ClientUnaryCall;
 };
 
@@ -450,10 +460,7 @@ export class JobGrpcClient {
     );
   }
 
-  async jobExists(
-    request: JobExistsRequest,
-    requestId?: string
-  ): Promise<JobExistsResponse> {
+  async jobExists(request: JobExistsRequest, requestId?: string): Promise<JobExistsResponse> {
     const grpcRequest = {
       ...request,
       jobId: request.job_id,
@@ -468,6 +475,29 @@ export class JobGrpcClient {
       'JobExists',
       (client, payload, metadata, callback) =>
         client.JobExists(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async getEmployerDashboardJobsSummary(
+    request: GetEmployerDashboardJobsSummaryRequest,
+    requestId?: string
+  ): Promise<GetEmployerDashboardJobsSummaryResponse> {
+    const grpcRequest = {
+      ...request,
+      employerIdentityId: request.employer_identity_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? request.request_id ?? ''
+    } as GetEmployerDashboardJobsSummaryRequest & {
+      employerIdentityId: string;
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      'GetEmployerDashboardJobsSummary',
+      (client, payload, metadata, callback) =>
+        client.GetEmployerDashboardJobsSummary(payload, metadata, callback),
       grpcRequest,
       requestId
     );

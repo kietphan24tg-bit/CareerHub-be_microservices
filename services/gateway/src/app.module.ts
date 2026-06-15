@@ -9,6 +9,7 @@ import {
 import {
   APPLICATION_GRPC_PACKAGE_NAME,
   CANDIDATE_GRPC_PACKAGE_NAME,
+  COMMUNICATION_GRPC_PACKAGE_NAME,
   EMPLOYER_GRPC_PACKAGE_NAME,
   IAM_GRPC_PACKAGE_NAME,
   JOB_GRPC_PACKAGE_NAME
@@ -21,8 +22,11 @@ import { GatewayResumeExportService } from './application/resumes/gateway-resume
 import { GatewayResumesService } from './application/resumes/gateway-resumes.service';
 import { GatewayJobsService } from './application/jobs/gateway-jobs.service';
 import { GatewayApplicationsService } from './application/applications/gateway-applications.service';
+import { GatewayDashboardService } from './application/dashboard/gateway-dashboard.service';
 import { GatewayInterviewsService } from './application/interviews/gateway-interviews.service';
+import { GatewayNotificationsService } from './application/notifications/gateway-notifications.service';
 import { GatewayOffersService } from './application/offers/gateway-offers.service';
+import { GatewayRecruiterNotesService } from './application/recruiter-notes/gateway-recruiter-notes.service';
 import { JobGrpcLookupAdapter } from './application/saved-jobs/adapters/job-grpc-lookup.adapter';
 import { GatewaySavedJobsService } from './application/saved-jobs/gateway-saved-jobs.service';
 import { JOB_LOOKUP_PORT } from './application/saved-jobs/ports/job-lookup.port';
@@ -30,6 +34,7 @@ import { GatewayRolesGuard } from './auth/guards/gateway-roles.guard';
 import { GatewayJwtAuthGuard } from './auth/guards/gateway-jwt-auth.guard';
 import { CandidateGrpcClient } from './infrastructure/transport/grpc/candidate-grpc.client';
 import { ApplicationGrpcClient } from './infrastructure/transport/grpc/application-grpc.client';
+import { CommunicationGrpcClient } from './infrastructure/transport/grpc/communication-grpc.client';
 import { EmployerGrpcClient } from './infrastructure/transport/grpc/employer-grpc.client';
 import { JobGrpcClient } from './infrastructure/transport/grpc/job-grpc.client';
 import { AuthController } from './presentation/http/auth/auth.controller';
@@ -44,6 +49,9 @@ import { CandidateInterviewsController } from './presentation/http/interviews/ca
 import { EmployerInterviewsController } from './presentation/http/interviews/employer-interviews.controller';
 import { CandidateOffersController } from './presentation/http/offers/candidate-offers.controller';
 import { EmployerOffersController } from './presentation/http/offers/employer-offers.controller';
+import { EmployerDashboardController } from './presentation/http/dashboard/employer-dashboard.controller';
+import { EmployerRecruiterNotesController } from './presentation/http/recruiter-notes/employer-recruiter-notes.controller';
+import { NotificationsController } from './presentation/http/notifications/notifications.controller';
 import { SavedJobsController } from './presentation/http/saved-jobs/saved-jobs.controller';
 import { GatewayController } from './presentation/http/health/gateway.controller';
 import { GRPC_CLIENT_OPTIONS } from './infrastructure/transport/grpc/grpc.constants';
@@ -63,7 +71,7 @@ import {
 } from './config/gateway.constants';
 
 function resolveGrpcProtoPath(
-  serviceName: 'application' | 'candidate' | 'employer' | 'iam' | 'job'
+  serviceName: 'application' | 'candidate' | 'communication' | 'employer' | 'iam' | 'job'
 ): string {
   const distRelativePath = join(
     __dirname,
@@ -110,9 +118,12 @@ function resolveGrpcProtoPath(
     CandidateOffersController,
     CompanyProfilesController,
     EmployerApplicationsController,
+    EmployerDashboardController,
     EmployerInterviewsController,
     EmployerOffersController,
+    EmployerRecruiterNotesController,
     EmployerJobsController,
+    NotificationsController,
     PublicJobsController,
     ResumesController,
     SavedJobsController,
@@ -123,10 +134,13 @@ function resolveGrpcProtoPath(
     GatewayAuthService,
     GatewayProfileService,
     GatewayResumeExportService,
-    GatewayJobsService,
     GatewayApplicationsService,
+    GatewayDashboardService,
     GatewayInterviewsService,
+    GatewayJobsService,
+    GatewayNotificationsService,
     GatewayOffersService,
+    GatewayRecruiterNotesService,
     GatewayResumesService,
     GatewaySavedJobsService,
     {
@@ -137,6 +151,7 @@ function resolveGrpcProtoPath(
     GatewayRolesGuard,
     GatewayGrpcClient,
     ApplicationGrpcClient,
+    CommunicationGrpcClient,
     CandidateGrpcClient,
     EmployerGrpcClient,
     IamGrpcClient,
@@ -173,6 +188,11 @@ function resolveGrpcProtoPath(
           packageName: CANDIDATE_GRPC_PACKAGE_NAME,
           protoPath: resolveGrpcProtoPath('candidate'),
           serviceUrl: gatewayRuntimeConfig.grpcCandidateUrl
+        },
+        communication: {
+          packageName: COMMUNICATION_GRPC_PACKAGE_NAME,
+          protoPath: resolveGrpcProtoPath('communication'),
+          serviceUrl: gatewayRuntimeConfig.grpcCommunicationUrl
         },
         employer: {
           packageName: EMPLOYER_GRPC_PACKAGE_NAME,

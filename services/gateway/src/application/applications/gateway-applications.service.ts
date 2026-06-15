@@ -247,6 +247,13 @@ export class GatewayApplicationsService {
     requestId?: string;
     status: string;
   }): Promise<GatewayHttpApplicationWriteResponse> {
+    const existing = await this.applicationGrpcClient.getEmployerApplicationById(
+      {
+        application_id: input.applicationId,
+        employer_identity_id: input.identityId
+      },
+      input.requestId
+    );
     const response = await this.applicationGrpcClient.updateApplicationStatus(
       {
         application_id: input.applicationId,

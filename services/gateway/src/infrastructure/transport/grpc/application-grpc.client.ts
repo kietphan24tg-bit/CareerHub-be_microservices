@@ -17,10 +17,14 @@ import type {
   CreateInterviewResponse,
   CreateOfferRequest,
   CreateOfferResponse,
+  CreateRecruiterNoteRequest,
+  CreateRecruiterNoteResponse,
   DeclineInterviewRequest,
   DeclineInterviewResponse,
   DeclineOfferRequest,
   DeclineOfferResponse,
+  DeleteRecruiterNoteRequest,
+  DeleteRecruiterNoteResponse,
   GetApplicationCountsByJobIdsRequest,
   GetApplicationCountsByJobIdsResponse,
   GetApplicationHistoryRequest,
@@ -33,6 +37,8 @@ import type {
   GetCandidateOfferResponse,
   GetEmployerApplicationByIdRequest,
   GetEmployerApplicationByIdResponse,
+  GetEmployerDashboardRecruitmentDataRequest,
+  GetEmployerDashboardRecruitmentDataResponse,
   GetEmployerOfferRequest,
   GetEmployerOfferResponse,
   ListBenefitCatalogRequest,
@@ -47,6 +53,8 @@ import type {
   ListEmployerOffersForApplicationResponse,
   ListJobApplicationsRequest,
   ListJobApplicationsResponse,
+  ListRecruiterNotesRequest,
+  ListRecruiterNotesResponse,
   RequestInterviewRescheduleRequest,
   RequestInterviewRescheduleResponse,
   SendOfferRequest,
@@ -59,6 +67,8 @@ import type {
   UpdateInterviewResponse,
   UpdateOfferRequest,
   UpdateOfferResponse,
+  UpdateRecruiterNoteRequest,
+  UpdateRecruiterNoteResponse,
   WithdrawApplicationRequest,
   WithdrawApplicationResponse
 } from '@careerhub/contracts';
@@ -254,6 +264,46 @@ type ApplicationGrpcServiceClient = {
     request: DeclineOfferRequest,
     metadata: Metadata,
     callback: (error: ServiceError | null, response: DeclineOfferResponse) => void
+  ): ClientUnaryCall;
+  GetEmployerDashboardRecruitmentData(
+    request: GetEmployerDashboardRecruitmentDataRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: GetEmployerDashboardRecruitmentDataResponse
+    ) => void
+  ): ClientUnaryCall;
+  ListRecruiterNotes(
+    request: ListRecruiterNotesRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: ListRecruiterNotesResponse
+    ) => void
+  ): ClientUnaryCall;
+  CreateRecruiterNote(
+    request: CreateRecruiterNoteRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: CreateRecruiterNoteResponse
+    ) => void
+  ): ClientUnaryCall;
+  UpdateRecruiterNote(
+    request: UpdateRecruiterNoteRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: UpdateRecruiterNoteResponse
+    ) => void
+  ): ClientUnaryCall;
+  DeleteRecruiterNote(
+    request: DeleteRecruiterNoteRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: DeleteRecruiterNoteResponse
+    ) => void
   ): ClientUnaryCall;
 };
 
@@ -794,6 +844,71 @@ export class ApplicationGrpcClient {
       'DeclineOffer',
       (client, payload, metadata, callback) =>
         client.DeclineOffer(payload, metadata, callback),
+      this.withRequestId(request, requestId),
+      requestId
+    );
+  }
+
+  async getEmployerDashboardRecruitmentData(
+    request: GetEmployerDashboardRecruitmentDataRequest,
+    requestId?: string
+  ): Promise<GetEmployerDashboardRecruitmentDataResponse> {
+    return this.invokeUnary(
+      'GetEmployerDashboardRecruitmentData',
+      (client, payload, metadata, callback) =>
+        client.GetEmployerDashboardRecruitmentData(payload, metadata, callback),
+      this.withRequestId(request, requestId),
+      requestId
+    );
+  }
+
+  async listRecruiterNotes(
+    request: ListRecruiterNotesRequest,
+    requestId?: string
+  ): Promise<ListRecruiterNotesResponse> {
+    return this.invokeUnary(
+      'ListRecruiterNotes',
+      (client, payload, metadata, callback) =>
+        client.ListRecruiterNotes(payload, metadata, callback),
+      this.withRequestId(request, requestId),
+      requestId
+    );
+  }
+
+  async createRecruiterNote(
+    request: CreateRecruiterNoteRequest,
+    requestId?: string
+  ): Promise<CreateRecruiterNoteResponse> {
+    return this.invokeUnary(
+      'CreateRecruiterNote',
+      (client, payload, metadata, callback) =>
+        client.CreateRecruiterNote(payload, metadata, callback),
+      this.withRequestId(request, requestId),
+      requestId
+    );
+  }
+
+  async updateRecruiterNote(
+    request: UpdateRecruiterNoteRequest,
+    requestId?: string
+  ): Promise<UpdateRecruiterNoteResponse> {
+    return this.invokeUnary(
+      'UpdateRecruiterNote',
+      (client, payload, metadata, callback) =>
+        client.UpdateRecruiterNote(payload, metadata, callback),
+      this.withRequestId(request, requestId),
+      requestId
+    );
+  }
+
+  async deleteRecruiterNote(
+    request: DeleteRecruiterNoteRequest,
+    requestId?: string
+  ): Promise<DeleteRecruiterNoteResponse> {
+    return this.invokeUnary(
+      'DeleteRecruiterNote',
+      (client, payload, metadata, callback) =>
+        client.DeleteRecruiterNote(payload, metadata, callback),
       this.withRequestId(request, requestId),
       requestId
     );

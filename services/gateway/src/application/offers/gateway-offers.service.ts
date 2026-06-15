@@ -81,13 +81,15 @@ export class GatewayOffersService {
   }
 
   async softDeleteOffer(input: { identityId: string; offerId: string; requestId?: string }) {
-    return this.applicationGrpcClient.softDeleteOffer(
+    const result = await this.applicationGrpcClient.softDeleteOffer(
       {
         employer_identity_id: input.identityId,
         offer_id: input.offerId
       },
       input.requestId
     );
+
+    return result;
   }
 
   async listEmployerOffersForApplication(input: {

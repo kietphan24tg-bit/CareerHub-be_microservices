@@ -7,6 +7,7 @@ export type GatewayRuntimeConfig = {
   authRefreshCookieSecure: boolean;
   grpcApplicationUrl: string;
   grpcCandidateUrl: string;
+  grpcCommunicationUrl: string;
   grpcEmployerUrl: string;
   grpcIamUrl: string;
   grpcJobUrl: string;
@@ -25,6 +26,7 @@ export function getGatewayRuntimeConfig(
     authRefreshCookieSecure: configService.getOrThrow('AUTH_REFRESH_COOKIE_SECURE'),
     grpcApplicationUrl: configService.getOrThrow('GRPC_APPLICATION_URL'),
     grpcCandidateUrl: configService.getOrThrow('GRPC_CANDIDATE_URL'),
+    grpcCommunicationUrl: configService.getOrThrow('GRPC_COMMUNICATION_URL'),
     grpcEmployerUrl: configService.getOrThrow('GRPC_EMPLOYER_URL'),
     grpcIamUrl: configService.getOrThrow('GRPC_IAM_URL'),
     grpcJobUrl: configService.getOrThrow('GRPC_JOB_URL'),

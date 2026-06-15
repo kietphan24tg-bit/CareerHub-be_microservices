@@ -10,6 +10,7 @@ export type GatewayEnvironmentVariables = BaseEnvironmentVariables & {
   AUTH_REFRESH_COOKIE_SECURE: boolean;
   GRPC_APPLICATION_URL: string;
   GRPC_CANDIDATE_URL: string;
+  GRPC_COMMUNICATION_URL: string;
   GRPC_EMPLOYER_URL: string;
   GRPC_IAM_URL: string;
   GRPC_JOB_URL: string;
@@ -47,6 +48,11 @@ export function validateGatewayEnvironment(
     config.GRPC_JOB_URL.trim().length > 0
       ? config.GRPC_JOB_URL.trim()
       : '127.0.0.1:50054';
+  const grpcCommunicationUrl =
+    typeof config.GRPC_COMMUNICATION_URL === 'string' &&
+    config.GRPC_COMMUNICATION_URL.trim().length > 0
+      ? config.GRPC_COMMUNICATION_URL.trim()
+      : '127.0.0.1:50056';
 
   return {
     ...baseEnvironment,
@@ -75,6 +81,7 @@ export function validateGatewayEnvironment(
           : false,
     GRPC_APPLICATION_URL: grpcApplicationUrl,
     GRPC_CANDIDATE_URL: grpcCandidateUrl,
+    GRPC_COMMUNICATION_URL: grpcCommunicationUrl,
     GRPC_EMPLOYER_URL: grpcEmployerUrl,
     GRPC_IAM_URL: grpcIamUrl,
     GRPC_JOB_URL: grpcJobUrl,

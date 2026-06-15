@@ -117,7 +117,20 @@ test('update application status returns mapped application shape', async () => {
         throw new Error('unused');
       },
       async getEmployerApplicationById() {
-        throw new Error('unused');
+        return {
+          application: {
+            candidate_identity_id: 'candidate-1',
+            cover_letter: 'Updated note',
+            created_at: '2026-06-12T00:00:00.000Z',
+            employer_identity_id: 'employer-1',
+            id: 'application-2',
+            job_id: 'job-2',
+            null_fields: [],
+            resume_id: 'resume-2',
+            status: 'applied',
+            updated_at: '2026-06-12T00:00:00.000Z'
+          }
+        };
       },
       async getApplicationCountsByJobIds() {
         throw new Error('unused');

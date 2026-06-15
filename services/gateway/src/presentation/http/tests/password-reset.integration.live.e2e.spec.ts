@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createPgClient, type SqlClient } from './helpers/live-db';
 import { createRequestId, createUniqueEmail } from './helpers/live-http';
-import { fetchPasswordResetTokenFromMailHog } from './helpers/live-mailhog';
+import { parseEnvFile, resolveServiceEnvPath } from './helpers/live-env';
 import { pollUntil } from './helpers/live-polling';
+import { startLocalSmtpSink } from './helpers/live-smtp-sink';
 import {
   login,
   registerCandidate,
@@ -29,6 +30,31 @@ type OutboxRow = {
   processed_at: Date | null;
   status: string;
 };
+
+function extractResetTokenFromSmtpMessage(body: string): string | undefined {
+  const normalizedBody = body
+    .replaceAll('&amp;', '&')
+    .replaceAll('=3D', '=')
+    .replace(/=\r?\n/g, '');
+  const resetPasswordUrlBase = parseEnvFile(resolveServiceEnvPath('iam-service'))
+    .RESET_PASSWORD_URL_BASE;
+
+  if (!resetPasswordUrlBase) {
+    return undefined;
+  }
+
+  const tokenMatch = normalizedBody.match(
+    new RegExp(
+      `${resetPasswordUrlBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\?token=([^\\s"'<>]+)`
+    )
+  );
+
+  if (!tokenMatch?.[1]) {
+    return undefined;
+  }
+
+  return decodeURIComponent(tokenMatch[1]);
+}
 
 async function findIdentityIdByEmail(
   client: SqlClient,
@@ -126,6 +152,7 @@ test(
     const reuseRequestId = createRequestId('integration-reset-password-reuse');
     const oldLoginFailureRequestId = createRequestId('integration-old-login-fail');
     const newLoginRequestId = createRequestId('integration-new-login');
+    const smtpSink = await startLocalSmtpSink();
 
     const client = createPgClient('iam-service');
     await client.connect();
@@ -163,16 +190,29 @@ test(
       assert.equal(outboxRow.status, 'processed');
       assert.ok(outboxRow.processed_at instanceof Date);
 
-      const resetToken = await fetchPasswordResetTokenFromMailHog(email);
-      const [resetTokenId] = resetToken.split('.');
-      assert.ok(resetTokenId);
-      assert.equal(outboxRow.payload_text.includes(resetToken), false);
+      const outboxPayload = JSON.parse(outboxRow.payload_text) as {
+        payload?: { resetTokenId?: string };
+      };
+      const resetTokenId = outboxPayload.payload?.resetTokenId;
+
+      if (!resetTokenId) {
+        throw new Error('resetTokenId was missing from IAM outbox payload');
+      }
 
       const tokenRowBeforeReset = await pollUntil(async () => {
-        const row = await findPasswordResetTokenById(client, resetTokenId ?? '');
+        const row = await findPasswordResetTokenById(client, resetTokenId);
         return row?.mail_sent_at ? row : null;
       });
 
+      const resetToken = extractResetTokenFromSmtpMessage(
+        smtpSink.messages.at(-1) ?? ''
+      );
+
+      if (!resetToken) {
+        throw new Error('Password reset token was not found in the captured SMTP message');
+      }
+
+      assert.equal(outboxRow.payload_text.includes(resetToken), false);
       assert.equal(tokenRowBeforeReset.identity_id, identityId);
       assert.equal(tokenRowBeforeReset.used_at, null);
       assert.notEqual(tokenRowBeforeReset.token_hash, resetToken);
@@ -186,7 +226,7 @@ test(
       });
 
       const tokenRowAfterReset = await pollUntil(async () => {
-        const row = await findPasswordResetTokenById(client, resetTokenId ?? '');
+        const row = await findPasswordResetTokenById(client, resetTokenId);
         return row?.used_at ? row : null;
       });
 
@@ -227,6 +267,7 @@ test(
       assert.equal(newLoginResult.body.success, true);
     } finally {
       await client.end();
+      await smtpSink.close();
     }
   }
 );

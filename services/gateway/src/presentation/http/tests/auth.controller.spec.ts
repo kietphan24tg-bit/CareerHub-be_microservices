@@ -36,6 +36,7 @@ const gatewayRuntimeConfig = {
   authRefreshCookieSecure: false,
   grpcApplicationUrl: '127.0.0.1:50055',
   grpcCandidateUrl: '127.0.0.1:50052',
+  grpcCommunicationUrl: '127.0.0.1:50056',
   grpcEmployerUrl: '127.0.0.1:50053',
   grpcIamUrl: '127.0.0.1:50051',
   grpcJobUrl: '127.0.0.1:50054',
