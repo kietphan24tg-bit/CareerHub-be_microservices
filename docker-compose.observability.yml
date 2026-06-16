@@ -55,6 +55,15 @@ services:
       - prometheus
       - loki
       - tempo
+    environment:
+      GF_SMTP_ENABLED: 'true'
+      GF_SMTP_HOST: '${GF_SMTP_HOST}'
+      GF_SMTP_USER: '${GF_SMTP_USER}'
+      GF_SMTP_PASSWORD: '${GF_SMTP_PASSWORD}'
+      GF_SMTP_FROM_ADDRESS: '${GF_SMTP_FROM_ADDRESS}'
+      GF_SMTP_FROM_NAME: 'CareerHub Alerts'
+      GF_UNIFIED_ALERTING_ENABLED: 'true'
+      GF_ALERT_EMAIL_TO: '${GF_ALERT_EMAIL_TO}'
     ports:
       - '3300:3000'
     restart: unless-stopped

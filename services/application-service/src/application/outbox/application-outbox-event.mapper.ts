@@ -26,3 +26,5 @@ export async function persistNotificationOutbox(
 ): Promise<void> {
   await outboxRepository.create(mapIntegrationEventToOutboxRecord(event, factory));
 }
+
+export const persistMailOutbox = persistNotificationOutbox;

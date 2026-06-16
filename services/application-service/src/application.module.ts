@@ -11,6 +11,7 @@ import {
 } from '@careerhub/infrastructure';
 
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 import {
 
@@ -100,6 +101,14 @@ import {
   ApplicationNotificationEventFactory,
   createDefaultApplicationNotificationEventFactory
 } from './application/notifications/application-notification-event.factory';
+import {
+  ApplicationMailContextQuery
+} from './application/mail/application-mail-context.query';
+import {
+  ApplicationMailEventFactory,
+  createDefaultApplicationMailEventFactory
+} from './application/mail/application-mail-event.factory';
+import { JobGrpcMailContextLookup } from './infrastructure/transport/grpc/job-grpc-mail-context.lookup';
 
 import { validateApplicationEnvironment } from './config';
 
@@ -229,6 +238,45 @@ import { ApplicationGrpcController } from './presentation';
 
     },
 
+    {
+
+      provide: APPLICATION_PORT_TOKENS.jobMailContextLookup,
+
+      inject: [ConfigService],
+
+      useFactory: (configService: ConfigService) =>
+        new JobGrpcMailContextLookup(configService.getOrThrow('GRPC_JOB_URL'))
+
+    },
+
+    {
+
+      provide: ApplicationMailContextQuery,
+
+      inject: [APPLICATION_PORT_TOKENS.jobMailContextLookup, ConfigService],
+
+      useFactory: (
+        jobMailContextLookup: JobGrpcMailContextLookup,
+        configService: ConfigService
+      ) =>
+        new ApplicationMailContextQuery({
+          appBaseUrl: configService.getOrThrow('APP_BASE_URL'),
+          jobMailContextLookup
+        })
+
+    },
+
+    {
+
+      provide: ApplicationMailEventFactory,
+
+      inject: [ApplicationMailContextQuery],
+
+      useFactory: (mailContextQuery: ApplicationMailContextQuery) =>
+        createDefaultApplicationMailEventFactory(mailContextQuery)
+
+    },
+
     ApplicationOutboxPublisher,
 
     ApplicationOutboxProcessor,
@@ -254,6 +302,7 @@ import { ApplicationGrpcController } from './presentation';
         APPLICATION_PORT_TOKENS.writeTransaction,
 
         ApplicationNotificationEventFactory,
+        ApplicationMailEventFactory,
 
         APPLICATION_PORT_TOKENS.idGenerator
 
@@ -268,6 +317,7 @@ import { ApplicationGrpcController } from './presentation';
         writeTransaction: PrismaApplicationWriteTransaction,
 
         notificationEventFactory: ApplicationNotificationEventFactory,
+        mailEventFactory: ApplicationMailEventFactory,
 
         idGenerator: UuidIdGenerator
 
@@ -277,6 +327,7 @@ import { ApplicationGrpcController } from './presentation';
           recruitmentRepository,
           writeTransaction,
           notificationEventFactory,
+          mailEventFactory,
           idGenerator
         )
 
@@ -295,6 +346,7 @@ import { ApplicationGrpcController } from './presentation';
         APPLICATION_PORT_TOKENS.writeTransaction,
 
         ApplicationNotificationEventFactory,
+        ApplicationMailEventFactory,
 
         APPLICATION_PORT_TOKENS.idGenerator
 
@@ -309,6 +361,7 @@ import { ApplicationGrpcController } from './presentation';
         writeTransaction: PrismaApplicationWriteTransaction,
 
         notificationEventFactory: ApplicationNotificationEventFactory,
+        mailEventFactory: ApplicationMailEventFactory,
 
         idGenerator: UuidIdGenerator
 
@@ -318,6 +371,7 @@ import { ApplicationGrpcController } from './presentation';
           recruitmentRepository,
           writeTransaction,
           notificationEventFactory,
+          mailEventFactory,
           idGenerator
         )
 

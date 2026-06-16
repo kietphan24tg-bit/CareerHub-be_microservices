@@ -6,8 +6,10 @@ import { OfferApplicationStateInvalidError } from '../errors/offer-application-s
 import { OfferExpirationRequiredError } from '../errors/offer-expiration-required.error';
 import { OfferSendStateInvalidError } from '../errors/offer-send-state-invalid.error';
 import { OfferStateInvalidError } from '../errors/offer-state-invalid.error';
-import type { ApplicationOfferRecord, ApplicationRecord } from '../ports';
 import { ApplicationNotificationEventFactory } from '../notifications/application-notification-event.factory';
+import { ApplicationMailEventFactory } from '../mail/application-mail-event.factory';
+import { ApplicationMailContextQuery } from '../mail/application-mail-context.query';
+import type { ApplicationOfferRecord, ApplicationRecord } from '../ports';
 import { OfferOperations } from './offer-operations.service';
 
 const baseApplication: ApplicationRecord = {
@@ -62,6 +64,7 @@ function createOperations(overrides: {
 }) {
   let idCounter = 0;
   const histories: Array<{ eventType: string; toStatus: string }> = [];
+  const outboxEvents: unknown[] = [];
 
   const applicationRepository = {
     async createHistory(data: { eventType: string; toStatus: string }) {
@@ -139,6 +142,22 @@ function createOperations(overrides: {
     ...overrides.recruitmentRepository
   };
 
+  const mailContextQuery = new ApplicationMailContextQuery({
+    appBaseUrl: 'http://localhost:4000',
+    jobMailContextLookup: {
+      async findByJobId() {
+        return {
+          companyName: 'Acme Corp',
+          jobTitle: 'Software Engineer'
+        };
+      }
+    }
+  });
+  const mailEventFactory = new ApplicationMailEventFactory({
+    createSourceEventId: () => 'mail-source-1',
+    mailContextQuery
+  });
+
   const operations = new OfferOperations(
     applicationRepository as never,
     recruitmentRepository as never,
@@ -147,7 +166,9 @@ function createOperations(overrides: {
         return work({
           applicationRepository: applicationRepository as never,
           outboxRepository: {
-            async create() {}
+            async create(record: unknown) {
+              outboxEvents.push(record);
+            }
           } as never,
           recruitmentRepository: recruitmentRepository as never
         });
@@ -156,6 +177,7 @@ function createOperations(overrides: {
     new ApplicationNotificationEventFactory({
       createSourceEventId: () => 'source-event-1'
     }),
+    mailEventFactory,
     {
       generate() {
         idCounter += 1;
@@ -164,7 +186,7 @@ function createOperations(overrides: {
     }
   );
 
-  return { histories, operations };
+  return { histories, operations, outboxEvents };
 }
 
 test('create draft offer blocks duplicate offers', async () => {
@@ -229,17 +251,20 @@ test('send offer requires draft status and expiration', async () => {
 });
 
 test('send offer moves application to offer', async () => {
-  const { histories, operations } = createOperations({});
+  const { histories, operations, outboxEvents } = createOperations({});
 
   const result = await operations.sendOffer('employer-1', 'offer-1');
 
   assert.equal(result.status, 'sent');
   assert.ok(histories.some((item) => item.eventType === 'status_change' && item.toStatus === 'offer'));
   assert.ok(histories.some((item) => item.eventType === 'offer_sent'));
+  assert.equal(outboxEvents.length, 2);
+  assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.offer-sent.v1');
+  assert.equal((outboxEvents[1] as { eventName: string }).eventName, 'mail.offer-sent.v1');
 });
 
 test('soft delete offer enforces mutable status', async () => {
-  const { operations } = createOperations({
+  const { operations, outboxEvents } = createOperations({
     recruitmentRepository: {
       async findOfferByIdAndEmployer() {
         return { ...baseOffer, status: 'accepted' };
@@ -248,20 +273,23 @@ test('soft delete offer enforces mutable status', async () => {
   });
 
   await assert.rejects(() => operations.softDeleteOffer('employer-1', 'offer-1'), OfferStateInvalidError);
+  assert.equal(outboxEvents.length, 0);
 });
 
 test('accept offer updates application to hired', async () => {
-  const { histories, operations } = createOperations({});
+  const { histories, operations, outboxEvents } = createOperations({});
 
   const result = await operations.acceptOffer('candidate-1', 'offer-1', {});
 
   assert.equal(result.status, 'accepted');
   assert.ok(histories.some((item) => item.eventType === 'status_change' && item.toStatus === 'hired'));
   assert.ok(histories.some((item) => item.eventType === 'offer_accepted'));
+  assert.equal(outboxEvents.length, 1);
+  assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.offer-accepted.v1');
 });
 
 test('accept offer rejects invalid status', async () => {
-  const { operations } = createOperations({
+  const { operations, outboxEvents } = createOperations({
     recruitmentRepository: {
       async findOfferByIdAndCandidate() {
         return { ...baseOffer, status: 'draft' };
@@ -270,16 +298,19 @@ test('accept offer rejects invalid status', async () => {
   });
 
   await assert.rejects(() => operations.acceptOffer('candidate-1', 'offer-1', {}), OfferAcceptStateInvalidError);
+  assert.equal(outboxEvents.length, 0);
 });
 
 test('decline offer updates application to rejected', async () => {
-  const { histories, operations } = createOperations({});
+  const { histories, operations, outboxEvents } = createOperations({});
 
   const result = await operations.declineOffer('candidate-1', 'offer-1', { note: 'Comp too low' });
 
   assert.equal(result.status, 'rejected');
   assert.ok(histories.some((item) => item.eventType === 'status_change' && item.toStatus === 'rejected'));
   assert.ok(histories.some((item) => item.eventType === 'offer_rejected'));
+  assert.equal(outboxEvents.length, 1);
+  assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.offer-declined.v1');
 });
 
 test('list benefit catalog returns active catalog rows', async () => {
@@ -314,7 +345,7 @@ test('list benefit catalog returns active catalog rows', async () => {
 });
 
 test('update offer writes note_added history', async () => {
-  const { histories, operations } = createOperations({});
+  const { histories, operations, outboxEvents } = createOperations({});
 
   const result = await operations.updateOffer('employer-1', 'offer-1', {
     message: 'Updated terms'
@@ -322,6 +353,8 @@ test('update offer writes note_added history', async () => {
 
   assert.equal(result.message, 'Updated terms');
   assert.ok(histories.some((item) => item.eventType === 'note_added'));
+  assert.equal(outboxEvents.length, 1);
+  assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.offer-updated.v1');
 });
 
 test('get employer offer expires due offer before returning', async () => {
@@ -378,7 +411,7 @@ test('list employer offers for application expires open offers first', async () 
 });
 
 test('send offer fails when conditional update loses race', async () => {
-  const { histories, operations } = createOperations({
+  const { histories, operations, outboxEvents } = createOperations({
     recruitmentRepository: {
       async updateOfferIfStatus() {
         return null;
@@ -388,10 +421,11 @@ test('send offer fails when conditional update loses race', async () => {
 
   await assert.rejects(() => operations.sendOffer('employer-1', 'offer-1'), OfferSendStateInvalidError);
   assert.equal(histories.length, 0);
+  assert.equal(outboxEvents.length, 0);
 });
 
 test('accept offer fails when conditional update loses race', async () => {
-  const { histories, operations } = createOperations({
+  const { histories, operations, outboxEvents } = createOperations({
     recruitmentRepository: {
       async updateOfferIfStatus() {
         return null;
@@ -401,4 +435,15 @@ test('accept offer fails when conditional update loses race', async () => {
 
   await assert.rejects(() => operations.acceptOffer('candidate-1', 'offer-1', {}), OfferAcceptStateInvalidError);
   assert.equal(histories.length, 0);
+  assert.equal(outboxEvents.length, 0);
+});
+
+test('soft delete offer enqueues notification only', async () => {
+  const { operations, outboxEvents } = createOperations({});
+
+  const result = await operations.softDeleteOffer('employer-1', 'offer-1');
+
+  assert.equal(result.deleted, true);
+  assert.equal(outboxEvents.length, 1);
+  assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.offer-withdrawn.v1');
 });

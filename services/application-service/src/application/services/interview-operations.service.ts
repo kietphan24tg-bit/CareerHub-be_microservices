@@ -4,7 +4,8 @@ import { InterviewNotFoundError } from '../errors/interview-not-found.error';
 import { InterviewResponseStateInvalidError } from '../errors/interview-response-state-invalid.error';
 import { InterviewStateInvalidError } from '../errors/interview-state-invalid.error';
 import { ApplicationNotificationEventFactory } from '../notifications/application-notification-event.factory';
-import { persistNotificationOutbox } from '../outbox/application-outbox-event.mapper';
+import { ApplicationMailEventFactory } from '../mail/application-mail-event.factory';
+import { persistMailOutbox, persistNotificationOutbox } from '../outbox/application-outbox-event.mapper';
 import type {
   ApplicationInterviewRecord,
   ApplicationRepository,
@@ -88,6 +89,7 @@ export class InterviewOperations {
     private readonly recruitmentRepository: RecruitmentRepository,
     private readonly writeTransaction: ApplicationWriteTransaction,
     private readonly notificationEventFactory: ApplicationNotificationEventFactory,
+    private readonly mailEventFactory: ApplicationMailEventFactory,
     private readonly idGenerator: IdGenerator
   ) {}
 
@@ -184,6 +186,17 @@ export class InterviewOperations {
 
       if (notificationEvent) {
         await persistNotificationOutbox(context.outboxRepository, notificationEvent, {
+          createOutboxId: () => this.idGenerator.generate()
+        });
+      }
+
+      const mailEvent = await this.mailEventFactory.buildInterviewCreatedMailEvent({
+        interview,
+        requestId: input.requestId
+      });
+
+      if (mailEvent) {
+        await persistMailOutbox(context.outboxRepository, mailEvent, {
           createOutboxId: () => this.idGenerator.generate()
         });
       }
@@ -295,6 +308,19 @@ export class InterviewOperations {
         });
       }
 
+      if (slotChanged) {
+        const mailEvent = await this.mailEventFactory.buildInterviewUpdatedMailEvent({
+          interview: updated,
+          requestId: input.requestId
+        });
+
+        if (mailEvent) {
+          await persistMailOutbox(context.outboxRepository, mailEvent, {
+            createOutboxId: () => this.idGenerator.generate()
+          });
+        }
+      }
+
       return updated;
     });
   }
@@ -353,6 +379,17 @@ export class InterviewOperations {
 
       if (notificationEvent) {
         await persistNotificationOutbox(context.outboxRepository, notificationEvent, {
+          createOutboxId: () => this.idGenerator.generate()
+        });
+      }
+
+      const mailEvent = await this.mailEventFactory.buildInterviewCancelledMailEvent({
+        interview: updated,
+        requestId: input.requestId
+      });
+
+      if (mailEvent) {
+        await persistMailOutbox(context.outboxRepository, mailEvent, {
           createOutboxId: () => this.idGenerator.generate()
         });
       }

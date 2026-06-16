@@ -152,6 +152,105 @@ export async function confirmInterview(input: {
   return body;
 }
 
+export async function declineInterview(input: {
+  accessToken: string;
+  interviewId: string;
+  note?: string;
+  requestId: string;
+}): Promise<SuccessEnvelope<GatewayInterviewDetail>> {
+  const { body, response } = await requestJson<SuccessEnvelope<GatewayInterviewDetail>>(
+    `/candidate/interviews/${input.interviewId}/decline`,
+    {
+      body: JSON.stringify({ candidateResponseNote: input.note ?? null }),
+      headers: authHeaders(input.accessToken, input.requestId, true),
+      method: 'POST'
+    }
+  );
+
+  assert.ok(response.status === 200 || response.status === 201);
+  assert.equal(body.success, true);
+
+  return body;
+}
+
+export async function requestReschedule(input: {
+  accessToken: string;
+  interviewId: string;
+  payload: {
+    proposedDate: string;
+    proposedStartTime: string;
+    proposedDurationMinutes?: number;
+    proposedTimezone?: string;
+    candidateResponseNote?: string;
+  };
+  requestId: string;
+}): Promise<SuccessEnvelope<GatewayInterviewDetail>> {
+  const { body, response } = await requestJson<SuccessEnvelope<GatewayInterviewDetail>>(
+    `/candidate/interviews/${input.interviewId}/request-reschedule`,
+    {
+      body: JSON.stringify(input.payload),
+      headers: authHeaders(input.accessToken, input.requestId, true),
+      method: 'POST'
+    }
+  );
+
+  assert.ok(response.status === 200 || response.status === 201);
+  assert.equal(body.success, true);
+
+  return body;
+}
+
+export async function updateInterview(input: {
+  accessToken: string;
+  interviewId: string;
+  payload: Partial<{
+    date: string;
+    durationMinutes: number;
+    meetingLink: string;
+    platform: string;
+    round: string;
+    startTime: string;
+    timezone: string;
+    type: string;
+  }>;
+  requestId: string;
+}): Promise<SuccessEnvelope<GatewayInterviewDetail>> {
+  const { body, response } = await requestJson<SuccessEnvelope<GatewayInterviewDetail>>(
+    `/employer/interviews/${input.interviewId}`,
+    {
+      body: JSON.stringify(input.payload),
+      headers: authHeaders(input.accessToken, input.requestId, true),
+      method: 'PATCH'
+    }
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(body.success, true);
+
+  return body;
+}
+
+export async function cancelInterview(input: {
+  accessToken: string;
+  interviewId: string;
+  reason: string;
+  requestId: string;
+}): Promise<SuccessEnvelope<GatewayInterviewDetail>> {
+  const { body, response } = await requestJson<SuccessEnvelope<GatewayInterviewDetail>>(
+    `/employer/interviews/${input.interviewId}/cancel`,
+    {
+      body: JSON.stringify({ reason: input.reason }),
+      headers: authHeaders(input.accessToken, input.requestId, true),
+      method: 'POST'
+    }
+  );
+
+  assert.ok(response.status === 200 || response.status === 201);
+  assert.equal(body.success, true);
+
+  return body;
+}
+
 export async function createOffer(input: {
   accessToken: string;
   applicationId: string;
@@ -189,6 +288,52 @@ export async function sendOffer(input: {
     {
       headers: authHeaders(input.accessToken, input.requestId, true),
       method: 'POST'
+    }
+  );
+
+  assert.ok(response.status === 200 || response.status === 201);
+  assert.equal(body.success, true);
+
+  return body;
+}
+
+export async function updateOffer(input: {
+  accessToken: string;
+  offerId: string;
+  payload: Partial<{
+    message: string | null;
+    title: string;
+    offerExpiresAt: string | null;
+    salary: number | null;
+    startDate: string | null;
+  }>;
+  requestId: string;
+}): Promise<SuccessEnvelope<GatewayOfferDetail>> {
+  const { body, response } = await requestJson<SuccessEnvelope<GatewayOfferDetail>>(
+    `/employer/offers/${input.offerId}`,
+    {
+      body: JSON.stringify(input.payload),
+      headers: authHeaders(input.accessToken, input.requestId, true),
+      method: 'PATCH'
+    }
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(body.success, true);
+
+  return body;
+}
+
+export async function withdrawOffer(input: {
+  accessToken: string;
+  offerId: string;
+  requestId: string;
+}): Promise<SuccessEnvelope<null>> {
+  const { body, response } = await requestJson<SuccessEnvelope<null>>(
+    `/employer/offers/${input.offerId}`,
+    {
+      headers: authHeaders(input.accessToken, input.requestId),
+      method: 'DELETE'
     }
   );
 

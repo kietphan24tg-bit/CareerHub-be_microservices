@@ -8,7 +8,8 @@ import { OfferNotFoundError } from '../errors/offer-not-found.error';
 import { OfferSendStateInvalidError } from '../errors/offer-send-state-invalid.error';
 import { OfferStateInvalidError } from '../errors/offer-state-invalid.error';
 import { ApplicationNotificationEventFactory } from '../notifications/application-notification-event.factory';
-import { persistNotificationOutbox } from '../outbox/application-outbox-event.mapper';
+import { ApplicationMailEventFactory } from '../mail/application-mail-event.factory';
+import { persistMailOutbox, persistNotificationOutbox } from '../outbox/application-outbox-event.mapper';
 import type {
   ApplicationOfferRecord,
   ApplicationRepository,
@@ -63,6 +64,7 @@ export class OfferOperations {
     private readonly recruitmentRepository: RecruitmentRepository,
     private readonly writeTransaction: ApplicationWriteTransaction,
     private readonly notificationEventFactory: ApplicationNotificationEventFactory,
+    private readonly mailEventFactory: ApplicationMailEventFactory,
     private readonly idGenerator: IdGenerator
   ) {}
 
@@ -234,6 +236,15 @@ export class OfferOperations {
       });
 
       await persistNotificationOutbox(context.outboxRepository, notificationEvent, {
+        createOutboxId: () => this.idGenerator.generate()
+      });
+
+      const mailEvent = await this.mailEventFactory.buildOfferSentMailEvent({
+        offer: updated,
+        requestId
+      });
+
+      await persistMailOutbox(context.outboxRepository, mailEvent, {
         createOutboxId: () => this.idGenerator.generate()
       });
 

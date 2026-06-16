@@ -13,9 +13,11 @@ import {
 } from './helpers/live-gateway-candidate';
 import {
   acceptOffer,
+  cancelInterview,
   confirmInterview,
   createInterview,
   createOffer,
+  declineInterview,
   declineOffer,
   getCandidateInterview,
   getCandidateOffer,
@@ -23,7 +25,11 @@ import {
   listBenefitCatalog,
   listCandidateOffersForApplication,
   listEmployerInterviews,
-  sendOffer
+  requestReschedule,
+  sendOffer,
+  updateInterview,
+  updateOffer,
+  withdrawOffer
 } from './helpers/live-gateway-interviews-offers';
 import {
   createEmployerJob,
@@ -35,6 +41,8 @@ import {
   registerEmployer
 } from './helpers/live-gateway-auth';
 import { createRequestId, createUniqueEmail } from './helpers/live-http';
+import { pollUntil, sleep } from './helpers/live-polling';
+import { startLocalSmtpSink } from './helpers/live-smtp-sink';
 
 const DEFAULT_TEMPLATE_ID = 'resume-template-classic-1';
 const INTERVIEW_DATE = '2026-12-15';
@@ -217,58 +225,72 @@ test(
   { timeout: 180_000 },
   async () => {
     const { applicationId, candidateLogin, employerLogin, job } = await setupAppliedApplication();
+    const smtpSink = await startLocalSmtpSink();
 
-    const { offerId } = await scheduleInterviewAndSendOffer({
-      accessToken: employerLogin.accessToken,
-      applicationId,
-      candidateAccessToken: candidateLogin.accessToken,
-      requestIdPrefix: 'interview-offer-accept'
-    });
+    try {
+      const { offerId } = await scheduleInterviewAndSendOffer({
+        accessToken: employerLogin.accessToken,
+        applicationId,
+        candidateAccessToken: candidateLogin.accessToken,
+        requestIdPrefix: 'interview-offer-accept'
+      });
 
-    const employerApplication = await getEmployerApplication({
-      accessToken: employerLogin.accessToken,
-      applicationId,
-      requestId: createRequestId('interview-offer-employer-app-offer-stage')
-    });
-    assert.equal(employerApplication.data.status, 'offer');
-    assert.ok(employerApplication.data.interview?.id);
-    assert.ok(employerApplication.data.offer?.id);
+      await pollUntil(async () => {
+        const message = smtpSink.messages.join('\n');
+        return message.includes('CareerHub interview invitation') ? true : null;
+      });
+      await pollUntil(async () => {
+        const message = smtpSink.messages.join('\n');
+        return message.includes('CareerHub job offer received') ? true : null;
+      });
 
-    const accepted = await acceptOffer({
-      accessToken: candidateLogin.accessToken,
-      note: 'Happy to join the team',
-      offerId,
-      requestId: createRequestId('interview-offer-accept')
-    });
-    assert.equal(accepted.data.status, 'accepted');
+      const employerApplication = await getEmployerApplication({
+        accessToken: employerLogin.accessToken,
+        applicationId,
+        requestId: createRequestId('interview-offer-employer-app-offer-stage')
+      });
+      assert.equal(employerApplication.data.status, 'offer');
+      assert.ok(employerApplication.data.interview?.id);
+      assert.ok(employerApplication.data.offer?.id);
 
-    const hiredApplication = await getCandidateApplication({
-      accessToken: candidateLogin.accessToken,
-      applicationId,
-      requestId: createRequestId('interview-offer-candidate-hired')
-    });
-    assert.equal(hiredApplication.data.status, 'hired');
-    assert.equal(hiredApplication.data.offer?.status, 'accepted');
+      const accepted = await acceptOffer({
+        accessToken: candidateLogin.accessToken,
+        note: 'Happy to join the team',
+        offerId,
+        requestId: createRequestId('interview-offer-accept')
+      });
+      assert.equal(accepted.data.status, 'accepted');
 
-    const history = await getApplicationHistory({
-      accessToken: employerLogin.accessToken,
-      applicationId,
-      requestId: createRequestId('interview-offer-history')
-    });
-    const eventTypes = history.data.map((item) => item.eventType);
-    assert.ok(eventTypes.includes('interview_scheduled'));
-    assert.ok(eventTypes.includes('offer_sent'));
-    assert.ok(eventTypes.includes('offer_viewed'));
-    assert.ok(eventTypes.includes('offer_accepted'));
+      const hiredApplication = await getCandidateApplication({
+        accessToken: candidateLogin.accessToken,
+        applicationId,
+        requestId: createRequestId('interview-offer-candidate-hired')
+      });
+      assert.equal(hiredApplication.data.status, 'hired');
+      assert.equal(hiredApplication.data.offer?.status, 'accepted');
 
-    const atsBoard = await getAtsBoard({
-      accessToken: employerLogin.accessToken,
-      jobId: job.id,
-      requestId: createRequestId('interview-offer-ats-board')
-    });
-    assert.ok(
-      atsBoard.data.applications.some((application) => application.stage === 'hired')
-    );
+      const history = await getApplicationHistory({
+        accessToken: employerLogin.accessToken,
+        applicationId,
+        requestId: createRequestId('interview-offer-history')
+      });
+      const eventTypes = history.data.map((item) => item.eventType);
+      assert.ok(eventTypes.includes('interview_scheduled'));
+      assert.ok(eventTypes.includes('offer_sent'));
+      assert.ok(eventTypes.includes('offer_viewed'));
+      assert.ok(eventTypes.includes('offer_accepted'));
+
+      const atsBoard = await getAtsBoard({
+        accessToken: employerLogin.accessToken,
+        jobId: job.id,
+        requestId: createRequestId('interview-offer-ats-board')
+      });
+      assert.ok(
+        atsBoard.data.applications.some((application) => application.stage === 'hired')
+      );
+    } finally {
+      await smtpSink.close();
+    }
   }
 );
 
@@ -277,35 +299,223 @@ test(
   { timeout: 180_000 },
   async () => {
     const { applicationId, candidateLogin, employerLogin } = await setupAppliedApplication();
+    const smtpSink = await startLocalSmtpSink();
 
-    const { offerId } = await scheduleInterviewAndSendOffer({
-      accessToken: employerLogin.accessToken,
-      applicationId,
-      candidateAccessToken: candidateLogin.accessToken,
-      requestIdPrefix: 'interview-offer-decline'
-    });
+    try {
+      const { offerId } = await scheduleInterviewAndSendOffer({
+        accessToken: employerLogin.accessToken,
+        applicationId,
+        candidateAccessToken: candidateLogin.accessToken,
+        requestIdPrefix: 'interview-offer-decline'
+      });
 
-    const declined = await declineOffer({
-      accessToken: candidateLogin.accessToken,
-      note: 'Compensation below expectation',
-      offerId,
-      requestId: createRequestId('interview-offer-decline')
-    });
-    assert.equal(declined.data.status, 'rejected');
+      await pollUntil(async () => {
+        const message = smtpSink.messages.join('\n');
+        return message.includes('CareerHub job offer received') ? true : null;
+      });
 
-    const rejectedApplication = await getCandidateApplication({
-      accessToken: candidateLogin.accessToken,
-      applicationId,
-      requestId: createRequestId('interview-offer-candidate-rejected')
-    });
-    assert.equal(rejectedApplication.data.status, 'rejected');
-    assert.equal(rejectedApplication.data.offer?.status, 'rejected');
+      const declined = await declineOffer({
+        accessToken: candidateLogin.accessToken,
+        note: 'Compensation below expectation',
+        offerId,
+        requestId: createRequestId('interview-offer-decline')
+      });
+      assert.equal(declined.data.status, 'rejected');
 
-    const history = await getApplicationHistory({
-      accessToken: employerLogin.accessToken,
-      applicationId,
-      requestId: createRequestId('interview-offer-decline-history')
-    });
-    assert.ok(history.data.some((item) => item.eventType === 'offer_rejected'));
+      const rejectedApplication = await getCandidateApplication({
+        accessToken: candidateLogin.accessToken,
+        applicationId,
+        requestId: createRequestId('interview-offer-candidate-rejected')
+      });
+      assert.equal(rejectedApplication.data.status, 'rejected');
+      assert.equal(rejectedApplication.data.offer?.status, 'rejected');
+
+      const history = await getApplicationHistory({
+        accessToken: employerLogin.accessToken,
+        applicationId,
+        requestId: createRequestId('interview-offer-decline-history')
+      });
+      assert.ok(history.data.some((item) => item.eventType === 'offer_rejected'));
+    } finally {
+      await smtpSink.close();
+    }
+  }
+);
+
+test(
+  'interview offer phase integration covers interview reschedule, cancel, and mail delivery',
+  { timeout: 180_000 },
+  async () => {
+    const { applicationId, candidateLogin, employerLogin } = await setupAppliedApplication();
+    const smtpSink = await startLocalSmtpSink();
+
+    try {
+      const createdInterview = await createInterview({
+        accessToken: employerLogin.accessToken,
+        applicationId,
+        payload: {
+          date: INTERVIEW_DATE,
+          durationMinutes: 60,
+          meetingLink: 'https://meet.example.com/live-e2e-reschedule',
+          platform: 'Google Meet',
+          round: 'Technical',
+          startTime: '10:00',
+          timezone: 'Asia/Ho_Chi_Minh',
+          type: 'online'
+        },
+        requestId: createRequestId('interview-offer-mail-create-interview')
+      });
+      assert.equal(createdInterview.data.status, 'scheduled');
+
+      await pollUntil(async () => {
+        const message = smtpSink.messages.join('\n');
+        return message.includes('CareerHub interview invitation') ? true : null;
+      });
+
+      const rescheduled = await updateInterview({
+        accessToken: employerLogin.accessToken,
+        interviewId: createdInterview.data.id,
+        payload: {
+          date: '2026-12-16',
+          round: createdInterview.data.round,
+          startTime: '11:00',
+          type: createdInterview.data.type
+        },
+        requestId: createRequestId('interview-offer-mail-reschedule')
+      });
+      assert.equal(rescheduled.data.status, 'rescheduled');
+
+      await pollUntil(async () => {
+        const message = smtpSink.messages.join('\n');
+        return message.includes('CareerHub interview schedule updated') ? true : null;
+      });
+
+      const cancelled = await cancelInterview({
+        accessToken: employerLogin.accessToken,
+        interviewId: createdInterview.data.id,
+        reason: 'Live e2e cancellation',
+        requestId: createRequestId('interview-offer-mail-cancel')
+      });
+      assert.equal(cancelled.data.status, 'cancelled');
+
+      await pollUntil(async () => {
+        const message = smtpSink.messages.join('\n');
+        return message.includes('CareerHub interview cancelled') ? true : null;
+      });
+
+      const candidateApp = await getCandidateApplication({
+        accessToken: candidateLogin.accessToken,
+        applicationId,
+        requestId: createRequestId('interview-offer-mail-candidate-app')
+      });
+      assert.ok(candidateApp.data.interview?.id);
+    } finally {
+      await smtpSink.close();
+    }
+  }
+);
+
+test(
+  'interview offer phase integration ensures candidate interview responses do not send mail',
+  { timeout: 180_000 },
+  async () => {
+    const { applicationId, candidateLogin, employerLogin } = await setupAppliedApplication();
+    const smtpSink = await startLocalSmtpSink();
+
+    try {
+      const interview = await createInterview({
+        accessToken: employerLogin.accessToken,
+        applicationId,
+        payload: {
+          date: INTERVIEW_DATE,
+          durationMinutes: 60,
+          meetingLink: 'https://meet.example.com/live-e2e-no-mail',
+          platform: 'Google Meet',
+          round: 'Technical',
+          startTime: '10:00',
+          timezone: 'Asia/Ho_Chi_Minh',
+          type: 'online'
+        },
+        requestId: createRequestId('interview-offer-no-mail-create-interview')
+      });
+
+      await pollUntil(async () => {
+        const message = smtpSink.messages.join('\n');
+        return message.includes('CareerHub interview invitation') ? true : null;
+      });
+
+      const baselineCount = smtpSink.messages.length;
+
+      const requested = await requestReschedule({
+        accessToken: candidateLogin.accessToken,
+        interviewId: interview.data.id,
+        payload: {
+          proposedDate: '2026-12-17',
+          proposedStartTime: '14:00',
+          proposedDurationMinutes: 45,
+          proposedTimezone: 'Asia/Ho_Chi_Minh',
+          candidateResponseNote: 'Requesting different time'
+        },
+        requestId: createRequestId('interview-offer-no-mail-request-reschedule')
+      });
+      assert.equal(requested.data.status, 'rescheduled');
+
+      const declined = await declineInterview({
+        accessToken: candidateLogin.accessToken,
+        interviewId: interview.data.id,
+        note: 'Cannot attend',
+        requestId: createRequestId('interview-offer-no-mail-decline-interview')
+      });
+      assert.equal(declined.data.status, 'cancelled');
+
+      await sleep(2_000);
+      assert.equal(smtpSink.messages.length, baselineCount);
+    } finally {
+      await smtpSink.close();
+    }
+  }
+);
+
+test(
+  'interview offer phase integration ensures offer update and withdraw do not send mail',
+  { timeout: 180_000 },
+  async () => {
+    const { applicationId, candidateLogin, employerLogin } = await setupAppliedApplication();
+    const smtpSink = await startLocalSmtpSink();
+
+    try {
+      const { offerId } = await scheduleInterviewAndSendOffer({
+        accessToken: employerLogin.accessToken,
+        applicationId,
+        candidateAccessToken: candidateLogin.accessToken,
+        requestIdPrefix: 'interview-offer-no-mail-offer-mutations'
+      });
+
+      await pollUntil(async () => {
+        const message = smtpSink.messages.join('\n');
+        return message.includes('CareerHub job offer received') ? true : null;
+      });
+
+      const baselineCount = smtpSink.messages.length;
+
+      const updated = await updateOffer({
+        accessToken: employerLogin.accessToken,
+        offerId,
+        payload: { message: 'Updated terms - live e2e', title: 'Senior Engineer Offer' },
+        requestId: createRequestId('interview-offer-no-mail-update-offer')
+      });
+      assert.ok(updated.data.id.length > 0);
+
+      await withdrawOffer({
+        accessToken: employerLogin.accessToken,
+        offerId,
+        requestId: createRequestId('interview-offer-no-mail-withdraw-offer')
+      });
+
+      await sleep(2_000);
+      assert.equal(smtpSink.messages.length, baselineCount);
+    } finally {
+      await smtpSink.close();
+    }
   }
 );

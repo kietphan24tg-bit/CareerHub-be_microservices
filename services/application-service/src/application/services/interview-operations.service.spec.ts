@@ -6,6 +6,8 @@ import { InterviewResponseStateInvalidError } from '../errors/interview-response
 import { InterviewStateInvalidError } from '../errors/interview-state-invalid.error';
 import type { ApplicationInterviewRecord, ApplicationRecord } from '../ports';
 import { ApplicationNotificationEventFactory } from '../notifications/application-notification-event.factory';
+import { ApplicationMailEventFactory } from '../mail/application-mail-event.factory';
+import { ApplicationMailContextQuery } from '../mail/application-mail-context.query';
 import { InterviewOperations } from './interview-operations.service';
 
 const baseApplication: ApplicationRecord = {
@@ -68,6 +70,7 @@ function createOperations(overrides: {
 }) {
   let idCounter = 0;
   const histories: Array<{ eventType: string; note: string | null; toStatus: string }> = [];
+  const outboxEvents: unknown[] = [];
 
   const applicationRepository = {
     async createHistory(data: {
@@ -132,6 +135,22 @@ function createOperations(overrides: {
     ...overrides.recruitmentRepository
   };
 
+  const mailContextQuery = new ApplicationMailContextQuery({
+    appBaseUrl: 'http://localhost:4000',
+    jobMailContextLookup: {
+      async findByJobId() {
+        return {
+          companyName: 'Acme Corp',
+          jobTitle: 'Software Engineer'
+        };
+      }
+    }
+  });
+  const mailEventFactory = new ApplicationMailEventFactory({
+    createSourceEventId: () => 'mail-source-1',
+    mailContextQuery
+  });
+
   const operations = new InterviewOperations(
     applicationRepository as never,
     recruitmentRepository as never,
@@ -140,7 +159,9 @@ function createOperations(overrides: {
         return work({
           applicationRepository: applicationRepository as never,
           outboxRepository: {
-            async create() {}
+            async create(record: unknown) {
+              outboxEvents.push(record);
+            }
           } as never,
           recruitmentRepository: recruitmentRepository as never
         });
@@ -149,6 +170,7 @@ function createOperations(overrides: {
     new ApplicationNotificationEventFactory({
       createSourceEventId: () => 'source-event-1'
     }),
+    mailEventFactory,
     {
       generate() {
         idCounter += 1;
@@ -157,11 +179,11 @@ function createOperations(overrides: {
     }
   );
 
-  return { histories, operations };
+  return { histories, operations, outboxEvents };
 }
 
 test('create interview moves application to interview and writes history', async () => {
-  const { histories, operations } = createOperations({});
+  const { histories, operations, outboxEvents } = createOperations({});
   let statusUpdated = false;
 
   const result = await operations.createInterview('employer-1', 'application-1', {
@@ -175,6 +197,42 @@ test('create interview moves application to interview and writes history', async
   assert.equal(result.id, 'interview-new');
   assert.ok(histories.some((item) => item.eventType === 'status_change' && item.toStatus === 'interview'));
   assert.ok(histories.some((item) => item.eventType === 'interview_scheduled'));
+  assert.equal(outboxEvents.length, 2);
+  assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.interview-scheduled.v1');
+  assert.equal((outboxEvents[1] as { eventName: string }).eventName, 'mail.interview-created.v1');
+});
+
+test('update interview without slot change does not enqueue mail outbox', async () => {
+  const { operations, outboxEvents } = createOperations({});
+
+  await operations.updateInterview('employer-1', 'interview-1', {
+    round: 'Final'
+  });
+
+  assert.equal(outboxEvents.length, 1);
+  assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.interview-status-changed.v1');
+});
+
+test('update interview with slot change enqueues mail outbox', async () => {
+  const { operations, outboxEvents } = createOperations({});
+
+  await operations.updateInterview('employer-1', 'interview-1', {
+    date: '2026-06-21',
+    startTime: '14:00'
+  });
+
+  assert.equal(outboxEvents.length, 2);
+  assert.equal((outboxEvents[1] as { eventName: string }).eventName, 'mail.interview-updated.v1');
+});
+
+test('cancel interview enqueues mail outbox', async () => {
+  const { operations, outboxEvents } = createOperations({});
+
+  await operations.cancelInterview('employer-1', 'interview-1', { reason: 'No longer needed' });
+
+  assert.equal(outboxEvents.length, 2);
+  assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.interview-status-changed.v1');
+  assert.equal((outboxEvents[1] as { eventName: string }).eventName, 'mail.interview-cancelled.v1');
 });
 
 test('create interview rejects terminal application', async () => {
@@ -242,7 +300,7 @@ test('candidate confirm enforces respondable status', async () => {
 });
 
 test('candidate confirm updates status and history', async () => {
-  const { histories, operations } = createOperations({});
+  const { histories, operations, outboxEvents } = createOperations({});
 
   const result = await operations.confirmInterview('candidate-1', 'interview-1', {
     candidateResponseNote: 'See you then'
@@ -250,6 +308,8 @@ test('candidate confirm updates status and history', async () => {
 
   assert.equal(result.status, 'confirmed');
   assert.ok(histories.some((item) => item.note?.includes('confirmed')));
+  assert.equal(outboxEvents.length, 1);
+  assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.interview-status-changed.v1');
 });
 
 test('get candidate interview returns not found for wrong owner', async () => {
@@ -268,7 +328,7 @@ test('get candidate interview returns not found for wrong owner', async () => {
 });
 
 test('candidate decline updates status and writes history', async () => {
-  const { histories, operations } = createOperations({});
+  const { histories, operations, outboxEvents } = createOperations({});
 
   const result = await operations.declineInterview('candidate-1', 'interview-1', {
     candidateResponseNote: 'Cannot attend'
@@ -276,10 +336,12 @@ test('candidate decline updates status and writes history', async () => {
 
   assert.equal(result.status, 'cancelled');
   assert.ok(histories.some((item) => item.note?.includes('declined')));
+  assert.equal(outboxEvents.length, 1);
+  assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.interview-status-changed.v1');
 });
 
 test('candidate request reschedule stores proposed slot and writes history', async () => {
-  const { histories, operations } = createOperations({});
+  const { histories, operations, outboxEvents } = createOperations({});
 
   const result = await operations.requestReschedule('candidate-1', 'interview-1', {
     proposedDate: '2026-06-22',
@@ -291,6 +353,8 @@ test('candidate request reschedule stores proposed slot and writes history', asy
   assert.equal(result.status, 'rescheduled');
   assert.equal(result.candidateProposedDate, '2026-06-22');
   assert.ok(histories.some((item) => item.note?.includes('reschedule')));
+  assert.equal(outboxEvents.length, 1);
+  assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.interview-status-changed.v1');
 });
 
 test('list employer interviews returns repository rows', async () => {
@@ -310,7 +374,7 @@ test('list employer interviews returns repository rows', async () => {
 });
 
 test('cancel interview fails when conditional update loses race', async () => {
-  const { histories, operations } = createOperations({
+  const { histories, operations, outboxEvents } = createOperations({
     recruitmentRepository: {
       async updateInterviewIfStatus() {
         return null;
@@ -323,10 +387,11 @@ test('cancel interview fails when conditional update loses race', async () => {
     InterviewStateInvalidError
   );
   assert.equal(histories.length, 0);
+  assert.equal(outboxEvents.length, 0);
 });
 
 test('update interview fails when conditional update loses race', async () => {
-  const { histories, operations } = createOperations({
+  const { histories, operations, outboxEvents } = createOperations({
     recruitmentRepository: {
       async updateInterviewIfStatus() {
         return null;
@@ -339,4 +404,5 @@ test('update interview fails when conditional update loses race', async () => {
     InterviewStateInvalidError
   );
   assert.equal(histories.length, 0);
+  assert.equal(outboxEvents.length, 0);
 });

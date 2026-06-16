@@ -21,3 +21,20 @@ model Notification {
   @@index([identityId, createdAt])
   @@map("notifications")
 }
+
+model RecruitmentMailDelivery {
+  id                  String    @id @db.VarChar(64)
+  sourceEventId       String    @unique @map("source_event_id") @db.VarChar(64)
+  eventName           String    @map("event_name") @db.VarChar(128)
+  recipientIdentityId String    @map("recipient_identity_id") @db.VarChar(64)
+  status              String    @db.VarChar(32)
+  claimedAt           DateTime? @map("claimed_at")
+  sentAt              DateTime? @map("sent_at")
+  failedAt            DateTime? @map("failed_at")
+  lastError           String?   @map("last_error") @db.Text
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@index([status, claimedAt])
+  @@map("recruitment_mail_deliveries")
+}

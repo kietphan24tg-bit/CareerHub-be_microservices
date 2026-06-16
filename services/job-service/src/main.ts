@@ -24,6 +24,23 @@ import {
 import { JOB_PRISMA_TOKENS } from './infrastructure';
 
 function resolveJobProtoPath(): string {
+  const cwdRelativePath = join(
+    process.cwd(),
+    '..',
+    '..',
+    'packages',
+    'contracts',
+    'src',
+    'grpc',
+    'job',
+    'v1',
+    'job.proto'
+  );
+
+  if (existsSync(cwdRelativePath)) {
+    return cwdRelativePath;
+  }
+
   const distRelativePath = join(
     __dirname,
     '..',

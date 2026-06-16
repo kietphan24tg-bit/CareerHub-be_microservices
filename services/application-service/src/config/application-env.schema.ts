@@ -4,7 +4,9 @@ import {
 } from '@careerhub/infrastructure';
 
 export type ApplicationEnvironmentVariables = BaseEnvironmentVariables & {
+  APP_BASE_URL: string;
   GRPC_APPLICATION_URL: string;
+  GRPC_JOB_URL: string;
   OUTBOX_BACKLOG_INTERVAL_MS: number;
   OUTBOX_BATCH_SIZE: number;
   OUTBOX_CLEANUP_BATCH_SIZE: number;
@@ -63,10 +65,20 @@ export function validateApplicationEnvironment(
     config.GRPC_APPLICATION_URL.trim().length > 0
       ? config.GRPC_APPLICATION_URL.trim()
       : '0.0.0.0:50055';
+  const grpcJobUrl =
+    typeof config.GRPC_JOB_URL === 'string' && config.GRPC_JOB_URL.trim().length > 0
+      ? config.GRPC_JOB_URL.trim()
+      : '0.0.0.0:50052';
+  const appBaseUrl =
+    typeof config.APP_BASE_URL === 'string' && config.APP_BASE_URL.trim().length > 0
+      ? config.APP_BASE_URL.trim().replace(/\/+$/, '')
+      : 'http://localhost:4000';
 
   return {
     ...baseEnvironment,
+    APP_BASE_URL: appBaseUrl,
     GRPC_APPLICATION_URL: grpcApplicationUrl,
+    GRPC_JOB_URL: grpcJobUrl,
     OUTBOX_BACKLOG_INTERVAL_MS: readPositiveNumber(
       config,
       'OUTBOX_BACKLOG_INTERVAL_MS',

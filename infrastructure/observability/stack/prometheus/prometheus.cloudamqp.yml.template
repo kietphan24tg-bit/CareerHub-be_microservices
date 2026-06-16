@@ -5,6 +5,14 @@ global:
 rule_files:
   - alerts/careerhub-observability.rules.yml
 
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - grafana:3000
+      api_version: v2
+      path_prefix: /
+
 scrape_configs:
   - job_name: careerhub-prometheus
     static_configs:

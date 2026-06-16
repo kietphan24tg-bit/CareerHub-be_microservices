@@ -48,6 +48,44 @@ export type NotificationModelDelegate = {
   }): Promise<{ count: number }>;
 };
 
+export type RecruitmentMailDeliveryPersistenceRecord = {
+  claimedAt: Date | null;
+  createdAt: Date;
+  eventName: string;
+  failedAt: Date | null;
+  id: string;
+  lastError: string | null;
+  recipientIdentityId: string;
+  sentAt: Date | null;
+  sourceEventId: string;
+  status: string;
+  updatedAt: Date;
+};
+
+export type RecruitmentMailDeliveryModelDelegate = {
+  create(args: {
+    data: {
+      claimedAt: Date | null;
+      eventName: string;
+      failedAt?: Date | null;
+      id: string;
+      lastError?: string | null;
+      recipientIdentityId: string;
+      sentAt?: Date | null;
+      sourceEventId: string;
+      status: string;
+    };
+  }): Promise<RecruitmentMailDeliveryPersistenceRecord>;
+  findUnique(args: {
+    where: { sourceEventId: string };
+  }): Promise<RecruitmentMailDeliveryPersistenceRecord | null>;
+  updateMany(args: {
+    data: Record<string, unknown>;
+    where: Record<string, unknown>;
+  }): Promise<{ count: number }>;
+};
+
 export type CommunicationPrismaClient = PrismaClientLike & {
   notification: NotificationModelDelegate;
+  recruitmentMailDelivery: RecruitmentMailDeliveryModelDelegate;
 };

@@ -4,6 +4,10 @@ $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $templatePath = Join-Path $repoRoot 'infrastructure/observability/stack/prometheus/prometheus.cloudamqp.yml.template'
 $outputPath = Join-Path $repoRoot 'infrastructure/observability/stack/prometheus/prometheus.generated.yml'
 
+if (Test-Path -LiteralPath $outputPath) {
+  Remove-Item -LiteralPath $outputPath -Force
+}
+
 $cloudAmqpUrl = $env:CLOUDAMQP_PROMETHEUS_URL
 $cloudAmqpUsername = $env:CLOUDAMQP_PROMETHEUS_USERNAME
 $cloudAmqpPassword = $env:CLOUDAMQP_PROMETHEUS_PASSWORD
@@ -40,13 +44,21 @@ if ([string]::IsNullOrWhiteSpace($metricsPath) -or $metricsPath -eq '/') {
   $metricsPath = '/metrics/detailed'
 }
 
-$template = Get-Content -Raw -Path $templatePath
-$rendered = (
-  $template.Replace('__CLOUDAMQP_PROMETHEUS_SCHEME__', $scheme)
-).Replace('__CLOUDAMQP_PROMETHEUS_PATH__', $metricsPath).
-  Replace('__CLOUDAMQP_PROMETHEUS_TARGET__', $target).
-  Replace('__CLOUDAMQP_PROMETHEUS_USERNAME__', $cloudAmqpUsername.Replace('"', '\"')).
-  Replace('__CLOUDAMQP_PROMETHEUS_PASSWORD__', $cloudAmqpPassword.Replace('"', '\"'))
+try {
+  $template = Get-Content -Raw -Path $templatePath
+  $rendered = (
+    $template.Replace('__CLOUDAMQP_PROMETHEUS_SCHEME__', $scheme)
+  ).Replace('__CLOUDAMQP_PROMETHEUS_PATH__', $metricsPath).
+    Replace('__CLOUDAMQP_PROMETHEUS_TARGET__', $target).
+    Replace('__CLOUDAMQP_PROMETHEUS_USERNAME__', $cloudAmqpUsername.Replace('"', '\"')).
+    Replace('__CLOUDAMQP_PROMETHEUS_PASSWORD__', $cloudAmqpPassword.Replace('"', '\"'))
 
-Set-Content -Path $outputPath -Value $rendered -NoNewline
-Write-Output "Rendered Prometheus config to $outputPath for target $target$metricsPath"
+  Set-Content -Path $outputPath -Value $rendered -NoNewline
+  Write-Output "Rendered Prometheus config to $outputPath for target $target$metricsPath"
+} catch {
+  if (Test-Path -LiteralPath $outputPath) {
+    Remove-Item -LiteralPath $outputPath -Force
+  }
+
+  throw
+}
