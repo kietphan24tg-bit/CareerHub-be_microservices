@@ -11,3 +11,6 @@ export {
   type IamEmailReplayOutcome,
   type IamEmailReplayResult
 } from './iam-email-dlq/replay-iam-email-dlq';
+export * from './job-search-dlq/replay-job-search-dlq';
+export * from './job-slug-cache-dlq/replay-job-slug-cache-dlq';
+export * from './application-cache-dlq/replay-application-cache-dlq';

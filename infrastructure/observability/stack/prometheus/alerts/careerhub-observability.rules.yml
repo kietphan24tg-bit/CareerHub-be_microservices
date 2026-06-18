@@ -60,7 +60,7 @@ groups:
   - name: careerhub-rabbitmq-dlq
     rules:
       - alert: CareerHubRabbitMqDlqBacklogDetected
-        expr: max by (queue, vhost) ((rabbitmq_detailed_queue_messages{queue=~".*dlq\\.(communication\\.notifications|iam\\.password-reset-mail)$"}) or (lavinmq_detailed_queue_messages{queue=~".*dlq\\.(communication\\.notifications|iam\\.password-reset-mail)$"})) > 0
+        expr: max by (queue, vhost) ((rabbitmq_detailed_queue_messages{queue=~".*dlq\\.(application\\.dashboard-cache-invalidation|communication\\.notifications|iam\\.password-reset-mail|job\\.search-index|job\\.slug-cache-invalidation)$"}) or (lavinmq_detailed_queue_messages{queue=~".*dlq\\.(application\\.dashboard-cache-invalidation|communication\\.notifications|iam\\.password-reset-mail|job\\.search-index|job\\.slug-cache-invalidation)$"})) > 0
         for: 5m
         labels:
           severity: warning

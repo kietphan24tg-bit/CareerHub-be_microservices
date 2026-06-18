@@ -30,6 +30,7 @@ const OUTBOX_EVENTS_EXCHANGE = 'events';
 const DASHBOARD_CACHE_INVALIDATION_QUEUE = 'application.dashboard-cache-invalidation';
 const RECONNECT_DELAY_MS = 5_000;
 const CONSUMER_NAME = 'application-dashboard-cache-invalidation';
+const MAX_RETRY_COUNT = 3;
 const RETRY_DELAY_STEPS_MS = [5_000, 15_000, 60_000] as const;
 
 const DASHBOARD_CACHE_EVENT_NAMES = [
@@ -269,7 +270,7 @@ export class ApplicationCacheInvalidationConsumer implements OnModuleInit, OnMod
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-      if (retryCount >= 3) {
+      if (retryCount >= MAX_RETRY_COUNT) {
         this.logger.error(
           `Dashboard cache invalidation retries exhausted for employer "${employerIdentityId}" after ${retryCount} attempts: ${errorMessage}`
         );

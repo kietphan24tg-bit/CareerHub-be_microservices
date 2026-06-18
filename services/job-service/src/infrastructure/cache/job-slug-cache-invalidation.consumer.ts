@@ -36,6 +36,7 @@ const OUTBOX_EVENTS_EXCHANGE = 'events';
 const SLUG_CACHE_INVALIDATION_QUEUE = 'job.slug-cache-invalidation';
 const RECONNECT_DELAY_MS = 5_000;
 const CONSUMER_NAME = 'job-slug-cache-invalidation';
+const MAX_RETRY_COUNT = 3;
 const RETRY_DELAY_STEPS_MS = [5_000, 15_000, 60_000] as const;
 
 const JOB_CACHE_EVENT_NAMES = [
@@ -268,7 +269,7 @@ export class JobSlugCacheInvalidationConsumer implements OnModuleInit, OnModuleD
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-      if (retryCount >= 3) {
+      if (retryCount >= MAX_RETRY_COUNT) {
         this.logger.error(
           `Slug cache invalidation retries exhausted for slug "${slug}" after ${retryCount} attempts: ${errorMessage}`
         );

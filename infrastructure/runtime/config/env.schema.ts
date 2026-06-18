@@ -29,7 +29,14 @@ export const runtimeNodeEnvSchema = z.enum([
 export const runtimeLogLevelSchema = z.enum(['debug', 'info', 'warn', 'error']);
 
 export const runtimeEnvironmentSchema = z.object({
-    BROKER_URL: z.string().url().optional(),
+    BROKER_URL: z.string().url().optional().superRefine((url, ctx) => {
+        if (url && process.env.NODE_ENV === 'production' && !url.startsWith('amqps://')) {
+            ctx.addIssue({
+                code: 'custom',
+                message: 'BROKER_URL must use amqps:// in production'
+            });
+        }
+    }),
     BROKER_QUEUE_PREFIX: z.string().optional(),
     BROKER_EXCHANGE_PREFIX: z.string().optional(),
     BROKER_PREFETCH_COUNT: z.coerce.number().int().positive().optional(),

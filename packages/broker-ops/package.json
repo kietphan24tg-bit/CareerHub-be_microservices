@@ -5,8 +5,11 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
+    "application-cache-dlq": "dist/application-cache-dlq/cli.js",
     "communication-dlq": "dist/communication-dlq/cli.js",
-    "iam-email-dlq": "dist/iam-email-dlq/cli.js"
+    "iam-email-dlq": "dist/iam-email-dlq/cli.js",
+    "job-search-dlq": "dist/job-search-dlq/cli.js",
+    "job-slug-cache-dlq": "dist/job-slug-cache-dlq/cli.js"
   },
   "dependencies": {
     "@careerhub/contracts": "workspace:*",
@@ -18,8 +21,11 @@
   },
   "scripts": {
     "build": "pnpm -C ../.. build:packages && tsc -p tsconfig.json",
+    "dlq:application-cache": "pnpm run build && node dist/application-cache-dlq/cli.js",
     "dlq:communication": "pnpm run build && node dist/communication-dlq/cli.js",
     "dlq:iam-email": "pnpm run build && node dist/iam-email-dlq/cli.js",
+    "dlq:job-search": "pnpm run build && node dist/job-search-dlq/cli.js",
+    "dlq:job-slug-cache": "pnpm run build && node dist/job-slug-cache-dlq/cli.js",
     "test": "tsc -p tsconfig.spec.json && node --test dist-test/**/*.spec.js"
   }
 }

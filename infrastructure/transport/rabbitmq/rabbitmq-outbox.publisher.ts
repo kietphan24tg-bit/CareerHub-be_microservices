@@ -123,6 +123,10 @@ export class RabbitMqOutboxPublisher {
           });
 
           return channel;
+        })
+        .catch((error: unknown) => {
+          this.channelPromise = undefined;
+          throw error;
         });
     }
 
@@ -131,8 +135,8 @@ export class RabbitMqOutboxPublisher {
 
   private async getConnection(): Promise<ChannelModel> {
     if (!this.connectionPromise) {
-      this.connectionPromise = connect(this.runtimeConfig.brokerUrl as string).then(
-        (connection) => {
+      this.connectionPromise = connect(this.runtimeConfig.brokerUrl as string)
+        .then((connection) => {
           connection.on('close', () => {
             this.connectionPromise = undefined;
           });
@@ -142,8 +146,11 @@ export class RabbitMqOutboxPublisher {
           });
 
           return connection;
-        }
-      );
+        })
+        .catch((error: unknown) => {
+          this.connectionPromise = undefined;
+          throw error;
+        });
     }
 
     return this.connectionPromise;
