@@ -89,14 +89,17 @@ function makeOperations(
       {
         async execute(work) {
           return work({
-            applicationRepository: contextRepository as never,
-            outboxRepository: {
-              async create(record: unknown) {
-                outboxCreates.push(record);
-              }
-            } as never,
-            recruitmentRepository: {} as never
-          });
+          applicationRepository: contextRepository as never,
+          outboxRepository: {
+            async create(record: unknown) {
+              outboxCreates.push(record);
+            },
+            async deleteFailedBatch() {
+              return 0;
+            }
+          } as never,
+          recruitmentRepository: {} as never
+        });
         }
       },
       new ApplicationNotificationEventFactory({
@@ -134,7 +137,9 @@ test('application operations applies with application, history, and outbox in on
   assert.equal(createData?.application.coverLetter, 'Cover letter');
   assert.equal(createData?.history.eventType, 'status_change');
   assert.equal(createData?.history.toStatus, 'applied');
-  assert.equal(outboxCreates.length, 1);
+  assert.equal(outboxCreates.length, 2);
+  assert.equal((outboxCreates[0] as { eventName: string }).eventName, 'notifications.application-received.v1');
+  assert.equal((outboxCreates[1] as { eventName: string }).eventName, 'application.created.v1');
 });
 
 test('application operations updates employer status with atomic history and outbox', async () => {
@@ -167,7 +172,9 @@ test('application operations updates employer status with atomic history and out
     transitionData?.history.note,
     'Employer moved application from applied to reviewed.'
   );
-  assert.equal(outboxCreates.length, 1);
+  assert.equal(outboxCreates.length, 2);
+  assert.equal((outboxCreates[0] as { eventName: string }).eventName, 'notifications.application-status-changed.v1');
+  assert.equal((outboxCreates[1] as { eventName: string }).eventName, 'application.status-updated.v1');
 });
 
 test('application operations rejects invalid employer lifecycle jump', async () => {
