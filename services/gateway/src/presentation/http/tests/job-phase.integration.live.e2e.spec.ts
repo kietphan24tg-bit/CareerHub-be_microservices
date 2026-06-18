@@ -16,6 +16,7 @@ import {
   registerEmployer
 } from './helpers/live-gateway-auth';
 import { createRequestId, createUniqueEmail } from './helpers/live-http';
+import { pollUntil } from './helpers/live-polling';
 
 test(
   'job phase integration covers employer lifecycle and saved-jobs enrichment',
@@ -51,7 +52,10 @@ test(
     });
     assert.equal(published.data.status, 'published');
 
-    const publicList = await listPublicJobs(createRequestId('job-public-list'));
+    const publicList = await pollUntil(async () => {
+      const response = await listPublicJobs(createRequestId('job-public-list'));
+      return response.data.items.some((job) => job.id === created.data.id) ? response : null;
+    }, { timeoutMs: 20_000, intervalMs: 500 });
     assert.ok(publicList.data.items.some((job) => job.id === created.data.id));
 
     const publicDetail = await getPublicJobBySlug({

@@ -1,8 +1,12 @@
 import {
+  InMemoryMetricsRegistry,
+  type MetricsRegistry,
   createPrismaModule,
   createRuntimeConfigModule
 } from '@careerhub/infrastructure';
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
 import {
   ArchiveJobCommandHandler,
   CloseJobCommandHandler,
@@ -18,13 +22,26 @@ import {
   ListPublicJobsQueryHandler,
   PublishJobCommandHandler,
   ReopenJobCommandHandler,
-  UpdateJobCommandHandler
+  UpdateJobCommandHandler,
+  type JobSearchCache,
+  type JobSearchIndexer,
+  type JobSearchRepository,
+  type JobSlugCache
 } from './application';
-import { validateJobEnvironment } from './config';
+import { getJobRuntimeConfig, validateJobEnvironment } from './config';
 import {
+  JobSearchIndexConsumer,
+  JobSlugCacheInvalidationConsumer,
+  MeilisearchJobRepository,
+  RedisJobSearchCache,
+  RedisJobSlugCache,
   createJobPrismaClient,
+  JOB_METRICS_TOKENS,
   JOB_PRISMA_TOKENS,
+  JobOutboxProcessor,
+  JobOutboxPublisher,
   JobPrismaService,
+  PrismaJobOutboxRepository,
   PrismaJobRepository
 } from './infrastructure';
 import { UuidIdGenerator } from './infrastructure/id/uuid-id-generator';
@@ -47,15 +64,67 @@ import { JobGrpcController } from './presentation';
   ],
   providers: [
     {
+      provide: JOB_METRICS_TOKENS.registry,
+      useFactory: (): MetricsRegistry => new InMemoryMetricsRegistry()
+    },
+    {
       provide: JOB_PORT_TOKENS.jobRepository,
       inject: [JOB_PRISMA_TOKENS.service],
       useFactory: (prismaService: JobPrismaService) =>
         new PrismaJobRepository(prismaService)
     },
     {
+      provide: JOB_PORT_TOKENS.outboxRepository,
+      inject: [JOB_PRISMA_TOKENS.service],
+      useFactory: (prismaService: JobPrismaService) =>
+        new PrismaJobOutboxRepository(prismaService.prisma)
+    },
+    {
       provide: JOB_PORT_TOKENS.idGenerator,
       useClass: UuidIdGenerator
     },
+    {
+      provide: JOB_PORT_TOKENS.slugCache,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService): JobSlugCache | null => {
+        const cfg = getJobRuntimeConfig(configService);
+        if (!cfg.redisUrl) return null;
+        const redis = new Redis(cfg.redisUrl, { lazyConnect: false });
+        return new RedisJobSlugCache(redis, cfg.redisSlugCacheTtlS);
+      }
+    },
+    {
+      provide: JOB_PORT_TOKENS.jobSearchCache,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService): JobSearchCache | null => {
+        const cfg = getJobRuntimeConfig(configService);
+        if (!cfg.redisUrl) return null;
+        const redis = new Redis(cfg.redisUrl, { lazyConnect: false });
+        return new RedisJobSearchCache(redis, cfg.redisSearchCacheTtlS);
+      }
+    },
+    {
+      provide: JOB_PORT_TOKENS.jobSearchRepository,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService): JobSearchRepository | null => {
+        const cfg = getJobRuntimeConfig(configService);
+        if (!cfg.meilisearchHost) return null;
+        return new MeilisearchJobRepository(cfg.meilisearchHost, cfg.meilisearchApiKey);
+      }
+    },
+    {
+      provide: JOB_PORT_TOKENS.jobSearchIndexer,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService): JobSearchIndexer | null => {
+        const cfg = getJobRuntimeConfig(configService);
+        if (!cfg.meilisearchHost) return null;
+        return new MeilisearchJobRepository(cfg.meilisearchHost, cfg.meilisearchApiKey);
+      }
+    },
+    JobOutboxPublisher,
+    JobOutboxProcessor,
+    JobSlugCacheInvalidationConsumer,
+    JobSearchIndexConsumer,
     {
       provide: CreateJobCommandHandler,
       inject: [JOB_PORT_TOKENS.jobRepository, JOB_PORT_TOKENS.idGenerator],
@@ -66,45 +135,104 @@ import { JobGrpcController } from './presentation';
     },
     {
       provide: UpdateJobCommandHandler,
-      inject: [JOB_PORT_TOKENS.jobRepository],
-      useFactory: (jobRepository: PrismaJobRepository) =>
-        new UpdateJobCommandHandler(jobRepository)
+      inject: [
+        JOB_PORT_TOKENS.jobRepository,
+        JOB_PORT_TOKENS.outboxRepository,
+        JOB_PORT_TOKENS.idGenerator
+      ],
+      useFactory: (
+        jobRepository: PrismaJobRepository,
+        outboxRepository: PrismaJobOutboxRepository,
+        idGenerator: UuidIdGenerator
+      ) => new UpdateJobCommandHandler(jobRepository, outboxRepository, idGenerator)
     },
     {
       provide: PublishJobCommandHandler,
-      inject: [JOB_PORT_TOKENS.jobRepository],
-      useFactory: (jobRepository: PrismaJobRepository) =>
-        new PublishJobCommandHandler(jobRepository)
+      inject: [
+        JOB_PORT_TOKENS.jobRepository,
+        JOB_PORT_TOKENS.outboxRepository,
+        JOB_PORT_TOKENS.idGenerator
+      ],
+      useFactory: (
+        jobRepository: PrismaJobRepository,
+        outboxRepository: PrismaJobOutboxRepository,
+        idGenerator: UuidIdGenerator
+      ) => new PublishJobCommandHandler(jobRepository, outboxRepository, idGenerator)
     },
     {
       provide: CloseJobCommandHandler,
-      inject: [JOB_PORT_TOKENS.jobRepository],
-      useFactory: (jobRepository: PrismaJobRepository) =>
-        new CloseJobCommandHandler(jobRepository)
+      inject: [
+        JOB_PORT_TOKENS.jobRepository,
+        JOB_PORT_TOKENS.outboxRepository,
+        JOB_PORT_TOKENS.idGenerator
+      ],
+      useFactory: (
+        jobRepository: PrismaJobRepository,
+        outboxRepository: PrismaJobOutboxRepository,
+        idGenerator: UuidIdGenerator
+      ) => new CloseJobCommandHandler(jobRepository, outboxRepository, idGenerator)
     },
     {
       provide: ArchiveJobCommandHandler,
-      inject: [JOB_PORT_TOKENS.jobRepository],
-      useFactory: (jobRepository: PrismaJobRepository) =>
-        new ArchiveJobCommandHandler(jobRepository)
+      inject: [
+        JOB_PORT_TOKENS.jobRepository,
+        JOB_PORT_TOKENS.outboxRepository,
+        JOB_PORT_TOKENS.idGenerator
+      ],
+      useFactory: (
+        jobRepository: PrismaJobRepository,
+        outboxRepository: PrismaJobOutboxRepository,
+        idGenerator: UuidIdGenerator
+      ) => new ArchiveJobCommandHandler(jobRepository, outboxRepository, idGenerator)
     },
     {
       provide: ReopenJobCommandHandler,
-      inject: [JOB_PORT_TOKENS.jobRepository],
-      useFactory: (jobRepository: PrismaJobRepository) =>
-        new ReopenJobCommandHandler(jobRepository)
+      inject: [
+        JOB_PORT_TOKENS.jobRepository,
+        JOB_PORT_TOKENS.outboxRepository,
+        JOB_PORT_TOKENS.idGenerator
+      ],
+      useFactory: (
+        jobRepository: PrismaJobRepository,
+        outboxRepository: PrismaJobOutboxRepository,
+        idGenerator: UuidIdGenerator
+      ) => new ReopenJobCommandHandler(jobRepository, outboxRepository, idGenerator)
     },
     {
       provide: ListPublicJobsQueryHandler,
-      inject: [JOB_PORT_TOKENS.jobRepository],
-      useFactory: (jobRepository: PrismaJobRepository) =>
-        new ListPublicJobsQueryHandler(jobRepository)
+      inject: [
+        JOB_PORT_TOKENS.jobRepository,
+        JOB_PORT_TOKENS.jobSearchRepository,
+        JOB_PORT_TOKENS.jobSearchCache
+      ],
+      useFactory: (
+        jobRepository: PrismaJobRepository,
+        jobSearchRepository: JobSearchRepository | null,
+        jobSearchCache: JobSearchCache | null
+      ) =>
+        new ListPublicJobsQueryHandler(
+          jobRepository,
+          jobSearchRepository ?? undefined,
+          jobSearchCache ?? undefined
+        )
     },
     {
       provide: GetPublicJobBySlugQueryHandler,
-      inject: [JOB_PORT_TOKENS.jobRepository],
-      useFactory: (jobRepository: PrismaJobRepository) =>
-        new GetPublicJobBySlugQueryHandler(jobRepository)
+      inject: [
+        JOB_PORT_TOKENS.jobRepository,
+        JOB_PORT_TOKENS.slugCache,
+        JOB_PORT_TOKENS.jobSearchRepository
+      ],
+      useFactory: (
+        jobRepository: PrismaJobRepository,
+        slugCache: JobSlugCache | null,
+        jobSearchRepository: JobSearchRepository | null
+      ) =>
+        new GetPublicJobBySlugQueryHandler(
+          jobRepository,
+          slugCache ?? undefined,
+          jobSearchRepository ?? undefined
+        )
     },
     {
       provide: ListEmployerJobsQueryHandler,

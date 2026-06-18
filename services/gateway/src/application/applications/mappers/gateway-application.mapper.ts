@@ -358,7 +358,10 @@ export function toAtsBoardJob(input: {
   };
 }
 
-export function toAtsStageContext(application: ApplicationMessage) {
+export function toAtsStageContext(
+  application: ApplicationMessage,
+  note?: string | null
+) {
   const interview = toInterviewModel(application.interview);
   const offer = toOfferModel(application.offer);
 
@@ -375,6 +378,13 @@ export function toAtsStageContext(application: ApplicationMessage) {
         ? `Offer: ${formatDateTimeLabel(offer.sentAt)}`
         : `Offer: ${startCase(offer.status)}`,
       type: 'offer'
+    };
+  }
+
+  if (typeof note === 'string' && note.trim().length > 0) {
+    return {
+      label: note.trim(),
+      type: 'note'
     };
   }
 

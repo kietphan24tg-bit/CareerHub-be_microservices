@@ -1,4 +1,5 @@
-import { ValidationError } from '@careerhub/shared-kernel';
+import { UniqueEntityID, ValidationError } from '@careerhub/shared-kernel';
+import { Job } from '../../../domain';
 import type { IdGenerator, JobRecord, JobRepository } from '../../ports';
 import { writeJobWithUniqueSlug } from '../../utils/job-slug';
 import type { CreateJobCommand } from './create-job.command';
@@ -10,10 +11,6 @@ export class CreateJobCommandHandler {
   ) {}
 
   async execute(command: CreateJobCommand): Promise<JobRecord> {
-    if (!command.employerIdentityId.trim()) {
-      throw new ValidationError('Employer identity id is required');
-    }
-
     if (!command.companyId.trim()) {
       throw new ValidationError('Company id is required');
     }
@@ -26,7 +23,11 @@ export class CreateJobCommandHandler {
       throw new ValidationError('Job title is required');
     }
 
-    const jobId = this.idGenerator.generate();
+    // employerIdentityId validation is enforced inside Job.create()
+    const job = Job.create({
+      id: new UniqueEntityID(this.idGenerator.generate()),
+      employerIdentityId: command.employerIdentityId
+    });
 
     return writeJobWithUniqueSlug(
       this.jobRepository,
@@ -45,10 +46,10 @@ export class CreateJobCommandHandler {
           country: command.country?.trim() || null,
           currency: command.currency?.trim() || null,
           description: command.description?.trim() || null,
-          employerIdentityId: command.employerIdentityId.trim(),
+          employerIdentityId: job.employerIdentityId,
           employmentType: command.employmentType ?? null,
           expiresAt: command.expiresAt ? new Date(command.expiresAt) : null,
-          id: jobId,
+          id: job.id.toString(),
           isRemote: command.isRemote ?? false,
           level: command.level ?? null,
           requirements: command.requirements ?? [],

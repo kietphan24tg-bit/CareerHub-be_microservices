@@ -1,11 +1,20 @@
 import { UniqueEntityID, ValidationError } from '@careerhub/shared-kernel';
+import {
+  createIntegrationEvent,
+  JOB_PUBLISHED_EVENT_NAME
+} from '@careerhub/contracts';
 import { InvalidJobStatusTransitionError, Job, JobStatus } from '../../../domain';
 import { JobNotFoundError } from '../../errors/job-not-found.error';
-import type { JobRecord, JobRepository } from '../../ports';
+import { persistJobOutbox } from '../../outbox/job-outbox-event.mapper';
+import type { IdGenerator, JobRecord, JobRepository, OutboxRepository } from '../../ports';
 import type { PublishJobCommand } from './publish-job.command';
 
 export class PublishJobCommandHandler {
-  constructor(private readonly jobRepository: JobRepository) {}
+  constructor(
+    private readonly jobRepository: JobRepository,
+    private readonly outboxRepository: OutboxRepository,
+    private readonly idGenerator: IdGenerator
+  ) {}
 
   async execute(command: PublishJobCommand): Promise<JobRecord> {
     const employerIdentityId = command.employerIdentityId.trim();
@@ -44,9 +53,18 @@ export class PublishJobCommandHandler {
     );
 
     if (!updated) {
-      // Bị chuyển trạng thái đồng thời sau khi đọc → transition không còn hợp lệ.
       throw new InvalidJobStatusTransitionError(fromStatus.value, job.status.value);
     }
+
+    await persistJobOutbox(
+      this.outboxRepository,
+      createIntegrationEvent(JOB_PUBLISHED_EVENT_NAME, {
+        employerIdentityId,
+        jobId,
+        slug: updated.slug
+      }),
+      { createOutboxId: () => this.idGenerator.generate() }
+    );
 
     return updated;
   }
