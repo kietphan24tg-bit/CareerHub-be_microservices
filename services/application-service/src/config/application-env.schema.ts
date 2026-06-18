@@ -16,6 +16,7 @@ export type ApplicationEnvironmentVariables = BaseEnvironmentVariables & {
   OUTBOX_MAX_RETRY_COUNT: number;
   OUTBOX_POLL_INTERVAL_MS: number;
   OUTBOX_PROCESSED_RETENTION_MS: number;
+  OUTBOX_PUBLISH_CONCURRENCY: number;
   OUTBOX_PUBLISH_ENABLED: boolean;
   OUTBOX_RETRY_DELAY_MS: number;
   OUTBOX_STALE_PROCESSING_TIMEOUT_MS: number;
@@ -113,6 +114,7 @@ export function validateApplicationEnvironment(
       'OUTBOX_PROCESSED_RETENTION_MS',
       7 * 24 * 60 * 60 * 1000
     ),
+    OUTBOX_PUBLISH_CONCURRENCY: readPositiveNumber(config, 'OUTBOX_PUBLISH_CONCURRENCY', 5),
     OUTBOX_PUBLISH_ENABLED: readBoolean(config, 'OUTBOX_PUBLISH_ENABLED', true),
     OUTBOX_RETRY_DELAY_MS: readPositiveNumber(config, 'OUTBOX_RETRY_DELAY_MS', 30_000),
     OUTBOX_STALE_PROCESSING_TIMEOUT_MS: readPositiveNumber(

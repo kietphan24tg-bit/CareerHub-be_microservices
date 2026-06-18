@@ -19,6 +19,7 @@ export type IamRuntimeConfig = {
   outboxMaxRetryCount: number;
   outboxPollIntervalMs: number;
   outboxProcessedRetentionMs: number;
+  outboxPublishConcurrency: number;
   outboxPublishEnabled: boolean;
   outboxRetryDelayMs: number;
   outboxStaleProcessingTimeoutMs: number;
@@ -58,6 +59,7 @@ export function getIamRuntimeConfig(
     outboxProcessedRetentionMs: configService.getOrThrow(
       'OUTBOX_PROCESSED_RETENTION_MS'
     ),
+    outboxPublishConcurrency: configService.getOrThrow('OUTBOX_PUBLISH_CONCURRENCY'),
     outboxPublishEnabled: configService.getOrThrow('OUTBOX_PUBLISH_ENABLED'),
     outboxRetryDelayMs: configService.getOrThrow('OUTBOX_RETRY_DELAY_MS'),
     outboxStaleProcessingTimeoutMs: configService.getOrThrow(

@@ -1,6 +1,6 @@
 import type { OutboxBacklogSummary, OutboxRepository } from '../../../application';
 import type { OutboxRecord } from '@careerhub/contracts';
-import type { IamPrismaRepositoryClient } from '../prisma/iam-prisma.types';
+import type { IamPrismaRepositoryClient, OutboxPersistenceRecord } from '../prisma/iam-prisma.types';
 
 function toOutboxRecord(record: {
   eventName: string;
@@ -124,6 +124,27 @@ export class PrismaOutboxRepository implements OutboxRepository {
     });
 
     return result.count;
+  }
+
+  async findAndClaimPendingBatch(processingAt: Date, limit: number): Promise<OutboxRecord[]> {
+    const raw = this.prismaClient as unknown as {
+      $queryRawUnsafe: <T>(query: string, ...values: unknown[]) => Promise<T>;
+    };
+    const records = await raw.$queryRawUnsafe<OutboxPersistenceRecord[]>(
+      `UPDATE outbox
+       SET status = 'processing', processing_at = $1
+       WHERE id IN (
+         SELECT id FROM outbox
+         WHERE status = 'pending'
+         ORDER BY occurred_at ASC
+         LIMIT $2
+         FOR UPDATE SKIP LOCKED
+       )
+       RETURNING *`,
+      processingAt,
+      limit
+    );
+    return records.map(toOutboxRecord);
   }
 
   async findPendingBatch(limit: number): Promise<OutboxRecord[]> {

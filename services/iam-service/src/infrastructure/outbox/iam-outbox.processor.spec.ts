@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { OutboxRecord } from '@careerhub/contracts';
 import type { MetricsRegistry } from '@careerhub/infrastructure';
+import type { SharedOutboxFailureRecord } from '../../../../../infrastructure/outbox/outbox.types';
 import type {
   IamEnvironmentVariables,
   IamRuntimeConfig
@@ -55,6 +56,14 @@ class FakeOutboxRepository implements OutboxRepository {
     return next;
   }
 
+  claimedBatch: OutboxRecord[] = [];
+  findAndClaimCalls = 0;
+
+  async findAndClaimPendingBatch(): Promise<OutboxRecord[]> {
+    this.findAndClaimCalls += 1;
+    return this.claimedBatch.splice(0);
+  }
+
   async findPendingBatch(): Promise<OutboxRecord[]> {
     return [];
   }
@@ -100,6 +109,7 @@ function createConfigService(
     outboxMaxRetryCount: 5,
     outboxPollIntervalMs: 5_000,
     outboxProcessedRetentionMs: 7 * 24 * 60 * 60 * 1000,
+    outboxPublishConcurrency: 5,
     outboxPublishEnabled: true,
     outboxRetryDelayMs: 30_000,
     outboxStaleProcessingTimeoutMs: 60_000,
@@ -123,6 +133,7 @@ function createConfigService(
     OUTBOX_MAX_RETRY_COUNT: config.outboxMaxRetryCount,
     OUTBOX_POLL_INTERVAL_MS: config.outboxPollIntervalMs,
     OUTBOX_PROCESSED_RETENTION_MS: config.outboxProcessedRetentionMs,
+    OUTBOX_PUBLISH_CONCURRENCY: config.outboxPublishConcurrency,
     OUTBOX_PUBLISH_ENABLED: config.outboxPublishEnabled,
     OUTBOX_RETRY_DELAY_MS: config.outboxRetryDelayMs,
     OUTBOX_STALE_PROCESSING_TIMEOUT_MS: config.outboxStaleProcessingTimeoutMs
@@ -157,7 +168,13 @@ function createMetricsRegistry(): MetricsRegistry & {
     recordHttpError() {},
     recordHttpRequest() {},
     recordIntegrationConsumer() {},
-    recordOutboxBacklog(record) {
+    recordOutboxBacklog(record: {
+      failed: number;
+      oldestPendingAgeSeconds?: number;
+      pending: number;
+      processing: number;
+      service: string;
+    }) {
       backlogRecords.push(record);
     },
     recordOutboxCleanup() {},
@@ -283,4 +300,82 @@ test('backlog cycle summarizes backlog and records metrics', async () => {
   assert.equal(metricsRegistry.backlogRecords[0]?.pending, 2);
   assert.equal(metricsRegistry.backlogRecords[0]?.processing, 3);
   assert.equal(metricsRegistry.backlogRecords[0]?.failed, 1);
+});
+
+test('publish cycle uses findAndClaimPendingBatch and publishes claimed records', async () => {
+  const repository = new FakeOutboxRepository();
+  const publishedIds: string[] = [];
+  repository.claimedBatch = [
+    { id: 'r1', eventName: 'test', occurredAt: new Date().toISOString(), payload: {}, retryCount: 0, status: 'pending' },
+    { id: 'r2', eventName: 'test', occurredAt: new Date().toISOString(), payload: {}, retryCount: 0, status: 'pending' }
+  ];
+  const processor = new IamOutboxProcessor(
+    repository,
+    createMetricsRegistry(),
+    {
+      isEnabled: () => true,
+      publish: async (record: OutboxRecord) => {
+        publishedIds.push(record.id);
+      }
+    } as never,
+    createConfigService({ outboxPublishConcurrency: 2 }) as never
+  );
+
+  await (processor as any).runPublishCycle();
+
+  assert.equal(repository.findAndClaimCalls, 1);
+  assert.deepEqual(publishedIds.sort(), ['r1', 'r2']);
+});
+
+test('exponential backoff doubles delay on each retry', async () => {
+  const retryDelayMs = 10_000;
+  const processor = new IamOutboxProcessor(
+    new FakeOutboxRepository(),
+    createMetricsRegistry(),
+    { isEnabled: () => true, publish: async () => undefined } as never,
+    createConfigService({ outboxRetryDelayMs: retryDelayMs, outboxMaxRetryCount: 5 }) as never
+  );
+  const sharedProcessor = (processor as any).processor as {
+    buildFailureRecord(
+      record: OutboxRecord,
+      error: unknown
+    ): SharedOutboxFailureRecord;
+  };
+
+  const before = Date.now();
+  const record1 = sharedProcessor.buildFailureRecord(
+    { id: 'x', retryCount: 0, eventName: 'e', occurredAt: new Date().toISOString(), payload: {}, status: 'pending' },
+    new Error('fail')
+  );
+  const record2 = sharedProcessor.buildFailureRecord(
+    { id: 'x', retryCount: 1, eventName: 'e', occurredAt: new Date().toISOString(), payload: {}, status: 'pending' },
+    new Error('fail')
+  );
+  const after = Date.now();
+
+  const delay1 = record1.nextRetryAt!.getTime() - before;
+  const delay2 = record2.nextRetryAt!.getTime() - after;
+
+  assert.ok(delay1 >= retryDelayMs && delay1 < retryDelayMs * 1.1, `attempt 1 delay ${delay1} not ~${retryDelayMs}`);
+  assert.ok(delay2 >= retryDelayMs * 2 && delay2 < retryDelayMs * 2.1, `attempt 2 delay ${delay2} not ~${retryDelayMs * 2}`);
+});
+
+test('graceful shutdown waits for in-flight cleanup cycle before resolving', async () => {
+  const repository = new FakeOutboxRepository();
+  repository.deleteDelayMs = 50;
+  repository.deletedCounts = [1];
+  const processor = new IamOutboxProcessor(
+    repository,
+    createMetricsRegistry(),
+    { isEnabled: () => true, publish: async () => undefined } as never,
+    createConfigService() as never
+  );
+
+  const cleanupStarted = (processor as any).runCleanupCycle();
+  const destroyStart = Date.now();
+  await (processor as any).onModuleDestroy();
+  const elapsed = Date.now() - destroyStart;
+  await cleanupStarted;
+
+  assert.ok(elapsed >= 40, `destroy resolved too fast (${elapsed}ms)`);
 });

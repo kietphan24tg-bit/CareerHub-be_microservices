@@ -77,6 +77,10 @@ class InMemoryOutboxRepository implements OutboxRepository {
     return 0;
   }
 
+  async findAndClaimPendingBatch(): Promise<OutboxRecord[]> {
+    return [];
+  }
+
   async findPendingBatch(): Promise<OutboxRecord[]> {
     return [];
   }

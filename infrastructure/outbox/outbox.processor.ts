@@ -15,6 +15,7 @@ export class OutboxProcessor {
   private cleanupTimer?: NodeJS.Timeout;
   private pollingTimer?: NodeJS.Timeout;
   private publishRunning = false;
+  private shutdownResolve?: () => void;
 
   constructor(private readonly options: SharedOutboxProcessorOptions) {
     this.logger = new Logger(options.loggerName);
@@ -59,6 +60,15 @@ export class OutboxProcessor {
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer);
       this.cleanupTimer = undefined;
+    }
+
+    if (this.publishRunning || this.cleanupRunning || this.backlogRunning) {
+      await Promise.race([
+        new Promise<void>((resolve) => {
+          this.shutdownResolve = resolve;
+        }),
+        new Promise<void>((resolve) => setTimeout(resolve, 5_000))
+      ]);
     }
   }
 
@@ -110,6 +120,7 @@ export class OutboxProcessor {
       }
     } finally {
       this.cleanupRunning = false;
+      this.shutdownResolve?.();
     }
   }
 
@@ -134,15 +145,24 @@ export class OutboxProcessor {
         this.options.runtimeConfig.outboxMaxRetryCount
       );
 
-      const pendingRecords = await this.options.repository.findPendingBatch(
-        this.options.runtimeConfig.outboxBatchSize
-      );
+      const claimedRecords =
+        await this.options.repository.findAndClaimPendingBatch(
+          now,
+          this.options.runtimeConfig.outboxBatchSize
+        );
 
-      for (const record of pendingRecords) {
-        await this.processRecord(record.id);
+      const concurrency = this.options.runtimeConfig.outboxPublishConcurrency;
+
+      for (let i = 0; i < claimedRecords.length; i += concurrency) {
+        await Promise.all(
+          claimedRecords
+            .slice(i, i + concurrency)
+            .map((record) => this.publishClaimedRecord(record))
+        );
       }
     } finally {
       this.publishRunning = false;
+      this.shutdownResolve?.();
     }
   }
 
@@ -195,32 +215,24 @@ export class OutboxProcessor {
       this.backlogStateKey = nextStateKey;
     } finally {
       this.backlogRunning = false;
+      this.shutdownResolve?.();
     }
   }
 
-  private async processRecord(recordId: string): Promise<void> {
-    const claimedRecord = await this.options.repository.claimPending(
-      recordId,
-      new Date()
-    );
-
-    if (!claimedRecord) {
-      return;
-    }
-
+  private async publishClaimedRecord(record: OutboxRecord): Promise<void> {
     try {
-      await this.options.publisher.publish(claimedRecord);
-      await this.options.repository.markProcessed(claimedRecord.id, new Date());
+      await this.options.publisher.publish(record);
+      await this.options.repository.markProcessed(record.id, new Date());
     } catch (error) {
       await this.options.repository.markFailed(
-        claimedRecord.id,
-        this.buildFailureRecord(claimedRecord, error)
+        record.id,
+        this.buildFailureRecord(record, error)
       );
 
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown outbox publish error';
       this.logger.warn(
-        `Failed to publish ${this.options.serviceName} outbox record ${claimedRecord.id}: ${errorMessage}`
+        `Failed to publish ${this.options.serviceName} outbox record ${record.id}: ${errorMessage}`
       );
     }
   }
@@ -232,13 +244,17 @@ export class OutboxProcessor {
     const retryCount = record.retryCount + 1;
     const shouldRetry =
       retryCount < this.options.runtimeConfig.outboxMaxRetryCount;
-    const message = error instanceof Error ? error.message : String(error);
+    const rawMessage = error instanceof Error ? error.message : String(error);
+    const lastError =
+      rawMessage.length > 2000 ? `${rawMessage.slice(0, 2000)}…` : rawMessage;
 
     return {
-      lastError: message,
+      lastError,
       nextRetryAt: shouldRetry
         ? new Date(
-            Date.now() + this.options.runtimeConfig.outboxRetryDelayMs
+            Date.now() +
+              this.options.runtimeConfig.outboxRetryDelayMs *
+                Math.pow(2, retryCount - 1)
           )
         : undefined,
       retryCount

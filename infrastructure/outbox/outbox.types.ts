@@ -23,6 +23,7 @@ export type SharedOutboxRuntimeConfig = {
   outboxFailedRetentionMs: number;
   outboxMaxRetryCount: number;
   outboxPollIntervalMs: number;
+  outboxPublishConcurrency: number;
   outboxProcessedRetentionMs: number;
   outboxRetryDelayMs: number;
   outboxStaleProcessingTimeoutMs: number;
@@ -33,6 +34,7 @@ export interface SharedOutboxRepository {
   create(record: OutboxRecord): Promise<void>;
   deleteFailedBatch(cutoff: Date, limit: number): Promise<number>;
   deleteProcessedBatch(cutoff: Date, limit: number): Promise<number>;
+  findAndClaimPendingBatch(processingAt: Date, limit: number): Promise<OutboxRecord[]>;
   findPendingBatch(limit: number): Promise<OutboxRecord[]>;
   markFailed(id: string, failure: SharedOutboxFailureRecord): Promise<void>;
   markProcessed(id: string, processedAt: Date): Promise<void>;

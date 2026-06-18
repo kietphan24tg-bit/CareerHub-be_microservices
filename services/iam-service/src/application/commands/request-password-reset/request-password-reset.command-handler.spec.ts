@@ -145,6 +145,10 @@ class FakeOutboxRepository implements OutboxRepository {
     return 0;
   }
 
+  async findAndClaimPendingBatch() {
+    return [];
+  }
+
   async findPendingBatch() {
     return [];
   }

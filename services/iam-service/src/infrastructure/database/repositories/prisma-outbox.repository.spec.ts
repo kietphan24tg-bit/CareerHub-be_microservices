@@ -106,6 +106,36 @@ test('deleteFailedBatch deletes only permanently failed records by id batch', as
   assert.deepEqual((findManyWhere as any)?.['nextRetryAt'], null);
 });
 
+test('findAndClaimPendingBatch claims pending records atomically via raw SQL', async () => {
+  const pendingRecord: OutboxPersistenceRecord = {
+    ...sampleRecord,
+    id: 'pending-1',
+    processedAt: null,
+    status: 'processing'
+  };
+
+  const queryRawArgs: Array<unknown> = [];
+  const rawClient = {
+    authSession: {} as never,
+    identity: {} as never,
+    passwordResetToken: {} as never,
+    outbox: {} as never,
+    $queryRawUnsafe: async <T>(_query: string, ...values: unknown[]): Promise<T> => {
+      queryRawArgs.push(...values);
+      return [pendingRecord] as unknown as T;
+    }
+  };
+
+  const repository = new PrismaOutboxRepository(rawClient as never);
+  const processingAt = new Date('2026-06-01T00:00:00.000Z');
+  const result = await repository.findAndClaimPendingBatch(processingAt, 10);
+
+  assert.equal(result.length, 1);
+  assert.equal(result[0]?.id, 'pending-1');
+  assert.equal(queryRawArgs[0], processingAt);
+  assert.equal(queryRawArgs[1], 10);
+});
+
 test('summarizeBacklog returns status counts and oldest pending timestamp', async () => {
   const countQueries: Array<Record<string, unknown> | undefined> = [];
 

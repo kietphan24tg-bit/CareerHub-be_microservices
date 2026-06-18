@@ -175,6 +175,9 @@ class FakeWriteTransaction implements IamWriteTransaction {
         async deleteProcessedBatch() {
           return 0;
         },
+        async findAndClaimPendingBatch() {
+          return [];
+        },
         async findPendingBatch() {
           return [];
         },

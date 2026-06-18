@@ -29,6 +29,7 @@ export type IamEnvironmentVariables = BaseEnvironmentVariables & {
   OUTBOX_MAX_RETRY_COUNT: number;
   OUTBOX_POLL_INTERVAL_MS: number;
   OUTBOX_PROCESSED_RETENTION_MS: number;
+  OUTBOX_PUBLISH_CONCURRENCY: number;
   OUTBOX_PUBLISH_ENABLED: boolean;
   OUTBOX_RETRY_DELAY_MS: number;
   OUTBOX_STALE_PROCESSING_TIMEOUT_MS: number;
@@ -190,6 +191,13 @@ export function validateIamEnvironment(
             Number.isFinite(Number(config.OUTBOX_PROCESSED_RETENTION_MS))
           ? Number(config.OUTBOX_PROCESSED_RETENTION_MS)
           : 7 * 24 * 60 * 60 * 1000,
+    OUTBOX_PUBLISH_CONCURRENCY:
+      typeof config.OUTBOX_PUBLISH_CONCURRENCY === 'number'
+        ? config.OUTBOX_PUBLISH_CONCURRENCY
+        : typeof config.OUTBOX_PUBLISH_CONCURRENCY === 'string' &&
+            Number.isFinite(Number(config.OUTBOX_PUBLISH_CONCURRENCY))
+          ? Number(config.OUTBOX_PUBLISH_CONCURRENCY)
+          : 5,
     OUTBOX_PUBLISH_ENABLED:
       typeof config.OUTBOX_PUBLISH_ENABLED === 'boolean'
         ? config.OUTBOX_PUBLISH_ENABLED
