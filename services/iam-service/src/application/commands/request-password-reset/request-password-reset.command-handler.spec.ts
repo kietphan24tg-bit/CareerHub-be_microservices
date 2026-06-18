@@ -137,6 +137,10 @@ class FakeOutboxRepository implements OutboxRepository {
     this.created.push(record);
   }
 
+  async deleteFailedBatch() {
+    return 0;
+  }
+
   async deleteProcessedBatch() {
     return 0;
   }

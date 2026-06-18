@@ -17,8 +17,11 @@ class FakeOutboxRepository implements OutboxRepository {
   cleanupCalls = 0;
   deleteDelayMs = 0;
   deletedCounts: number[] = [];
+  deletedFailedCounts: number[] = [];
   lastCleanupCutoff?: Date;
   lastCleanupLimit?: number;
+  lastFailedCleanupCutoff?: Date;
+  lastFailedCleanupLimit?: number;
   summarizeBacklogCalls = 0;
   summary: OutboxBacklogSummary = {
     failed: 0,
@@ -32,6 +35,12 @@ class FakeOutboxRepository implements OutboxRepository {
   }
 
   async create(): Promise<void> {}
+
+  async deleteFailedBatch(cutoff: Date, limit: number): Promise<number> {
+    this.lastFailedCleanupCutoff = cutoff;
+    this.lastFailedCleanupLimit = limit;
+    return this.deletedFailedCounts.shift() ?? 0;
+  }
 
   async deleteProcessedBatch(cutoff: Date, limit: number): Promise<number> {
     this.cleanupCalls += 1;
@@ -87,6 +96,7 @@ function createConfigService(
     outboxCleanupBatchSize: 100,
     outboxCleanupEnabled: true,
     outboxCleanupIntervalMs: 60_000,
+    outboxFailedRetentionMs: 30 * 24 * 60 * 60 * 1000,
     outboxMaxRetryCount: 5,
     outboxPollIntervalMs: 5_000,
     outboxProcessedRetentionMs: 7 * 24 * 60 * 60 * 1000,
@@ -109,6 +119,7 @@ function createConfigService(
     OUTBOX_CLEANUP_BATCH_SIZE: config.outboxCleanupBatchSize,
     OUTBOX_CLEANUP_ENABLED: config.outboxCleanupEnabled,
     OUTBOX_CLEANUP_INTERVAL_MS: config.outboxCleanupIntervalMs,
+    OUTBOX_FAILED_RETENTION_MS: config.outboxFailedRetentionMs,
     OUTBOX_MAX_RETRY_COUNT: config.outboxMaxRetryCount,
     OUTBOX_POLL_INTERVAL_MS: config.outboxPollIntervalMs,
     OUTBOX_PROCESSED_RETENTION_MS: config.outboxProcessedRetentionMs,
@@ -222,6 +233,28 @@ test('publish cycle does not summarize backlog metrics', async () => {
 
   assert.equal(repository.summarizeBacklogCalls, 0);
   assert.equal(metricsRegistry.backlogRecords.length, 0);
+});
+
+test('cleanup cycle deletes failed records with failed retention cutoff', async () => {
+  const repository = new FakeOutboxRepository();
+  repository.deletedFailedCounts = [2];
+  const processor = new IamOutboxProcessor(
+    repository,
+    createMetricsRegistry(),
+    {
+      isEnabled: () => true,
+      publish: async () => undefined
+    } as never,
+    createConfigService({
+      outboxCleanupBatchSize: 25,
+      outboxFailedRetentionMs: 30 * 24 * 60 * 60 * 1000
+    }) as never
+  );
+
+  await (processor as any).runCleanupCycle();
+
+  assert.ok(repository.lastFailedCleanupCutoff instanceof Date);
+  assert.equal(repository.lastFailedCleanupLimit, 25);
 });
 
 test('backlog cycle summarizes backlog and records metrics', async () => {

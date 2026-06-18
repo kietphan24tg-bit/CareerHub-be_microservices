@@ -15,6 +15,7 @@ export type IamRuntimeConfig = {
   outboxCleanupBatchSize: number;
   outboxCleanupEnabled: boolean;
   outboxCleanupIntervalMs: number;
+  outboxFailedRetentionMs: number;
   outboxMaxRetryCount: number;
   outboxPollIntervalMs: number;
   outboxProcessedRetentionMs: number;
@@ -51,6 +52,7 @@ export function getIamRuntimeConfig(
     outboxCleanupBatchSize: configService.getOrThrow('OUTBOX_CLEANUP_BATCH_SIZE'),
     outboxCleanupEnabled: configService.getOrThrow('OUTBOX_CLEANUP_ENABLED'),
     outboxCleanupIntervalMs: configService.getOrThrow('OUTBOX_CLEANUP_INTERVAL_MS'),
+    outboxFailedRetentionMs: configService.getOrThrow('OUTBOX_FAILED_RETENTION_MS'),
     outboxMaxRetryCount: configService.getOrThrow('OUTBOX_MAX_RETRY_COUNT'),
     outboxPollIntervalMs: configService.getOrThrow('OUTBOX_POLL_INTERVAL_MS'),
     outboxProcessedRetentionMs: configService.getOrThrow(

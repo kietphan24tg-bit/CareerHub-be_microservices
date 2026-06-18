@@ -169,6 +169,9 @@ class FakeWriteTransaction implements IamWriteTransaction {
           return null;
         },
         async create() {},
+        async deleteFailedBatch() {
+          return 0;
+        },
         async deleteProcessedBatch() {
           return 0;
         },
