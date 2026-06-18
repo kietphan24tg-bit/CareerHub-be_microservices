@@ -12,6 +12,7 @@ import {
 
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
 
 import {
 
@@ -111,12 +112,15 @@ import {
 import { JobGrpcMailContextLookup } from './infrastructure/transport/grpc/job-grpc-mail-context.lookup';
 
 import { validateApplicationEnvironment } from './config';
+import { getApplicationRuntimeConfig } from './config/application-runtime-config';
 
 import {
 
   ApplicationPrismaService,
 
   APPLICATION_METRICS_TOKENS,
+
+  ApplicationCacheInvalidationConsumer,
 
   APPLICATION_PRISMA_TOKENS,
 
@@ -132,7 +136,9 @@ import {
 
   PrismaApplicationWriteTransaction,
 
-  PrismaRecruitmentRepository
+  PrismaRecruitmentRepository,
+
+  RedisEmployerDashboardCache
 
 } from './infrastructure';
 
@@ -240,6 +246,21 @@ import { ApplicationGrpcController } from './presentation';
 
     {
 
+      provide: APPLICATION_PORT_TOKENS.dashboardCache,
+
+      inject: [ConfigService],
+
+      useFactory: (configService: ConfigService) => {
+        const cfg = getApplicationRuntimeConfig(configService);
+        if (!cfg.redisUrl) return null;
+        const redis = new Redis(cfg.redisUrl, { lazyConnect: false });
+        return new RedisEmployerDashboardCache(redis, cfg.redisDashboardCacheTtlS);
+      }
+
+    },
+
+    {
+
       provide: APPLICATION_PORT_TOKENS.jobMailContextLookup,
 
       inject: [ConfigService],
@@ -280,6 +301,8 @@ import { ApplicationGrpcController } from './presentation';
     ApplicationOutboxPublisher,
 
     ApplicationOutboxProcessor,
+
+    ApplicationCacheInvalidationConsumer,
 
     {
 
@@ -809,11 +832,17 @@ import { ApplicationGrpcController } from './presentation';
 
       provide: GetEmployerDashboardRecruitmentDataQueryHandler,
 
-      inject: [EmployerDashboardOperations],
+      inject: [EmployerDashboardOperations, APPLICATION_PORT_TOKENS.dashboardCache],
 
-      useFactory: (employerDashboardOperations: EmployerDashboardOperations) =>
+      useFactory: (
+        employerDashboardOperations: EmployerDashboardOperations,
+        dashboardCache: RedisEmployerDashboardCache | null
+      ) =>
 
-        new GetEmployerDashboardRecruitmentDataQueryHandler(employerDashboardOperations)
+        new GetEmployerDashboardRecruitmentDataQueryHandler(
+          employerDashboardOperations,
+          dashboardCache ?? undefined
+        )
 
     },
 

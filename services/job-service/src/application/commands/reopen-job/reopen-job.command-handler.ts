@@ -1,11 +1,20 @@
 import { UniqueEntityID, ValidationError } from '@careerhub/shared-kernel';
+import {
+  createIntegrationEvent,
+  JOB_REOPENED_EVENT_NAME
+} from '@careerhub/contracts';
 import { InvalidJobStatusTransitionError, Job, JobStatus } from '../../../domain';
 import { JobNotFoundError } from '../../errors/job-not-found.error';
-import type { JobRecord, JobRepository } from '../../ports';
+import { persistJobOutbox } from '../../outbox/job-outbox-event.mapper';
+import type { IdGenerator, JobRecord, JobRepository, OutboxRepository } from '../../ports';
 import type { ReopenJobCommand } from './reopen-job.command';
 
 export class ReopenJobCommandHandler {
-  constructor(private readonly jobRepository: JobRepository) {}
+  constructor(
+    private readonly jobRepository: JobRepository,
+    private readonly outboxRepository: OutboxRepository,
+    private readonly idGenerator: IdGenerator
+  ) {}
 
   async execute(command: ReopenJobCommand): Promise<JobRecord> {
     const employerIdentityId = command.employerIdentityId.trim();
@@ -46,6 +55,16 @@ export class ReopenJobCommandHandler {
     if (!updated) {
       throw new InvalidJobStatusTransitionError(fromStatus.value, job.status.value);
     }
+
+    await persistJobOutbox(
+      this.outboxRepository,
+      createIntegrationEvent(JOB_REOPENED_EVENT_NAME, {
+        employerIdentityId,
+        jobId,
+        slug: updated.slug
+      }),
+      { createOutboxId: () => this.idGenerator.generate() }
+    );
 
     return updated;
   }

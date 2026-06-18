@@ -1,4 +1,5 @@
 export * from './application-repository.port';
+export * from './employer-dashboard-cache.port';
 export * from './id-generator.port';
 export * from './outbox/outbox-repository.port';
 export * from './job-mail-context-lookup.port';

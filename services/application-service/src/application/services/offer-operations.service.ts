@@ -1,4 +1,8 @@
 import { ApplicationNotFoundError } from '../errors/application-not-found.error';
+import {
+  OFFER_STATUS_CHANGED_EVENT_NAME,
+  createIntegrationEvent
+} from '@careerhub/contracts';
 import { OfferAcceptStateInvalidError } from '../errors/offer-accept-state-invalid.error';
 import { OfferAlreadyExistsError } from '../errors/offer-already-exists.error';
 import { OfferApplicationStateInvalidError } from '../errors/offer-application-state-invalid.error';
@@ -19,10 +23,8 @@ import type {
   IdGenerator,
   RecruitmentRepository
 } from '../ports';
-import { TERMINAL_APPLICATION_STATUSES, normalizeNullableString } from './interview-schedule.utils';
+import { normalizeNullableString } from './interview-schedule.utils';
 import {
-  EMPLOYER_MUTABLE_OFFER_STATUSES,
-  OFFER_STATUS,
   buildOfferBenefitCreateRows,
   toDateEndOfDay,
   toDateOnlyOrThrow,
@@ -31,6 +33,10 @@ import {
   type OfferBenefitInput,
   type OfferPayloadInput
 } from './offer-validation.utils';
+import {
+  ApplicationStatus as ApplicationStatusVO,
+  OfferStatus as OfferStatusVO
+} from '../../domain';
 
 export type CreateOfferInput = OfferPayloadInput & {
   benefits?: OfferBenefitInput[];
@@ -56,6 +62,24 @@ function lifecycleHistoryStatus(status: ApplicationStatus): {
     fromStatus: status,
     toStatus: status
   };
+}
+
+function buildOfferStatusChangedEvent(
+  offer: ApplicationOfferRecord,
+  requestId?: string
+) {
+  return createIntegrationEvent(
+    OFFER_STATUS_CHANGED_EVENT_NAME,
+    {
+      applicationId: offer.applicationId,
+      candidateIdentityId: offer.candidateIdentityId,
+      employerIdentityId: offer.employerIdentityId,
+      jobId: offer.jobId,
+      offerId: offer.id,
+      status: offer.status
+    },
+    requestId
+  );
 }
 
 export class OfferOperations {
@@ -86,7 +110,7 @@ export class OfferOperations {
       throw new ApplicationNotFoundError(applicationId);
     }
 
-    if (TERMINAL_APPLICATION_STATUSES.has(application.status)) {
+    if (new ApplicationStatusVO(application.status).isTerminal()) {
       throw new OfferApplicationStateInvalidError();
     }
 
@@ -133,7 +157,7 @@ export class OfferOperations {
         salaryPeriod: input.salaryPeriod ?? null,
         seniorityLabel: normalizeNullableString(input.seniorityLabel),
         startDate: input.startDate ? toDateOnlyOrThrow(input.startDate) : null,
-        status: OFFER_STATUS.draft,
+        status: OfferStatusVO.draft().value,
         title: input.title.trim(),
         workModel: input.workModel ?? null
       },
@@ -169,7 +193,7 @@ export class OfferOperations {
       throw new OfferNotFoundError(offerId);
     }
 
-    if (offer.status !== OFFER_STATUS.draft) {
+    if (!new OfferStatusVO(offer.status).isDraft()) {
       throw new OfferSendStateInvalidError();
     }
 
@@ -182,7 +206,7 @@ export class OfferOperations {
       throw new ApplicationNotFoundError(offer.applicationId);
     }
 
-    if (TERMINAL_APPLICATION_STATUSES.has(application.status)) {
+    if (new ApplicationStatusVO(application.status).isTerminal()) {
       throw new OfferApplicationStateInvalidError('Cannot send an offer for a closed application.');
     }
 
@@ -192,10 +216,10 @@ export class OfferOperations {
     return this.writeTransaction.execute(async (context) => {
       const updated = await context.recruitmentRepository.updateOfferIfStatus(
         offer.id,
-        [OFFER_STATUS.draft],
+        [OfferStatusVO.draft().value],
         {
           sentAt: now,
-          status: OFFER_STATUS.sent
+          status: OfferStatusVO.sent().value
         }
       );
 
@@ -247,6 +271,14 @@ export class OfferOperations {
       await persistMailOutbox(context.outboxRepository, mailEvent, {
         createOutboxId: () => this.idGenerator.generate()
       });
+
+      await persistNotificationOutbox(
+        context.outboxRepository,
+        buildOfferStatusChangedEvent(updated, requestId),
+        {
+          createOutboxId: () => this.idGenerator.generate()
+        }
+      );
 
       return updated;
     });
@@ -434,6 +466,14 @@ export class OfferOperations {
       await persistNotificationOutbox(context.outboxRepository, notificationEvent, {
         createOutboxId: () => this.idGenerator.generate()
       });
+
+      await persistNotificationOutbox(
+        context.outboxRepository,
+        buildOfferStatusChangedEvent(offerSnapshot, requestId),
+        {
+          createOutboxId: () => this.idGenerator.generate()
+        }
+      );
     });
 
     return {
@@ -509,10 +549,10 @@ export class OfferOperations {
       throw new OfferNotFoundError(offerId);
     }
 
-    if (offer.status === OFFER_STATUS.sent) {
+    if (new OfferStatusVO(offer.status).value === OfferStatusVO.sent().value) {
       const now = new Date();
       const updated = await this.recruitmentRepository.updateOffer(offer.id, {
-        status: OFFER_STATUS.viewed,
+        status: OfferStatusVO.viewed().value,
         viewedAt: now
       });
 
@@ -530,6 +570,16 @@ export class OfferOperations {
           toStatus: historyStatus.toStatus
         });
         offer = updated;
+
+        await this.writeTransaction.execute(async (context) => {
+          await persistNotificationOutbox(
+            context.outboxRepository,
+            buildOfferStatusChangedEvent(updated),
+            {
+              createOutboxId: () => this.idGenerator.generate()
+            }
+          );
+        });
       }
     }
 
@@ -552,7 +602,7 @@ export class OfferOperations {
       throw new OfferNotFoundError(offerId);
     }
 
-    if (offer.status !== OFFER_STATUS.sent && offer.status !== OFFER_STATUS.viewed) {
+    if (!new OfferStatusVO(offer.status).isRespondable()) {
       throw new OfferAcceptStateInvalidError();
     }
 
@@ -571,7 +621,7 @@ export class OfferOperations {
         [offer.status],
         {
           respondedAt: now,
-          status: OFFER_STATUS.accepted
+          status: OfferStatusVO.accepted().value
         }
       );
 
@@ -613,6 +663,14 @@ export class OfferOperations {
         createOutboxId: () => this.idGenerator.generate()
       });
 
+      await persistNotificationOutbox(
+        context.outboxRepository,
+        buildOfferStatusChangedEvent(updated, input.requestId),
+        {
+          createOutboxId: () => this.idGenerator.generate()
+        }
+      );
+
       return updated;
     });
   }
@@ -633,7 +691,7 @@ export class OfferOperations {
       throw new OfferNotFoundError(offerId);
     }
 
-    if (offer.status !== OFFER_STATUS.sent && offer.status !== OFFER_STATUS.viewed) {
+    if (!new OfferStatusVO(offer.status).isRespondable()) {
       throw new OfferDeclineStateInvalidError();
     }
 
@@ -652,7 +710,7 @@ export class OfferOperations {
         [offer.status],
         {
           respondedAt: now,
-          status: OFFER_STATUS.rejected
+          status: OfferStatusVO.rejected().value
         }
       );
 
@@ -694,12 +752,20 @@ export class OfferOperations {
         createOutboxId: () => this.idGenerator.generate()
       });
 
+      await persistNotificationOutbox(
+        context.outboxRepository,
+        buildOfferStatusChangedEvent(updated, input.requestId),
+        {
+          createOutboxId: () => this.idGenerator.generate()
+        }
+      );
+
       return updated;
     });
   }
 
   private ensureEmployerCanMutateOffer(status: string): void {
-    if (!EMPLOYER_MUTABLE_OFFER_STATUSES.has(status)) {
+    if (!new OfferStatusVO(status).canEmployerMutate()) {
       throw new OfferStateInvalidError();
     }
   }

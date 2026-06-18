@@ -23,10 +23,12 @@ type CandidateProfileSnapshot = {
   address: string | null;
   fullName: string | null;
   headline: string | null;
+  resumeId: string | null;
   yearsExperience: number | null;
 };
 
 type ResumeSnapshot = {
+  address: string | null;
   fullName: string | null;
   headline: string | null;
   skills: string[];
@@ -385,13 +387,45 @@ export class GatewayApplicationsService {
     application: ApplicationMessage,
     requestId?: string
   ): Promise<GatewayHttpEmployerAtsApplication> {
-    const [profile, resume] = await Promise.all([
-      this.loadCandidateProfileSnapshot(application.candidate_identity_id, requestId),
-      this.loadResumeSnapshot(application.candidate_identity_id, application.resume_id, requestId)
+    const profile = await this.loadCandidateProfileSnapshot(
+      application.candidate_identity_id,
+      requestId
+    );
+    const applicationResumeId = application.resume_id.trim();
+    const profileResumeId = profile.resumeId?.trim() ?? '';
+    const applicationResumePromise = applicationResumeId
+      ? this.loadResumeSnapshot(
+          application.candidate_identity_id,
+          applicationResumeId,
+          requestId
+        )
+      : Promise.resolve<ResumeSnapshot | null>(null);
+    const profileResumePromise =
+      profileResumeId && profileResumeId !== applicationResumeId
+        ? this.loadResumeSnapshot(
+            application.candidate_identity_id,
+            profileResumeId,
+            requestId
+          )
+        : Promise.resolve<ResumeSnapshot | null>(null);
+    const notesPromise = this.applicationGrpcClient.listRecruiterNotes(
+      {
+        application_id: application.id,
+        employer_identity_id: application.employer_identity_id
+      },
+      requestId
+    );
+
+    const [applicationResume, profileResume, notesResponse] = await Promise.all([
+      applicationResumePromise,
+      profileResumePromise,
+      notesPromise
     ]);
-    const candidateName = profile.fullName ?? resume.fullName ?? null;
-    const headline = profile.headline ?? resume.headline ?? null;
-    const location = profile.address;
+    const resume = applicationResume ?? profileResume;
+    const latestNote = notesResponse.items?.[0]?.body?.trim() || null;
+    const candidateName = profile.fullName ?? resume?.fullName ?? null;
+    const headline = profile.headline ?? resume?.headline ?? null;
+    const location = profile.address ?? resume?.address ?? null;
 
     return {
       applicationId: this.toSafeInteger(application.id),
@@ -399,9 +433,9 @@ export class GatewayApplicationsService {
       candidateName,
       headline,
       location,
-      skills: resume.skills,
+      skills: resume?.skills ?? [],
       stage: application.status,
-      stageContext: toAtsStageContext(application),
+      stageContext: toAtsStageContext(application, latestNote),
       updatedAt: application.updated_at,
       yearsExperience: profile.yearsExperience
     };
@@ -424,6 +458,7 @@ export class GatewayApplicationsService {
         address: nullFields.has('address') ? null : response.profile.address,
         fullName: response.profile.full_name,
         headline: nullFields.has('headline') ? null : response.profile.headline,
+        resumeId: nullFields.has('resume_id') ? null : response.profile.resume_id,
         yearsExperience: nullFields.has('years_experience')
           ? null
           : response.profile.years_experience
@@ -433,6 +468,7 @@ export class GatewayApplicationsService {
         address: null,
         fullName: null,
         headline: null,
+        resumeId: null,
         yearsExperience: null
       };
     }
@@ -442,7 +478,11 @@ export class GatewayApplicationsService {
     identityId: string,
     resumeId: string,
     requestId?: string
-  ): Promise<ResumeSnapshot> {
+  ): Promise<ResumeSnapshot | null> {
+    if (!resumeId.trim()) {
+      return null;
+    }
+
     try {
       const response = await this.candidateGrpcClient.getResumeById(
         {
@@ -454,18 +494,14 @@ export class GatewayApplicationsService {
       const content = this.parseResumeContent(response.resume.content_json);
 
       return {
+        address: this.readNullableString(content.address),
         fullName: this.readNullableString(content.fullName),
         headline: this.readNullableString(content.headline),
         skills: this.readResumeSkills(content.skills),
         title: response.resume.title
       };
     } catch {
-      return {
-        fullName: null,
-        headline: null,
-        skills: [],
-        title: ''
-      };
+      return null;
     }
   }
 

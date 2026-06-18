@@ -1,9 +1,17 @@
 import {
   AggregateRoot,
   type CreateEntityProps,
+  UniqueEntityID,
   ValidationError
 } from '@careerhub/shared-kernel';
 import { InvalidJobStatusTransitionError } from '../errors';
+import {
+  JobArchivedEvent,
+  JobClosedEvent,
+  JobPublishedEvent,
+  JobReopenedEvent,
+  JobUpdatedEvent
+} from '../events';
 import { JobStatus, type JobStatusValue } from '../value-objects';
 
 export type JobProps = {
@@ -33,6 +41,23 @@ export class Job extends AggregateRoot<JobProps> {
     this.propsRef = props.props;
   }
 
+  static create(props: {
+    id: UniqueEntityID;
+    employerIdentityId: string;
+  }): Job {
+    if (!props.employerIdentityId.trim()) {
+      throw new ValidationError('Employer identity id is required');
+    }
+
+    return new Job({
+      id: props.id,
+      props: {
+        employerIdentityId: props.employerIdentityId.trim(),
+        status: JobStatus.draft()
+      }
+    });
+  }
+
   static reconstitute(props: ReconstituteJobProps): Job {
     return new Job(props);
   }
@@ -47,18 +72,26 @@ export class Job extends AggregateRoot<JobProps> {
 
   publish(): void {
     this.transition(['draft', 'closed'], JobStatus.published());
+    this.addDomainEvent(new JobPublishedEvent({ aggregateId: this.id }));
   }
 
   close(): void {
     this.transition(['published'], JobStatus.closed());
+    this.addDomainEvent(new JobClosedEvent({ aggregateId: this.id }));
   }
 
   archive(): void {
     this.transition(['closed'], JobStatus.archived());
+    this.addDomainEvent(new JobArchivedEvent({ aggregateId: this.id }));
   }
 
   reopen(): void {
     this.transition(['closed'], JobStatus.published());
+    this.addDomainEvent(new JobReopenedEvent({ aggregateId: this.id }));
+  }
+
+  markUpdated(): void {
+    this.addDomainEvent(new JobUpdatedEvent({ aggregateId: this.id }));
   }
 
   private transition(allowedFrom: JobStatusValue[], next: JobStatus): void {

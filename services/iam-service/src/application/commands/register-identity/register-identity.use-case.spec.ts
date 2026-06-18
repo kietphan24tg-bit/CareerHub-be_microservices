@@ -69,6 +69,10 @@ class InMemoryOutboxRepository implements OutboxRepository {
     this.records.push(record);
   }
 
+  async deleteFailedBatch(): Promise<number> {
+    return 0;
+  }
+
   async deleteProcessedBatch(): Promise<number> {
     return 0;
   }

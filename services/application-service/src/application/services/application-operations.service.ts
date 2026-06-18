@@ -1,4 +1,10 @@
 import { ValidationError } from '@careerhub/shared-kernel';
+import {
+  APPLICATION_CREATED_EVENT_NAME,
+  APPLICATION_STATUS_UPDATED_EVENT_NAME,
+  createIntegrationEvent
+} from '@careerhub/contracts';
+import { ApplicationStatus as ApplicationStatusVO } from '../../domain';
 import { ApplicationNotificationEventFactory } from '../notifications/application-notification-event.factory';
 import { persistNotificationOutbox } from '../outbox/application-outbox-event.mapper';
 import { ApplicationNotFoundError } from '../errors/application-not-found.error';
@@ -12,24 +18,6 @@ import type {
   ApplicationWriteTransaction,
   IdGenerator
 } from '../ports';
-import { APPLICATION_STATUS_VALUES } from '../ports';
-
-const WITHDRAWABLE_STATUSES = new Set<ApplicationStatus>([
-  'applied',
-  'reviewed',
-  'shortlisted'
-]);
-
-const EMPLOYER_STATUS_TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> = {
-  applied: ['reviewed', 'shortlisted', 'interview', 'rejected'],
-  reviewed: ['shortlisted', 'interview', 'rejected'],
-  shortlisted: ['interview', 'offer', 'rejected'],
-  interview: ['reviewed', 'shortlisted', 'offer', 'rejected'],
-  offer: ['interview', 'hired', 'rejected'],
-  hired: [],
-  rejected: [],
-  withdrawn: []
-};
 
 function normalizeRequired(value: string, message: string): string {
   const normalized = value.trim();
@@ -38,10 +26,6 @@ function normalizeRequired(value: string, message: string): string {
   }
 
   return normalized;
-}
-
-function isApplicationStatus(value: string): value is ApplicationStatus {
-  return APPLICATION_STATUS_VALUES.includes(value as ApplicationStatus);
 }
 
 export class ApplicationOperations {
@@ -114,6 +98,21 @@ export class ApplicationOperations {
         createOutboxId: () => this.idGenerator.generate()
       });
 
+      await persistNotificationOutbox(
+        context.outboxRepository,
+        createIntegrationEvent(
+          APPLICATION_CREATED_EVENT_NAME,
+          {
+            applicationId,
+            candidateIdentityId,
+            employerIdentityId,
+            jobId
+          },
+          input.requestId
+        ),
+        { createOutboxId: () => this.idGenerator.generate() }
+      );
+
       return application;
     });
   }
@@ -138,7 +137,7 @@ export class ApplicationOperations {
       throw new ForbiddenApplicationAccessError(application.id);
     }
 
-    if (!WITHDRAWABLE_STATUSES.has(application.status)) {
+    if (!new ApplicationStatusVO(application.status).canWithdraw()) {
       throw new InvalidApplicationStatusTransitionError(application.status, 'withdrawn');
     }
 
@@ -178,11 +177,9 @@ export class ApplicationOperations {
       'Employer identity id is required'
     );
 
-    if (!isApplicationStatus(input.status)) {
-      throw new ValidationError('Application status is invalid');
-    }
-
-    const nextStatus = input.status;
+    // Constructor throws ValidationError if status is invalid
+    const nextStatusVO = new ApplicationStatusVO(input.status);
+    const nextStatus = nextStatusVO.value;
 
     const application = await this.applicationRepository.findById(applicationId);
 
@@ -194,7 +191,7 @@ export class ApplicationOperations {
       throw new ForbiddenApplicationAccessError(application.id);
     }
 
-    this.assertEmployerTransition(application.status, nextStatus);
+    this.assertEmployerTransition(application.status, nextStatusVO);
 
     const note =
       typeof input.note === 'string' && input.note.trim().length > 0
@@ -236,20 +233,34 @@ export class ApplicationOperations {
         createOutboxId: () => this.idGenerator.generate()
       });
 
+      await persistNotificationOutbox(
+        context.outboxRepository,
+        createIntegrationEvent(
+          APPLICATION_STATUS_UPDATED_EVENT_NAME,
+          {
+            applicationId: updated.id,
+            candidateIdentityId: updated.candidateIdentityId,
+            employerIdentityId: updated.employerIdentityId,
+            fromStatus: oldStatus,
+            jobId: updated.jobId,
+            toStatus: nextStatus
+          },
+          input.requestId
+        ),
+        { createOutboxId: () => this.idGenerator.generate() }
+      );
+
       return updated;
     });
   }
 
   private assertEmployerTransition(
     currentStatus: ApplicationStatus,
-    nextStatus: ApplicationStatus
+    nextStatusVO: ApplicationStatusVO
   ): void {
-    if (currentStatus === nextStatus) {
-      throw new InvalidApplicationStatusTransitionError(currentStatus, nextStatus);
-    }
-
-    if (!EMPLOYER_STATUS_TRANSITIONS[currentStatus].includes(nextStatus)) {
-      throw new InvalidApplicationStatusTransitionError(currentStatus, nextStatus);
+    const currentVO = new ApplicationStatusVO(currentStatus);
+    if (!currentVO.canEmployerTransitionTo(nextStatusVO)) {
+      throw new InvalidApplicationStatusTransitionError(currentVO.value, nextStatusVO.value);
     }
   }
 }

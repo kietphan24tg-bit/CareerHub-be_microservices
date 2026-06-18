@@ -1,6 +1,8 @@
 import 'reflect-metadata';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import Redis from 'ioredis';
+import { MeiliSearch } from 'meilisearch';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -8,6 +10,7 @@ import {
   configureHttpRuntime,
   getRuntimeConfig,
   initializeOpenTelemetry,
+  type ReadinessCheck,
   type PrismaReadinessCheck,
   type EnvironmentVariables
 } from '@careerhub/infrastructure';
@@ -77,6 +80,33 @@ function resolveJobProtoPath(): string {
   );
 }
 
+function createRedisReadinessCheck(redis: Redis, name: string): ReadinessCheck {
+  return {
+    check: async () => {
+      const result = await redis.ping();
+      if (result !== 'PONG') {
+        throw new Error(`Unexpected Redis ping response: ${result}`);
+      }
+
+      return { redis: 'up' };
+    },
+    name
+  };
+}
+
+function createMeilisearchReadinessCheck(
+  client: MeiliSearch,
+  name: string
+): ReadinessCheck {
+  return {
+    check: async () => {
+      await client.health();
+      return { meilisearch: 'up' };
+    },
+    name
+  };
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(JobModule, {
     bufferLogs: true
@@ -89,9 +119,29 @@ async function bootstrap() {
   const prismaReadinessCheck = app.get<PrismaReadinessCheck>(
     JOB_PRISMA_TOKENS.readinessCheck
   );
+  const readinessChecks: ReadinessCheck[] = [prismaReadinessCheck];
+
+  if (jobRuntimeConfig.redisUrl) {
+    const redis = new Redis(jobRuntimeConfig.redisUrl, {
+      enableOfflineQueue: false,
+      lazyConnect: true,
+      maxRetriesPerRequest: 1
+    });
+    readinessChecks.push(createRedisReadinessCheck(redis, 'redis'));
+  }
+
+  if (jobRuntimeConfig.meilisearchHost) {
+    const meilisearch = new MeiliSearch({
+      apiKey: jobRuntimeConfig.meilisearchApiKey,
+      host: jobRuntimeConfig.meilisearchHost
+    });
+    readinessChecks.push(
+      createMeilisearchReadinessCheck(meilisearch, 'meilisearch')
+    );
+  }
 
   const runtime = configureHttpRuntime(app, {
-    readinessChecks: [prismaReadinessCheck],
+    readinessChecks,
     runtimeConfig
   });
   initializeOpenTelemetry(runtimeConfig);

@@ -25,6 +25,7 @@ export type IamEnvironmentVariables = BaseEnvironmentVariables & {
   OUTBOX_CLEANUP_BATCH_SIZE: number;
   OUTBOX_CLEANUP_ENABLED: boolean;
   OUTBOX_CLEANUP_INTERVAL_MS: number;
+  OUTBOX_FAILED_RETENTION_MS: number;
   OUTBOX_MAX_RETRY_COUNT: number;
   OUTBOX_POLL_INTERVAL_MS: number;
   OUTBOX_PROCESSED_RETENTION_MS: number;
@@ -161,6 +162,13 @@ export function validateIamEnvironment(
             Number.isFinite(Number(config.OUTBOX_CLEANUP_INTERVAL_MS))
           ? Number(config.OUTBOX_CLEANUP_INTERVAL_MS)
           : 60_000,
+    OUTBOX_FAILED_RETENTION_MS:
+      typeof config.OUTBOX_FAILED_RETENTION_MS === 'number'
+        ? config.OUTBOX_FAILED_RETENTION_MS
+        : typeof config.OUTBOX_FAILED_RETENTION_MS === 'string' &&
+            Number.isFinite(Number(config.OUTBOX_FAILED_RETENTION_MS))
+          ? Number(config.OUTBOX_FAILED_RETENTION_MS)
+          : 30 * 24 * 60 * 60 * 1000,
     OUTBOX_MAX_RETRY_COUNT:
       typeof config.OUTBOX_MAX_RETRY_COUNT === 'number'
         ? config.OUTBOX_MAX_RETRY_COUNT

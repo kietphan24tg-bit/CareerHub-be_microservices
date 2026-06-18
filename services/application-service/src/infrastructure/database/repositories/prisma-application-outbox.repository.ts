@@ -71,6 +71,33 @@ export class PrismaApplicationOutboxRepository implements OutboxRepository {
     });
   }
 
+  async deleteFailedBatch(cutoff: Date, limit: number): Promise<number> {
+    const records = await this.prismaClient.outbox.findMany({
+      orderBy: { occurredAt: 'asc' },
+      select: { id: true },
+      take: limit,
+      where: {
+        nextRetryAt: null,
+        occurredAt: { lt: cutoff },
+        status: 'failed'
+      }
+    });
+
+    if (records.length === 0) {
+      return 0;
+    }
+
+    const result = await this.prismaClient.outbox.deleteMany({
+      where: {
+        id: {
+          in: records.map((record) => record.id)
+        }
+      }
+    });
+
+    return result.count;
+  }
+
   async deleteProcessedBatch(cutoff: Date, limit: number): Promise<number> {
     const records = await this.prismaClient.outbox.findMany({
       orderBy: { occurredAt: 'asc' },

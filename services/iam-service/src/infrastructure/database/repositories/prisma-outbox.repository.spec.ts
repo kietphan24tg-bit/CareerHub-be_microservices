@@ -57,6 +57,55 @@ test('deleteProcessedBatch deletes only selected processed records by id batch',
   });
 });
 
+test('deleteFailedBatch deletes only permanently failed records by id batch', async () => {
+  let deletedWhere: Record<string, unknown> | undefined;
+  let findManyWhere: Record<string, unknown> | undefined;
+
+  const failedRecord = {
+    ...sampleRecord,
+    nextRetryAt: null,
+    processedAt: null,
+    status: 'failed' as const
+  };
+
+  const repository = new PrismaOutboxRepository({
+    authSession: {} as never,
+    identity: {} as never,
+    passwordResetToken: {} as never,
+    outbox: {
+      count: async () => 0,
+      create: async () => failedRecord,
+      deleteMany: async ({ where }) => {
+        deletedWhere = where;
+        return { count: 2 };
+      },
+      findFirst: async () => null,
+      findMany: async ({ where }) => {
+        findManyWhere = where;
+        return [
+          { ...failedRecord, id: 'failed-1' },
+          { ...failedRecord, id: 'failed-2' }
+        ];
+      },
+      findUnique: async () => failedRecord,
+      update: async () => failedRecord,
+      updateMany: async () => ({ count: 0 })
+    }
+  } as IamPrismaRepositoryClient);
+
+  const deleted = await repository.deleteFailedBatch(
+    new Date('2026-05-01T00:00:00.000Z'),
+    50
+  );
+
+  assert.equal(deleted, 2);
+  assert.deepEqual(deletedWhere, {
+    id: { in: ['failed-1', 'failed-2'] }
+  });
+  assert.deepEqual((findManyWhere as any)?.['status'], 'failed');
+  assert.deepEqual((findManyWhere as any)?.['nextRetryAt'], null);
+});
+
 test('summarizeBacklog returns status counts and oldest pending timestamp', async () => {
   const countQueries: Array<Record<string, unknown> | undefined> = [];
 

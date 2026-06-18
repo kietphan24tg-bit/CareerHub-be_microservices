@@ -65,6 +65,45 @@ export type JobOrderByInput =
   | Record<string, 'asc' | 'desc'>
   | Array<Record<string, 'asc' | 'desc'>>;
 
+export type OutboxPersistenceRecord = {
+  eventName: string;
+  id: string;
+  lastError: string | null;
+  nextRetryAt: Date | null;
+  occurredAt: Date;
+  payload: unknown;
+  processedAt: Date | null;
+  processingAt: Date | null;
+  retryCount: number;
+  status: string;
+};
+
+export type OutboxModelDelegate = {
+  count(args: { where?: Record<string, unknown> }): Promise<number>;
+  create(args: { data: Omit<OutboxPersistenceRecord, never> }): Promise<OutboxPersistenceRecord>;
+  deleteMany(args: { where: Record<string, unknown> }): Promise<{ count: number }>;
+  findFirst(args: {
+    orderBy?: Record<string, 'asc' | 'desc'>;
+    select?: Record<string, boolean>;
+    where?: Record<string, unknown>;
+  }): Promise<OutboxPersistenceRecord | null>;
+  findMany(args: {
+    orderBy?: Record<string, 'asc' | 'desc'>;
+    select?: Record<string, boolean>;
+    take?: number;
+    where?: Record<string, unknown>;
+  }): Promise<OutboxPersistenceRecord[]>;
+  findUnique(args: { where: { id: string } }): Promise<OutboxPersistenceRecord | null>;
+  update(args: {
+    data: Partial<OutboxPersistenceRecord>;
+    where: { id: string };
+  }): Promise<OutboxPersistenceRecord>;
+  updateMany(args: {
+    data: Partial<OutboxPersistenceRecord>;
+    where: Record<string, unknown>;
+  }): Promise<{ count: number }>;
+};
+
 export type JobModelDelegate = {
   count(args: { where?: JobWhereInput }): Promise<number>;
   create(args: { data: JobCreateInput }): Promise<JobPersistenceRecord>;
@@ -95,4 +134,5 @@ export type JobModelDelegate = {
 
 export type JobPrismaClient = PrismaClientLike & {
   job: JobModelDelegate;
+  outbox: OutboxModelDelegate;
 };

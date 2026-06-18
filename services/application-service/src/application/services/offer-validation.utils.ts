@@ -20,12 +20,6 @@ export const OFFER_STATUS = {
   viewed: 'viewed'
 } as const;
 
-export const EMPLOYER_MUTABLE_OFFER_STATUSES = new Set<string>([
-  OFFER_STATUS.draft,
-  OFFER_STATUS.sent,
-  OFFER_STATUS.viewed
-]);
-
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export type OfferPayloadInput = {

@@ -1,11 +1,20 @@
 import { ValidationError } from '@careerhub/shared-kernel';
+import {
+  createIntegrationEvent,
+  JOB_UPDATED_EVENT_NAME
+} from '@careerhub/contracts';
 import { JobNotFoundError } from '../../errors/job-not-found.error';
-import type { JobRecord, JobRepository } from '../../ports';
+import { persistJobOutbox } from '../../outbox/job-outbox-event.mapper';
+import type { IdGenerator, JobRecord, JobRepository, OutboxRepository } from '../../ports';
 import { writeJobWithUniqueSlug } from '../../utils/job-slug';
 import type { UpdateJobCommand } from './update-job.command';
 
 export class UpdateJobCommandHandler {
-  constructor(private readonly jobRepository: JobRepository) {}
+  constructor(
+    private readonly jobRepository: JobRepository,
+    private readonly outboxRepository: OutboxRepository,
+    private readonly idGenerator: IdGenerator
+  ) {}
 
   async execute(command: UpdateJobCommand): Promise<JobRecord> {
     if (!command.employerIdentityId.trim()) {
@@ -66,40 +75,51 @@ export class UpdateJobCommandHandler {
     const shouldRefreshSlug =
       command.title !== undefined && command.title.trim() !== existingJob.title;
 
+    let updated: JobRecord;
+
     if (!shouldRefreshSlug) {
-      const updated = await this.jobRepository.update(
+      const result = await this.jobRepository.update(
         existingJob.id,
         command.employerIdentityId.trim(),
         patch
       );
 
-      if (!updated) {
+      if (!result) {
         throw new JobNotFoundError(command.jobId);
       }
 
-      return updated;
+      updated = result;
+    } else {
+      updated = await writeJobWithUniqueSlug(
+        this.jobRepository,
+        command.title as string,
+        existingJob.id,
+        async (slug) => {
+          const result = await this.jobRepository.update(
+            existingJob.id,
+            command.employerIdentityId.trim(),
+            { ...patch, slug }
+          );
+
+          if (!result) {
+            throw new JobNotFoundError(command.jobId);
+          }
+
+          return result;
+        }
+      );
     }
 
-    return writeJobWithUniqueSlug(
-      this.jobRepository,
-      command.title as string,
-      existingJob.id,
-      async (slug) => {
-        const updated = await this.jobRepository.update(
-          existingJob.id,
-          command.employerIdentityId.trim(),
-          {
-            ...patch,
-            slug
-          }
-        );
-
-        if (!updated) {
-          throw new JobNotFoundError(command.jobId);
-        }
-
-        return updated;
-      }
+    await persistJobOutbox(
+      this.outboxRepository,
+      createIntegrationEvent(JOB_UPDATED_EVENT_NAME, {
+        employerIdentityId: command.employerIdentityId.trim(),
+        jobId: updated.id,
+        slug: updated.slug
+      }),
+      { createOutboxId: () => this.idGenerator.generate() }
     );
+
+    return updated;
   }
 }
