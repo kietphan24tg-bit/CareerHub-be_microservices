@@ -161,6 +161,9 @@ function createOperations(overrides: {
           outboxRepository: {
             async create(record: unknown) {
               outboxEvents.push(record);
+            },
+            async deleteFailedBatch() {
+              return 0;
             }
           } as never,
           recruitmentRepository: recruitmentRepository as never
@@ -197,9 +200,10 @@ test('create interview moves application to interview and writes history', async
   assert.equal(result.id, 'interview-new');
   assert.ok(histories.some((item) => item.eventType === 'status_change' && item.toStatus === 'interview'));
   assert.ok(histories.some((item) => item.eventType === 'interview_scheduled'));
-  assert.equal(outboxEvents.length, 2);
+  assert.equal(outboxEvents.length, 3);
   assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.interview-scheduled.v1');
   assert.equal((outboxEvents[1] as { eventName: string }).eventName, 'mail.interview-created.v1');
+  assert.equal((outboxEvents[2] as { eventName: string }).eventName, 'application.interview-changed.v1');
 });
 
 test('update interview without slot change does not enqueue mail outbox', async () => {
@@ -209,8 +213,9 @@ test('update interview without slot change does not enqueue mail outbox', async 
     round: 'Final'
   });
 
-  assert.equal(outboxEvents.length, 1);
+  assert.equal(outboxEvents.length, 2);
   assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.interview-status-changed.v1');
+  assert.equal((outboxEvents[1] as { eventName: string }).eventName, 'application.interview-changed.v1');
 });
 
 test('update interview with slot change enqueues mail outbox', async () => {
@@ -221,8 +226,9 @@ test('update interview with slot change enqueues mail outbox', async () => {
     startTime: '14:00'
   });
 
-  assert.equal(outboxEvents.length, 2);
+  assert.equal(outboxEvents.length, 3);
   assert.equal((outboxEvents[1] as { eventName: string }).eventName, 'mail.interview-updated.v1');
+  assert.equal((outboxEvents[2] as { eventName: string }).eventName, 'application.interview-changed.v1');
 });
 
 test('cancel interview enqueues mail outbox', async () => {
@@ -230,9 +236,10 @@ test('cancel interview enqueues mail outbox', async () => {
 
   await operations.cancelInterview('employer-1', 'interview-1', { reason: 'No longer needed' });
 
-  assert.equal(outboxEvents.length, 2);
+  assert.equal(outboxEvents.length, 3);
   assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.interview-status-changed.v1');
   assert.equal((outboxEvents[1] as { eventName: string }).eventName, 'mail.interview-cancelled.v1');
+  assert.equal((outboxEvents[2] as { eventName: string }).eventName, 'application.interview-changed.v1');
 });
 
 test('create interview rejects terminal application', async () => {
@@ -308,8 +315,9 @@ test('candidate confirm updates status and history', async () => {
 
   assert.equal(result.status, 'confirmed');
   assert.ok(histories.some((item) => item.note?.includes('confirmed')));
-  assert.equal(outboxEvents.length, 1);
+  assert.equal(outboxEvents.length, 2);
   assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.interview-status-changed.v1');
+  assert.equal((outboxEvents[1] as { eventName: string }).eventName, 'application.interview-changed.v1');
 });
 
 test('get candidate interview returns not found for wrong owner', async () => {
@@ -336,8 +344,9 @@ test('candidate decline updates status and writes history', async () => {
 
   assert.equal(result.status, 'cancelled');
   assert.ok(histories.some((item) => item.note?.includes('declined')));
-  assert.equal(outboxEvents.length, 1);
+  assert.equal(outboxEvents.length, 2);
   assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.interview-status-changed.v1');
+  assert.equal((outboxEvents[1] as { eventName: string }).eventName, 'application.interview-changed.v1');
 });
 
 test('candidate request reschedule stores proposed slot and writes history', async () => {
@@ -353,8 +362,9 @@ test('candidate request reschedule stores proposed slot and writes history', asy
   assert.equal(result.status, 'rescheduled');
   assert.equal(result.candidateProposedDate, '2026-06-22');
   assert.ok(histories.some((item) => item.note?.includes('reschedule')));
-  assert.equal(outboxEvents.length, 1);
+  assert.equal(outboxEvents.length, 2);
   assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.interview-status-changed.v1');
+  assert.equal((outboxEvents[1] as { eventName: string }).eventName, 'application.interview-changed.v1');
 });
 
 test('list employer interviews returns repository rows', async () => {

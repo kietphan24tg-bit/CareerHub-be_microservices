@@ -168,6 +168,9 @@ function createOperations(overrides: {
           outboxRepository: {
             async create(record: unknown) {
               outboxEvents.push(record);
+            },
+            async deleteFailedBatch() {
+              return 0;
             }
           } as never,
           recruitmentRepository: recruitmentRepository as never
@@ -258,9 +261,10 @@ test('send offer moves application to offer', async () => {
   assert.equal(result.status, 'sent');
   assert.ok(histories.some((item) => item.eventType === 'status_change' && item.toStatus === 'offer'));
   assert.ok(histories.some((item) => item.eventType === 'offer_sent'));
-  assert.equal(outboxEvents.length, 2);
+  assert.equal(outboxEvents.length, 3);
   assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.offer-sent.v1');
   assert.equal((outboxEvents[1] as { eventName: string }).eventName, 'mail.offer-sent.v1');
+  assert.equal((outboxEvents[2] as { eventName: string }).eventName, 'application.offer-status-changed.v1');
 });
 
 test('soft delete offer enforces mutable status', async () => {
@@ -284,8 +288,9 @@ test('accept offer updates application to hired', async () => {
   assert.equal(result.status, 'accepted');
   assert.ok(histories.some((item) => item.eventType === 'status_change' && item.toStatus === 'hired'));
   assert.ok(histories.some((item) => item.eventType === 'offer_accepted'));
-  assert.equal(outboxEvents.length, 1);
+  assert.equal(outboxEvents.length, 2);
   assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.offer-accepted.v1');
+  assert.equal((outboxEvents[1] as { eventName: string }).eventName, 'application.offer-status-changed.v1');
 });
 
 test('accept offer rejects invalid status', async () => {
@@ -309,8 +314,9 @@ test('decline offer updates application to rejected', async () => {
   assert.equal(result.status, 'rejected');
   assert.ok(histories.some((item) => item.eventType === 'status_change' && item.toStatus === 'rejected'));
   assert.ok(histories.some((item) => item.eventType === 'offer_rejected'));
-  assert.equal(outboxEvents.length, 1);
+  assert.equal(outboxEvents.length, 2);
   assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.offer-declined.v1');
+  assert.equal((outboxEvents[1] as { eventName: string }).eventName, 'application.offer-status-changed.v1');
 });
 
 test('list benefit catalog returns active catalog rows', async () => {
@@ -444,6 +450,7 @@ test('soft delete offer enqueues notification only', async () => {
   const result = await operations.softDeleteOffer('employer-1', 'offer-1');
 
   assert.equal(result.deleted, true);
-  assert.equal(outboxEvents.length, 1);
+  assert.equal(outboxEvents.length, 2);
   assert.equal((outboxEvents[0] as { eventName: string }).eventName, 'notifications.offer-withdrawn.v1');
+  assert.equal((outboxEvents[1] as { eventName: string }).eventName, 'application.offer-status-changed.v1');
 });
