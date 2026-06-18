@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import Redis from 'ioredis';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -9,6 +10,7 @@ import {
   getRuntimeConfig,
   initializeOpenTelemetry,
   type EnvironmentVariables,
+  type ReadinessCheck,
   type PrismaReadinessCheck
 } from '@careerhub/infrastructure';
 import { APPLICATION_GRPC_PACKAGE_NAME } from '@careerhub/contracts';
@@ -60,6 +62,20 @@ function resolveApplicationProtoPath(): string {
   );
 }
 
+function createRedisReadinessCheck(redis: Redis, name: string): ReadinessCheck {
+  return {
+    check: async () => {
+      const result = await redis.ping();
+      if (result !== 'PONG') {
+        throw new Error(`Unexpected Redis ping response: ${result}`);
+      }
+
+      return { redis: 'up' };
+    },
+    name
+  };
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(ApplicationModule, {
     bufferLogs: true
@@ -72,9 +88,19 @@ async function bootstrap() {
   const prismaReadinessCheck = app.get<PrismaReadinessCheck>(
     APPLICATION_PRISMA_TOKENS.readinessCheck
   );
+  const readinessChecks: ReadinessCheck[] = [prismaReadinessCheck];
+
+  if (applicationRuntimeConfig.redisUrl) {
+    const redis = new Redis(applicationRuntimeConfig.redisUrl, {
+      enableOfflineQueue: false,
+      lazyConnect: true,
+      maxRetriesPerRequest: 1
+    });
+    readinessChecks.push(createRedisReadinessCheck(redis, 'redis'));
+  }
 
   const runtime = configureHttpRuntime(app, {
-    readinessChecks: [prismaReadinessCheck],
+    readinessChecks,
     runtimeConfig
   });
   initializeOpenTelemetry(runtimeConfig);

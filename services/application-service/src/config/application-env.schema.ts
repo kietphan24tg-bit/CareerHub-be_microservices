@@ -12,12 +12,15 @@ export type ApplicationEnvironmentVariables = BaseEnvironmentVariables & {
   OUTBOX_CLEANUP_BATCH_SIZE: number;
   OUTBOX_CLEANUP_ENABLED: boolean;
   OUTBOX_CLEANUP_INTERVAL_MS: number;
+  OUTBOX_FAILED_RETENTION_MS: number;
   OUTBOX_MAX_RETRY_COUNT: number;
   OUTBOX_POLL_INTERVAL_MS: number;
   OUTBOX_PROCESSED_RETENTION_MS: number;
   OUTBOX_PUBLISH_ENABLED: boolean;
   OUTBOX_RETRY_DELAY_MS: number;
   OUTBOX_STALE_PROCESSING_TIMEOUT_MS: number;
+  REDIS_DASHBOARD_CACHE_TTL_S: number;
+  REDIS_URL: string;
 };
 
 function readPositiveNumber(
@@ -73,6 +76,8 @@ export function validateApplicationEnvironment(
     typeof config.APP_BASE_URL === 'string' && config.APP_BASE_URL.trim().length > 0
       ? config.APP_BASE_URL.trim().replace(/\/+$/, '')
       : 'http://localhost:4000';
+  const redisUrl =
+    typeof config.REDIS_URL === 'string' ? config.REDIS_URL.trim() : '';
 
   return {
     ...baseEnvironment,
@@ -96,6 +101,11 @@ export function validateApplicationEnvironment(
       'OUTBOX_CLEANUP_INTERVAL_MS',
       60_000
     ),
+    OUTBOX_FAILED_RETENTION_MS: readPositiveNumber(
+      config,
+      'OUTBOX_FAILED_RETENTION_MS',
+      30 * 24 * 60 * 60 * 1000
+    ),
     OUTBOX_MAX_RETRY_COUNT: readPositiveNumber(config, 'OUTBOX_MAX_RETRY_COUNT', 5),
     OUTBOX_POLL_INTERVAL_MS: readPositiveNumber(config, 'OUTBOX_POLL_INTERVAL_MS', 5_000),
     OUTBOX_PROCESSED_RETENTION_MS: readPositiveNumber(
@@ -109,6 +119,12 @@ export function validateApplicationEnvironment(
       config,
       'OUTBOX_STALE_PROCESSING_TIMEOUT_MS',
       60_000
-    )
+    ),
+    REDIS_DASHBOARD_CACHE_TTL_S: readPositiveNumber(
+      config,
+      'REDIS_DASHBOARD_CACHE_TTL_S',
+      120
+    ),
+    REDIS_URL: redisUrl
   };
 }

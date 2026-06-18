@@ -1,4 +1,8 @@
 import { ApplicationNotFoundError } from '../errors/application-not-found.error';
+import {
+  INTERVIEW_CHANGED_EVENT_NAME,
+  createIntegrationEvent
+} from '@careerhub/contracts';
 import { InterviewApplicationStateInvalidError } from '../errors/interview-application-state-invalid.error';
 import { InterviewNotFoundError } from '../errors/interview-not-found.error';
 import { InterviewResponseStateInvalidError } from '../errors/interview-response-state-invalid.error';
@@ -15,10 +19,6 @@ import type {
   RecruitmentRepository
 } from '../ports';
 import {
-  CANDIDATE_RESPONDABLE_INTERVIEW_STATUSES,
-  EMPLOYER_MUTABLE_INTERVIEW_STATUSES,
-  INTERVIEW_STATUS,
-  TERMINAL_APPLICATION_STATUSES,
   hasInterviewSlotChange,
   normalizeDecimal,
   normalizeInterviewSchedule,
@@ -30,6 +30,10 @@ import {
   toDateOnly,
   toTimeOnly
 } from './interview-schedule.utils';
+import {
+  ApplicationStatus as ApplicationStatusVO,
+  InterviewStatus as InterviewStatusVO
+} from '../../domain';
 
 export type CreateInterviewInput = {
   callerInfo?: string | null;
@@ -83,6 +87,24 @@ function lifecycleHistoryStatus(status: ApplicationStatus): {
   };
 }
 
+function buildInterviewChangedEvent(
+  interview: ApplicationInterviewRecord,
+  requestId?: string
+) {
+  return createIntegrationEvent(
+    INTERVIEW_CHANGED_EVENT_NAME,
+    {
+      applicationId: interview.applicationId,
+      candidateIdentityId: interview.candidateIdentityId,
+      employerIdentityId: interview.employerIdentityId,
+      interviewId: interview.id,
+      jobId: interview.jobId,
+      status: interview.status
+    },
+    requestId
+  );
+}
+
 export class InterviewOperations {
   constructor(
     private readonly applicationRepository: ApplicationRepository,
@@ -111,7 +133,7 @@ export class InterviewOperations {
       throw new ApplicationNotFoundError(applicationId);
     }
 
-    if (TERMINAL_APPLICATION_STATUSES.has(application.status)) {
+    if (new ApplicationStatusVO(application.status).isTerminal()) {
       throw new InterviewApplicationStateInvalidError();
     }
 
@@ -161,7 +183,7 @@ export class InterviewOperations {
         round: normalizeRequiredString(input.round, 'Interview round is required.'),
         scheduledByIdentityId: normalizedEmployerIdentityId,
         startTime: schedule.startTime,
-        status: INTERVIEW_STATUS.scheduled,
+        status: InterviewStatusVO.scheduled().value,
         timezone: normalizeNullableString(input.timezone),
         type: normalizeInterviewType(input.type)
       });
@@ -200,6 +222,14 @@ export class InterviewOperations {
           createOutboxId: () => this.idGenerator.generate()
         });
       }
+
+      await persistNotificationOutbox(
+        context.outboxRepository,
+        buildInterviewChangedEvent(interview, input.requestId),
+        {
+          createOutboxId: () => this.idGenerator.generate()
+        }
+      );
 
       return interview;
     });
@@ -269,7 +299,7 @@ export class InterviewOperations {
             ? interview.round
             : normalizeRequiredString(input.round, 'Interview round is required.'),
         startTime: updatedSchedule.startTime,
-        status: slotChanged ? INTERVIEW_STATUS.rescheduled : interview.status,
+        status: slotChanged ? InterviewStatusVO.rescheduled().value : interview.status,
         timezone: pickNullableString(input.timezone, interview.timezone),
         type: input.type === undefined ? interview.type : normalizeInterviewType(input.type)
       });
@@ -321,6 +351,14 @@ export class InterviewOperations {
         }
       }
 
+      await persistNotificationOutbox(
+        context.outboxRepository,
+        buildInterviewChangedEvent(updated, input.requestId),
+        {
+          createOutboxId: () => this.idGenerator.generate()
+        }
+      );
+
       return updated;
     });
   }
@@ -348,7 +386,7 @@ export class InterviewOperations {
         [interview.status],
         {
         candidateResponseNote: normalizeNullableString(input.reason),
-        status: INTERVIEW_STATUS.cancelled
+        status: InterviewStatusVO.cancelled().value
       });
 
       if (!updated) {
@@ -394,6 +432,14 @@ export class InterviewOperations {
         });
       }
 
+      await persistNotificationOutbox(
+        context.outboxRepository,
+        buildInterviewChangedEvent(updated, input.requestId),
+        {
+          createOutboxId: () => this.idGenerator.generate()
+        }
+      );
+
       return updated;
     });
   }
@@ -437,7 +483,7 @@ export class InterviewOperations {
         [interview.status],
         {
         candidateResponseNote: normalizeNullableString(input.candidateResponseNote),
-        status: INTERVIEW_STATUS.confirmed
+        status: InterviewStatusVO.confirmed().value
       });
 
       if (!updated) {
@@ -472,6 +518,14 @@ export class InterviewOperations {
         });
       }
 
+      await persistNotificationOutbox(
+        context.outboxRepository,
+        buildInterviewChangedEvent(updated, input.requestId),
+        {
+          createOutboxId: () => this.idGenerator.generate()
+        }
+      );
+
       return updated;
     });
   }
@@ -499,7 +553,7 @@ export class InterviewOperations {
         [interview.status],
         {
         candidateResponseNote: normalizeNullableString(input.candidateResponseNote),
-        status: INTERVIEW_STATUS.cancelled
+        status: InterviewStatusVO.cancelled().value
       });
 
       if (!updated) {
@@ -534,6 +588,14 @@ export class InterviewOperations {
         });
       }
 
+      await persistNotificationOutbox(
+        context.outboxRepository,
+        buildInterviewChangedEvent(updated, input.requestId),
+        {
+          createOutboxId: () => this.idGenerator.generate()
+        }
+      );
+
       return updated;
     });
   }
@@ -565,7 +627,7 @@ export class InterviewOperations {
         candidateProposedStartTime: toTimeOnly(input.proposedStartTime),
         candidateProposedTimezone: normalizeNullableString(input.proposedTimezone),
         candidateResponseNote: normalizeNullableString(input.candidateResponseNote),
-        status: INTERVIEW_STATUS.rescheduled
+        status: InterviewStatusVO.rescheduled().value
       });
 
       if (!updated) {
@@ -600,18 +662,26 @@ export class InterviewOperations {
         });
       }
 
+      await persistNotificationOutbox(
+        context.outboxRepository,
+        buildInterviewChangedEvent(updated, input.requestId),
+        {
+          createOutboxId: () => this.idGenerator.generate()
+        }
+      );
+
       return updated;
     });
   }
 
   private ensureEmployerMutable(status: string): void {
-    if (!EMPLOYER_MUTABLE_INTERVIEW_STATUSES.has(status)) {
+    if (!new InterviewStatusVO(status).canEmployerMutate()) {
       throw new InterviewStateInvalidError();
     }
   }
 
   private ensureCandidateRespondable(status: string): void {
-    if (!CANDIDATE_RESPONDABLE_INTERVIEW_STATUSES.has(status)) {
+    if (!new InterviewStatusVO(status).canCandidateRespond()) {
       throw new InterviewResponseStateInvalidError();
     }
   }

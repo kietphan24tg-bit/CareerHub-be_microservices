@@ -4,24 +4,6 @@ import type { ApplicationInterviewRecord } from '../ports/recruitment-repository
 export const INTERVIEW_TYPE_VALUES = ['online', 'onsite', 'phone'] as const;
 export type InterviewType = (typeof INTERVIEW_TYPE_VALUES)[number];
 
-export const INTERVIEW_STATUS = {
-  scheduled: 'scheduled',
-  confirmed: 'confirmed',
-  cancelled: 'cancelled',
-  rescheduled: 'rescheduled'
-} as const;
-
-export const TERMINAL_APPLICATION_STATUSES = new Set(['rejected', 'hired', 'withdrawn']);
-export const EMPLOYER_MUTABLE_INTERVIEW_STATUSES = new Set<string>([
-  INTERVIEW_STATUS.scheduled,
-  INTERVIEW_STATUS.rescheduled,
-  INTERVIEW_STATUS.confirmed
-]);
-export const CANDIDATE_RESPONDABLE_INTERVIEW_STATUSES = new Set<string>([
-  INTERVIEW_STATUS.scheduled,
-  INTERVIEW_STATUS.rescheduled
-]);
-
 const SLOT_FIELDS = new Set([
   'date',
   'startTime',
