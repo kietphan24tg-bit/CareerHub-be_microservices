@@ -31,9 +31,10 @@ This document defines the standard outbox flow for CareerHub services that own a
 
 - Services do not delete records immediately after successful publish.
 - Successful records stay in `processed` state for short-term audit and debugging.
-- The default retention window is `7 days`.
+- The default retention window for `processed` records is `7 days` (`OUTBOX_PROCESSED_RETENTION_MS`).
 - A cleanup loop deletes old `processed` records in small batches.
-- `failed` records are kept for investigation in the current phase.
+- `failed` records that have exhausted all retries (`nextRetryAt IS NULL`) are cleaned up after `30 days` (`OUTBOX_FAILED_RETENTION_MS`).
+- `failed` records that still have a scheduled retry (`nextRetryAt IS NOT NULL`) are never deleted by the cleanup cycle — they will be re-queued automatically.
 
 ## Current Runtime Decision
 

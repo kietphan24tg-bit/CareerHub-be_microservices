@@ -73,11 +73,11 @@ export class OutboxProcessor {
     this.cleanupRunning = true;
 
     try {
-      const cutoff = new Date(
+      const processedCutoff = new Date(
         Date.now() - this.options.runtimeConfig.outboxProcessedRetentionMs
       );
       const deleted = await this.options.repository.deleteProcessedBatch(
-        cutoff,
+        processedCutoff,
         this.options.runtimeConfig.outboxCleanupBatchSize
       );
 
@@ -87,7 +87,25 @@ export class OutboxProcessor {
           service: this.options.serviceName
         });
         this.logger.log(
-          `Outbox cleanup deleted ${deleted} processed records older than ${cutoff.toISOString()}`
+          `Outbox cleanup deleted ${deleted} processed records older than ${processedCutoff.toISOString()}`
+        );
+      }
+
+      const failedCutoff = new Date(
+        Date.now() - this.options.runtimeConfig.outboxFailedRetentionMs
+      );
+      const deletedFailed = await this.options.repository.deleteFailedBatch(
+        failedCutoff,
+        this.options.runtimeConfig.outboxCleanupBatchSize
+      );
+
+      if (deletedFailed > 0) {
+        this.options.metricsRegistry.recordOutboxCleanup({
+          deletedCount: deletedFailed,
+          service: this.options.serviceName
+        });
+        this.logger.log(
+          `Outbox cleanup deleted ${deletedFailed} failed records older than ${failedCutoff.toISOString()}`
         );
       }
     } finally {
