@@ -1,8 +1,10 @@
 import { Controller, Get, Headers, Param, Query } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { GatewayJobsService } from '../../../application/jobs/gateway-jobs.service';
 import { Public } from '../../../auth/decorators/public.decorator';
 import { PublicJobsQueryDto } from './dto/public-jobs-query.dto';
 
+@ApiTags('Jobs')
 @Controller('jobs')
 export class PublicJobsController {
   constructor(private readonly gatewayJobsService: GatewayJobsService) {}

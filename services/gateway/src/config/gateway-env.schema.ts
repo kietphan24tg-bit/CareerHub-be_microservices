@@ -6,6 +6,7 @@ import {
 export type GatewayEnvironmentVariables = BaseEnvironmentVariables & {
   APP_BASE_URL?: string;
   AUTH_REFRESH_COOKIE_DOMAIN?: string;
+  CORS_ORIGIN?: string;
   AUTH_REFRESH_COOKIE_NAME: string;
   AUTH_REFRESH_COOKIE_SECURE: boolean;
   GRPC_APPLICATION_URL: string;
@@ -17,7 +18,30 @@ export type GatewayEnvironmentVariables = BaseEnvironmentVariables & {
   JWT_REFRESH_EXPIRES_IN: string;
   JWT_SECRET: string;
   RESUME_PRINT_BASE_URL?: string;
+  THROTTLE_MEDIUM_LIMIT: number;
+  THROTTLE_MEDIUM_TTL_MS: number;
+  THROTTLE_SHORT_LIMIT: number;
+  THROTTLE_SHORT_TTL_MS: number;
 };
+
+function parsePositiveInteger(
+  value: unknown,
+  fallback: number
+): number {
+  if (typeof value === 'number' && Number.isInteger(value) && value > 0) {
+    return value;
+  }
+
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number.parseInt(value.trim(), 10);
+
+    if (Number.isInteger(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  return fallback;
+}
 
 export function validateGatewayEnvironment(
   config: Record<string, unknown>
@@ -98,6 +122,14 @@ export function validateGatewayEnvironment(
       typeof config.RESUME_PRINT_BASE_URL === 'string' &&
       config.RESUME_PRINT_BASE_URL.trim().length > 0
         ? config.RESUME_PRINT_BASE_URL.trim()
-        : undefined
+        : undefined,
+    CORS_ORIGIN:
+      typeof config.CORS_ORIGIN === 'string' && config.CORS_ORIGIN.trim().length > 0
+        ? config.CORS_ORIGIN.trim()
+        : undefined,
+    THROTTLE_MEDIUM_LIMIT: parsePositiveInteger(config.THROTTLE_MEDIUM_LIMIT, 100),
+    THROTTLE_MEDIUM_TTL_MS: parsePositiveInteger(config.THROTTLE_MEDIUM_TTL_MS, 60_000),
+    THROTTLE_SHORT_LIMIT: parsePositiveInteger(config.THROTTLE_SHORT_LIMIT, 10),
+    THROTTLE_SHORT_TTL_MS: parsePositiveInteger(config.THROTTLE_SHORT_TTL_MS, 1_000)
   };
 }

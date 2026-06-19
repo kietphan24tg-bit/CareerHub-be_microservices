@@ -5,18 +5,36 @@ import { EmployerProfileNotFoundError } from '../../errors/employer-profile-not-
 import { UpdateEmployerProfileCommandHandler } from './update-employer-profile.command-handler';
 
 test('updates employer profile successfully', async () => {
+  let receivedPatch: Record<string, unknown> | null = null;
   const handler = new UpdateEmployerProfileCommandHandler({
     async existsByIdentityId() {
       return true;
     },
     async findByIdentityId() {
-      return null;
+      return {
+        address: '123 Street',
+        companyName: 'CareerHub',
+        companySize: null,
+        contactName: 'Employer User',
+        contactPhone: '0987654321',
+        createdAt: new Date('2026-06-06T00:00:00.000Z'),
+        description: null,
+        foundedYear: null,
+        id: 'employer-profile-1',
+        identityId: 'identity-1',
+        industry: 'technology',
+        logoUrl: null,
+        taxCode: null,
+        updatedAt: new Date('2026-06-06T01:00:00.000Z'),
+        website: null
+      };
     },
     async save() {},
     async deleteByIdentityId() {
       return false;
     },
     async updateByIdentityId(identityId, patch) {
+      receivedPatch = patch;
       return {
         address: patch.address ?? null,
         companyName: patch.companyName ?? 'CareerHub',
@@ -45,6 +63,10 @@ test('updates employer profile successfully', async () => {
 
   assert.equal(result.companyName, 'Updated Company');
   assert.equal(result.website, 'https://careerhub.dev');
+  assert.deepEqual(receivedPatch, {
+    companyName: 'Updated Company',
+    website: 'https://careerhub.dev'
+  });
 });
 
 test('throws when updated employer profile does not exist', async () => {
@@ -77,10 +99,26 @@ test('throws when updated employer profile does not exist', async () => {
 test('throws when employer update payload is empty', async () => {
   const handler = new UpdateEmployerProfileCommandHandler({
     async existsByIdentityId() {
-      return false;
+      return true;
     },
     async findByIdentityId() {
-      return null;
+      return {
+        address: '123 Street',
+        companyName: 'CareerHub',
+        companySize: null,
+        contactName: 'Employer User',
+        contactPhone: '0987654321',
+        createdAt: new Date('2026-06-06T00:00:00.000Z'),
+        description: null,
+        foundedYear: null,
+        id: 'employer-profile-1',
+        identityId: 'identity-1',
+        industry: 'technology',
+        logoUrl: null,
+        taxCode: null,
+        updatedAt: new Date('2026-06-06T01:00:00.000Z'),
+        website: null
+      };
     },
     async save() {},
     async deleteByIdentityId() {

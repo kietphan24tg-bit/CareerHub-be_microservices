@@ -10,8 +10,11 @@ import { GatewayOffersService } from '../../../application/offers/gateway-offers
 import { CurrentUser } from '../../../auth/decorators/current-user.decorator';
 import { Roles } from '../../../auth/decorators/roles.decorator';
 import type { GatewayAuthenticatedUser } from '../../../auth/types/gateway-auth.types';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { CandidateOfferDecisionRequestDto } from './dto/offer-write.request.dto';
 
+@ApiTags('Offers')
+@ApiBearerAuth()
 @Controller()
 @Roles('candidate')
 export class CandidateOffersController {

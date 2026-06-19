@@ -32,6 +32,7 @@ service ApplicationService {
   rpc AcceptOffer (AcceptOfferRequest) returns (AcceptOfferResponse);
   rpc DeclineOffer (DeclineOfferRequest) returns (DeclineOfferResponse);
   rpc GetEmployerDashboardRecruitmentData (GetEmployerDashboardRecruitmentDataRequest) returns (GetEmployerDashboardRecruitmentDataResponse);
+  rpc GetCandidateDashboardData (GetCandidateDashboardDataRequest) returns (GetCandidateDashboardDataResponse);
   rpc ListRecruiterNotes (ListRecruiterNotesRequest) returns (ListRecruiterNotesResponse);
   rpc CreateRecruiterNote (CreateRecruiterNoteRequest) returns (CreateRecruiterNoteResponse);
   rpc UpdateRecruiterNote (UpdateRecruiterNoteRequest) returns (UpdateRecruiterNoteResponse);
@@ -748,6 +749,59 @@ message GetEmployerDashboardRecruitmentDataResponse {
   repeated EmployerDashboardPipelineItemMessage pipeline = 2;
   repeated EmployerDashboardInterviewTodayItemMessage interviews_today = 3;
   repeated EmployerDashboardRecentActivityItemMessage recent_activities = 4;
+}
+
+message CandidateDashboardRecentApplicationItemMessage {
+  string application_id = 1;
+  string employer_identity_id = 2;
+  string job_id = 3;
+  string status = 4;
+  string applied_at = 5;
+  string updated_at = 6;
+}
+
+message CandidateDashboardUpcomingInterviewItemMessage {
+  string id = 1;
+  string application_id = 2;
+  string employer_identity_id = 3;
+  string job_id = 4;
+  string status = 5;
+  string type = 6;
+  string round = 7;
+  string date = 8;
+  string start_time = 9;
+}
+
+message CandidateDashboardActiveOfferItemMessage {
+  string id = 1;
+  string application_id = 2;
+  string employer_identity_id = 3;
+  string job_id = 4;
+  string status = 5;
+  string title = 6;
+  string salary = 7;
+  string currency = 8;
+  string sent_at = 9;
+  string expires_at = 10;
+}
+
+message CandidateDashboardSummaryMessage {
+  int32 total_applications = 1;
+  int32 active_interviews = 2;
+  int32 active_offers = 3;
+}
+
+message GetCandidateDashboardDataRequest {
+  string candidate_identity_id = 1;
+  string local_date = 2;
+  string request_id = 3;
+}
+
+message GetCandidateDashboardDataResponse {
+  CandidateDashboardSummaryMessage summary = 1;
+  repeated CandidateDashboardRecentApplicationItemMessage recent_applications = 2;
+  repeated CandidateDashboardUpcomingInterviewItemMessage upcoming_interviews = 3;
+  repeated CandidateDashboardActiveOfferItemMessage active_offers = 4;
 }
 
 message RecruiterNoteMessage {

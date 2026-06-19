@@ -284,10 +284,26 @@ export interface RecruitmentRepository {
     localDate: string,
     statuses: string[]
   ): Promise<number>;
+  countCandidateInterviewsByStatuses(
+    candidateIdentityId: string,
+    localDate: string,
+    statuses: string[]
+  ): Promise<number>;
   listEmployerInterviewsForDate(
     employerIdentityId: string,
     localDate: string,
     statuses: string[],
     limit: number
   ): Promise<ApplicationInterviewRecord[]>;
+  listCandidateUpcomingInterviews(
+    candidateIdentityId: string,
+    localDate: string,
+    statuses: string[],
+    limit: number
+  ): Promise<ApplicationInterviewRecord[]>;
+  listCandidateActiveOffers(
+    candidateIdentityId: string,
+    statuses: string[],
+    limit: number
+  ): Promise<ApplicationOfferRecord[]>;
 }

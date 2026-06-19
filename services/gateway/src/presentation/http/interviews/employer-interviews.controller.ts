@@ -16,7 +16,10 @@ import {
   CreateInterviewRequestDto,
   UpdateInterviewRequestDto
 } from './dto/interview-write.request.dto';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('Interviews')
+@ApiBearerAuth()
 @Controller()
 @Roles('employer')
 export class EmployerInterviewsController {

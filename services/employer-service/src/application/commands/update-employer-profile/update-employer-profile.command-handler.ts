@@ -5,22 +5,8 @@ import type {
   UpdateEmployerProfilePatch
 } from '../../ports';
 import { EmployerProfileNotFoundError } from '../../errors/employer-profile-not-found.error';
+import { EmployerProfileAggregate } from '../../../domain/employer-profile';
 import type { UpdateEmployerProfileCommand } from './update-employer-profile.command';
-
-function normalizeNullableString(
-  value: string | null | undefined
-): string | null | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (value === null) {
-    return null;
-  }
-
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
 
 export class UpdateEmployerProfileCommandHandler {
   constructor(
@@ -36,72 +22,79 @@ export class UpdateEmployerProfileCommandHandler {
       throw new ValidationError('Employer identity id is required');
     }
 
-    const patch: UpdateEmployerProfilePatch = {};
+    const existingProfile = await this.employerProfileRepository.findByIdentityId(identityId);
+
+    if (!existingProfile) {
+      throw new EmployerProfileNotFoundError(identityId);
+    }
+
+    const touchedFields: Array<keyof UpdateEmployerProfilePatch> = [];
 
     if (command.companyName !== undefined) {
-      const companyName = command.companyName.trim();
-
-      if (!companyName) {
-        throw new ValidationError('Employer company name cannot be blank');
-      }
-
-      patch.companyName = companyName;
+      touchedFields.push('companyName');
     }
 
     if (command.logoUrl !== undefined) {
-      patch.logoUrl = normalizeNullableString(command.logoUrl);
+      touchedFields.push('logoUrl');
     }
 
     if (command.website !== undefined) {
-      patch.website = normalizeNullableString(command.website);
+      touchedFields.push('website');
     }
 
     if (command.industry !== undefined) {
-      patch.industry = normalizeNullableString(command.industry);
+      touchedFields.push('industry');
     }
 
     if (command.companySize !== undefined) {
-      patch.companySize = normalizeNullableString(command.companySize);
+      touchedFields.push('companySize');
     }
 
     if (command.foundedYear !== undefined) {
-      if (
-        command.foundedYear !== null &&
-        (command.foundedYear < 1800 || command.foundedYear > 2100)
-      ) {
-        throw new ValidationError(
-          'Employer founded year must be between 1800 and 2100'
-        );
-      }
-
-      patch.foundedYear = command.foundedYear;
+      touchedFields.push('foundedYear');
     }
 
     if (command.description !== undefined) {
-      patch.description = normalizeNullableString(command.description);
+      touchedFields.push('description');
     }
 
     if (command.address !== undefined) {
-      patch.address = normalizeNullableString(command.address);
+      touchedFields.push('address');
     }
 
     if (command.taxCode !== undefined) {
-      patch.taxCode = normalizeNullableString(command.taxCode);
+      touchedFields.push('taxCode');
     }
 
     if (command.contactName !== undefined) {
-      patch.contactName = normalizeNullableString(command.contactName);
+      touchedFields.push('contactName');
     }
 
     if (command.contactPhone !== undefined) {
-      patch.contactPhone = normalizeNullableString(command.contactPhone);
+      touchedFields.push('contactPhone');
     }
 
-    if (Object.keys(patch).length === 0) {
+    if (touchedFields.length === 0) {
       throw new ValidationError(
         'At least one employer profile field must be provided'
       );
     }
+
+    const aggregate = EmployerProfileAggregate.reconstitute(existingProfile);
+    aggregate.update({
+      address: command.address,
+      companyName: command.companyName,
+      companySize: command.companySize,
+      contactName: command.contactName,
+      contactPhone: command.contactPhone,
+      description: command.description,
+      foundedYear: command.foundedYear,
+      industry: command.industry,
+      logoUrl: command.logoUrl,
+      taxCode: command.taxCode,
+      website: command.website
+    });
+    const patch = aggregate.toUpdatePatch(touchedFields);
 
     const updated = await this.employerProfileRepository.updateByIdentityId(
       identityId,

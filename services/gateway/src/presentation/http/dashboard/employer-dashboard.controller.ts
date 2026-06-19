@@ -1,9 +1,12 @@
 import { Controller, Get, Headers } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { GatewayDashboardService } from '../../../application/dashboard/gateway-dashboard.service';
 import { CurrentUser } from '../../../auth/decorators/current-user.decorator';
 import { Roles } from '../../../auth/decorators/roles.decorator';
 import type { GatewayAuthenticatedUser } from '../../../auth/types/gateway-auth.types';
 
+@ApiTags('Dashboard')
+@ApiBearerAuth()
 @Controller('employer/dashboard')
 @Roles('employer')
 export class EmployerDashboardController {

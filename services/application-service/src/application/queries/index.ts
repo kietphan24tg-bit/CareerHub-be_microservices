@@ -2,6 +2,7 @@ export * from './get-application-counts-by-job-ids';
 export * from './get-application-history';
 export * from './get-application-related-data';
 export * from './get-candidate-application-by-id';
+export * from './get-candidate-dashboard-data';
 export * from './get-employer-application-by-id';
 export * from './get-employer-dashboard-recruitment-data';
 export * from './interviews';

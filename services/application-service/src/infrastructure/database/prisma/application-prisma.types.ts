@@ -257,6 +257,7 @@ export type OfferModelDelegate = {
   findMany(args: {
     where?: ApplicationWhereInput;
     orderBy?: Record<string, 'asc' | 'desc'> | Record<string, 'asc' | 'desc'>[];
+    take?: number;
   }): Promise<OfferPersistenceRecord[]>;
   updateMany(args: {
     data: OfferUpdateInput;

@@ -13,8 +13,11 @@ import { Roles } from '../../../auth/decorators/roles.decorator';
 import type { GatewayAuthenticatedUser } from '../../../auth/types/gateway-auth.types';
 import { AtsBoardQueryDto } from './dto/ats-board-query.dto';
 import { EmployerApplicationsQueryDto } from './dto/employer-applications-query.dto';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { UpdateApplicationStatusRequestDto } from './dto/update-application-status.request.dto';
 
+@ApiTags('Applications')
+@ApiBearerAuth()
 @Controller()
 @Roles('employer')
 export class EmployerApplicationsController {

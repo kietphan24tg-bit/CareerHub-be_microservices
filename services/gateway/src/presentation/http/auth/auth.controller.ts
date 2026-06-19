@@ -11,6 +11,8 @@ import {
   Res,
   UnauthorizedException
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { ApiTags } from '@nestjs/swagger';
 import { GatewayAuthService } from '../../../application/auth/gateway-auth.service';
 import { CurrentUser } from '../../../auth/decorators/current-user.decorator';
 import { Public } from '../../../auth/decorators/public.decorator';
@@ -52,6 +54,13 @@ function validatePasswordConfirmation(
   }
 }
 
+const AUTH_REGISTER_THROTTLE = { medium: { limit: 5, ttl: 60_000 } } as const;
+const AUTH_LOGIN_THROTTLE = { medium: { limit: 10, ttl: 60_000 } } as const;
+const AUTH_PASSWORD_RESET_THROTTLE = { medium: { limit: 5, ttl: 60_000 } } as const;
+const AUTH_REFRESH_THROTTLE = { medium: { limit: 20, ttl: 60_000 } } as const;
+const AUTH_LOGOUT_THROTTLE = { medium: { limit: 30, ttl: 60_000 } } as const;
+
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   private readonly refreshCookieMaxAge: number;
@@ -68,6 +77,7 @@ export class AuthController {
 
   @Post('candidate/register')
   @Public()
+  @Throttle(AUTH_REGISTER_THROTTLE)
   async registerCandidate(
     @Body() dto: CandidateRegisterRequestDto,
     @Headers('x-request-id') requestId?: string
@@ -89,6 +99,7 @@ export class AuthController {
 
   @Post('employer/register')
   @Public()
+  @Throttle(AUTH_REGISTER_THROTTLE)
   async registerEmployer(
     @Body() dto: EmployerRegisterRequestDto,
     @Headers('x-request-id') requestId?: string
@@ -114,6 +125,7 @@ export class AuthController {
   @Post('login')
   @Public()
   @HttpCode(200)
+  @Throttle(AUTH_LOGIN_THROTTLE)
   async login(
     @Body() dto: LoginRequestDto,
     @Headers('x-request-id') requestId: string | undefined,
@@ -140,6 +152,7 @@ export class AuthController {
   @Post('refresh')
   @Public()
   @HttpCode(200)
+  @Throttle(AUTH_REFRESH_THROTTLE)
   async refresh(
     @Req() request: CookieRequest,
     @Headers('x-request-id') requestId: string | undefined,
@@ -166,6 +179,7 @@ export class AuthController {
   @Post('logout')
   @Public()
   @HttpCode(200)
+  @Throttle(AUTH_LOGOUT_THROTTLE)
   async logout(
     @Req() request: CookieRequest,
     @Headers('x-request-id') requestId: string | undefined,
@@ -193,6 +207,7 @@ export class AuthController {
   @Post('forgot-password')
   @Public()
   @HttpCode(200)
+  @Throttle(AUTH_PASSWORD_RESET_THROTTLE)
   async requestPasswordReset(
     @Body() dto: RequestPasswordResetRequestDto,
     @Headers('x-request-id') requestId?: string
@@ -210,6 +225,7 @@ export class AuthController {
   @Post('reset-password')
   @Public()
   @HttpCode(200)
+  @Throttle(AUTH_PASSWORD_RESET_THROTTLE)
   async resetPassword(
     @Body() dto: ResetPasswordRequestDto,
     @Headers('x-request-id') requestId?: string

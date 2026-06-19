@@ -1,10 +1,13 @@
 import { Body, Controller, Delete, Get, Headers, Param, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GatewaySavedJobsService } from '../../../application/saved-jobs/gateway-saved-jobs.service';
 import { CurrentUser } from '../../../auth/decorators/current-user.decorator';
 import { Roles } from '../../../auth/decorators/roles.decorator';
 import type { GatewayAuthenticatedUser } from '../../../auth/types/gateway-auth.types';
 import { SaveJobRequestDto } from './dto/save-job.request.dto';
 
+@ApiTags('Saved Jobs')
+@ApiBearerAuth()
 @Controller('candidate/saved-jobs')
 @Roles('candidate')
 export class SavedJobsController {

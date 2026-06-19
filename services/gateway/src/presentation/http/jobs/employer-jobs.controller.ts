@@ -14,8 +14,11 @@ import { Roles } from '../../../auth/decorators/roles.decorator';
 import type { GatewayAuthenticatedUser } from '../../../auth/types/gateway-auth.types';
 import { CreateJobRequestDto } from './dto/create-job.request.dto';
 import { EmployerJobsQueryDto } from './dto/employer-jobs-query.dto';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { UpdateJobRequestDto } from './dto/update-job.request.dto';
 
+@ApiTags('Jobs')
+@ApiBearerAuth()
 @Controller('employer/jobs')
 @Roles('employer')
 export class EmployerJobsController {

@@ -35,6 +35,11 @@ test('apply to job resolves employer identity from job rpc', async () => {
       async getApplicationCountsByJobIds() {
         throw new Error('unused');
       },
+      async listRecruiterNotes() {
+        return {
+          items: [{ body: 'Bring portfolio review' }]
+        };
+      },
       async listCandidateApplications() {
         throw new Error('unused');
       },
@@ -134,6 +139,11 @@ test('update application status returns mapped application shape', async () => {
       },
       async getApplicationCountsByJobIds() {
         throw new Error('unused');
+      },
+      async listRecruiterNotes() {
+        return {
+          items: [{ body: 'Bring portfolio review' }]
+        };
       },
       async listCandidateApplications() {
         throw new Error('unused');
@@ -383,6 +393,11 @@ test('get candidate application maps interview and offer actions from grpc paylo
       async getApplicationCountsByJobIds() {
         throw new Error('unused');
       },
+      async listRecruiterNotes() {
+        return {
+          items: [{ body: 'Bring portfolio review' }]
+        };
+      },
       async listCandidateApplications() {
         throw new Error('unused');
       },
@@ -570,6 +585,11 @@ test('ats board derives stage context from interview and offer payloads', async 
       },
       async getApplicationCountsByJobIds() {
         throw new Error('unused');
+      },
+      async listRecruiterNotes() {
+        return {
+          items: [{ body: 'Bring portfolio review' }]
+        };
       },
       async listCandidateApplications() {
         throw new Error('unused');

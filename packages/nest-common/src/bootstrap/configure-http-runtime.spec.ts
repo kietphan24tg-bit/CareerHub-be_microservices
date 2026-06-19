@@ -6,7 +6,7 @@ import { Controller, Get, Module } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import { configureHttpRuntime } from '@careerhub/infrastructure';
-import type { RuntimeConfig } from '../config/runtime-config';
+import type { RuntimeConfig } from '@careerhub/infrastructure';
 
 @Controller()
 class TestController {
@@ -27,12 +27,24 @@ class TestController {
 class TestModule {}
 
 const runtimeConfig: RuntimeConfig = {
+    brokerDeadLetterEnabled: false,
+    brokerDeadLetterPrefix: 'dlx',
+    brokerDurable: true,
+    brokerExchangePrefix: 'careerhub',
+    brokerPrefetchCount: 10,
+    brokerQueuePrefix: 'careerhub',
     brokerUrl: undefined,
     databaseUrl: undefined,
+    healthEnabled: true,
+    healthLivenessPath: '/health/live',
+    healthPath: '/health',
+    healthReadinessPath: '/health/ready',
     httpLogEnabled: true,
     logFilePath: undefined,
     logLevel: 'info',
     logPretty: false,
+    metricsEnabled: true,
+    metricsPath: '/metrics',
     nodeEnv: 'test',
     otelEnabled: false,
     otelExporterOtlpEndpoint: undefined,

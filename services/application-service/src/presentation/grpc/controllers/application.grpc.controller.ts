@@ -26,6 +26,8 @@ import {
   type GetApplicationHistoryResponse,
   type GetCandidateApplicationByIdRequest,
   type GetCandidateApplicationByIdResponse,
+  type GetCandidateDashboardDataRequest,
+  type GetCandidateDashboardDataResponse,
   type GetCandidateInterviewRequest,
   type GetCandidateInterviewResponse,
   type GetCandidateOfferRequest,
@@ -84,6 +86,7 @@ import {
   GetApplicationHistoryQueryHandler,
   GetApplicationRelatedDataQueryHandler,
   GetCandidateApplicationByIdQueryHandler,
+  GetCandidateDashboardDataQueryHandler,
   GetCandidateInterviewQueryHandler,
   GetCandidateOfferQueryHandler,
   GetEmployerApplicationByIdQueryHandler,
@@ -123,6 +126,7 @@ import {
   toGrpcOfferDetailMessage
 } from '../mappers/recruitment-message.mapper';
 import {
+  toGrpcCandidateDashboardDataResponse,
   toGrpcEmployerDashboardRecruitmentDataResponse,
   toGrpcRecruiterNoteMessage
 } from '../mappers/employer-dashboard-message.mapper';
@@ -144,6 +148,7 @@ export class ApplicationGrpcController {
     private readonly getApplicationHistoryQueryHandler: GetApplicationHistoryQueryHandler,
     private readonly getApplicationRelatedDataQueryHandler: GetApplicationRelatedDataQueryHandler,
     private readonly getCandidateApplicationByIdQueryHandler: GetCandidateApplicationByIdQueryHandler,
+    private readonly getCandidateDashboardDataQueryHandler: GetCandidateDashboardDataQueryHandler,
     private readonly getCandidateInterviewQueryHandler: GetCandidateInterviewQueryHandler,
     private readonly getCandidateOfferQueryHandler: GetCandidateOfferQueryHandler,
     private readonly getEmployerApplicationByIdQueryHandler: GetEmployerApplicationByIdQueryHandler,
@@ -745,6 +750,22 @@ export class ApplicationGrpcController {
       });
 
       return toGrpcEmployerDashboardRecruitmentDataResponse(data);
+    } catch (error) {
+      throw mapErrorToApplicationGrpcException(error);
+    }
+  }
+
+  @GrpcMethod(APPLICATION_GRPC_SERVICE_NAME, 'GetCandidateDashboardData')
+  async getCandidateDashboardData(
+    request: GetCandidateDashboardDataRequest
+  ): Promise<GetCandidateDashboardDataResponse> {
+    try {
+      const data = await this.getCandidateDashboardDataQueryHandler.execute({
+        candidateIdentityId: request.candidate_identity_id,
+        localDate: request.local_date
+      });
+
+      return toGrpcCandidateDashboardDataResponse(data);
     } catch (error) {
       throw mapErrorToApplicationGrpcException(error);
     }

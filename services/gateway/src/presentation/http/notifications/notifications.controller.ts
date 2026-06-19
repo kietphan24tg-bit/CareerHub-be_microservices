@@ -1,8 +1,11 @@
 import { Controller, Get, Headers, Param, Patch } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { GatewayNotificationsService } from '../../../application/notifications/gateway-notifications.service';
 import { CurrentUser } from '../../../auth/decorators/current-user.decorator';
 import type { GatewayAuthenticatedUser } from '../../../auth/types/gateway-auth.types';
 
+@ApiTags('Notifications')
+@ApiBearerAuth()
 @Controller('notifications')
 export class NotificationsController {
   constructor(private readonly gatewayNotificationsService: GatewayNotificationsService) {}

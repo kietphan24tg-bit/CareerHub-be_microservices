@@ -24,6 +24,8 @@ import {
 
   ApplyToJobCommandHandler,
 
+  CandidateDashboardOperations,
+
   CancelInterviewCommandHandler,
 
   ConfirmInterviewCommandHandler,
@@ -49,6 +51,8 @@ import {
   GetApplicationRelatedDataQueryHandler,
 
   GetCandidateApplicationByIdQueryHandler,
+
+  GetCandidateDashboardDataQueryHandler,
 
   GetCandidateInterviewQueryHandler,
 
@@ -786,6 +790,28 @@ import { ApplicationGrpcController } from './presentation';
 
     {
 
+      provide: CandidateDashboardOperations,
+
+      inject: [
+
+        APPLICATION_PORT_TOKENS.applicationRepository,
+
+        APPLICATION_PORT_TOKENS.recruitmentRepository
+
+      ],
+
+      useFactory: (
+
+        applicationRepository: PrismaApplicationRepository,
+
+        recruitmentRepository: PrismaRecruitmentRepository
+
+      ) => new CandidateDashboardOperations(applicationRepository, recruitmentRepository)
+
+    },
+
+    {
+
       provide: EmployerDashboardOperations,
 
       inject: [
@@ -825,6 +851,18 @@ import { ApplicationGrpcController } from './presentation';
         idGenerator: UuidIdGenerator
 
       ) => new RecruiterNoteOperations(applicationRepository, idGenerator)
+
+    },
+
+    {
+
+      provide: GetCandidateDashboardDataQueryHandler,
+
+      inject: [CandidateDashboardOperations],
+
+      useFactory: (candidateDashboardOperations: CandidateDashboardOperations) =>
+
+        new GetCandidateDashboardDataQueryHandler(candidateDashboardOperations)
 
     },
 

@@ -31,6 +31,8 @@ import type {
   GetApplicationHistoryResponse,
   GetCandidateApplicationByIdRequest,
   GetCandidateApplicationByIdResponse,
+  GetCandidateDashboardDataRequest,
+  GetCandidateDashboardDataResponse,
   GetCandidateInterviewRequest,
   GetCandidateInterviewResponse,
   GetCandidateOfferRequest,
@@ -121,6 +123,14 @@ type ApplicationGrpcServiceClient = {
     callback: (
       error: ServiceError | null,
       response: GetCandidateApplicationByIdResponse
+    ) => void
+  ): ClientUnaryCall;
+  GetCandidateDashboardData(
+    request: GetCandidateDashboardDataRequest,
+    metadata: Metadata,
+    callback: (
+      error: ServiceError | null,
+      response: GetCandidateDashboardDataResponse
     ) => void
   ): ClientUnaryCall;
   ListJobApplications(
@@ -519,6 +529,19 @@ export class ApplicationGrpcClient {
       (client, payload, metadata, callback) =>
         client.GetCandidateApplicationById(payload, metadata, callback),
       grpcRequest,
+      requestId
+    );
+  }
+
+  async getCandidateDashboardData(
+    request: GetCandidateDashboardDataRequest,
+    requestId?: string
+  ): Promise<GetCandidateDashboardDataResponse> {
+    return this.invokeUnary(
+      'GetCandidateDashboardData',
+      (client, payload, metadata, callback) =>
+        client.GetCandidateDashboardData(payload, metadata, callback),
+      this.withRequestId(request, requestId),
       requestId
     );
   }

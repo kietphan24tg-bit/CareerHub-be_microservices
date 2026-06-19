@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Headers, Param, Patch, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { GatewayRecruiterNotesService } from '../../../application/recruiter-notes/gateway-recruiter-notes.service';
@@ -14,6 +15,8 @@ class RecruiterNoteWriteDto {
   body!: string;
 }
 
+@ApiTags('Recruiter Notes')
+@ApiBearerAuth()
 @Controller()
 @Roles('employer')
 export class EmployerRecruiterNotesController {

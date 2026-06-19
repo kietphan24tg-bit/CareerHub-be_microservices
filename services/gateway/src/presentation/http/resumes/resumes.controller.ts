@@ -10,6 +10,7 @@ import {
   Res,
   StreamableFile
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GatewayResumeExportService } from '../../../application/resumes/gateway-resume-export.service';
 import { GatewayResumesService } from '../../../application/resumes/gateway-resumes.service';
 import { buildResumeContentFromDto } from '../../../application/resumes/resume-content.parser';
@@ -26,6 +27,8 @@ type PdfResponse = {
   setHeader: (name: string, value: string) => void;
 };
 
+@ApiTags('Resumes')
+@ApiBearerAuth()
 @Controller('candidate/resumes')
 @Roles('candidate')
 export class ResumesController {

@@ -631,6 +631,59 @@ export type GetEmployerDashboardRecruitmentDataResponse = {
   summary: EmployerDashboardRecruitmentSummaryMessage;
 };
 
+export type CandidateDashboardRecentApplicationItemMessage = {
+  application_id: string;
+  applied_at: string;
+  employer_identity_id: string;
+  job_id: string;
+  status: string;
+  updated_at: string;
+};
+
+export type CandidateDashboardUpcomingInterviewItemMessage = {
+  application_id: string;
+  date: string;
+  employer_identity_id: string;
+  id: string;
+  job_id: string;
+  round: string;
+  start_time: string;
+  status: string;
+  type: string;
+};
+
+export type CandidateDashboardActiveOfferItemMessage = {
+  application_id: string;
+  currency: string;
+  employer_identity_id: string;
+  expires_at: string;
+  id: string;
+  job_id: string;
+  salary: string;
+  sent_at: string;
+  status: string;
+  title: string;
+};
+
+export type CandidateDashboardSummaryMessage = {
+  active_interviews: number;
+  active_offers: number;
+  total_applications: number;
+};
+
+export type GetCandidateDashboardDataRequest = {
+  candidate_identity_id: string;
+  local_date: string;
+  request_id?: string;
+};
+
+export type GetCandidateDashboardDataResponse = {
+  active_offers: CandidateDashboardActiveOfferItemMessage[];
+  recent_applications: CandidateDashboardRecentApplicationItemMessage[];
+  summary: CandidateDashboardSummaryMessage;
+  upcoming_interviews: CandidateDashboardUpcomingInterviewItemMessage[];
+};
+
 export type RecruiterNoteMessage = {
   application_id: string;
   author_identity_id: string;

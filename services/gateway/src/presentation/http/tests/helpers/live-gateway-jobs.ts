@@ -85,6 +85,22 @@ export async function listPublicJobs(requestId: string): Promise<SuccessEnvelope
   return body;
 }
 
+export async function searchPublicJobs(input: {
+  keyword: string;
+  requestId: string;
+}): Promise<SuccessEnvelope<JobListResponse>> {
+  const params = new URLSearchParams({ keyword: input.keyword });
+  const { body, response } = await requestJson<SuccessEnvelope<JobListResponse>>(
+    `/jobs?${params.toString()}`,
+    {
+      headers: { 'x-request-id': input.requestId }
+    }
+  );
+
+  assert.equal(response.status, 200);
+  return body;
+}
+
 export async function listEmployerJobs(input: {
   accessToken: string;
   requestId: string;

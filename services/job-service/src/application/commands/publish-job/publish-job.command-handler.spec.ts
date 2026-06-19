@@ -33,15 +33,22 @@ const publishedJob = {
   updatedAt: new Date('2026-01-02T00:00:00.000Z')
 };
 
+const stubOutboxRepository = { create: async () => {} } as never;
+const stubIdGenerator = { generate: () => 'id-1' } as never;
+
 test('publish job transitions draft to published', async () => {
-  const handler = new PublishJobCommandHandler({
-    async findByIdAndEmployer() {
-      return { ...publishedJob, status: 'draft' };
-    },
-    async saveStatus() {
-      return publishedJob;
-    }
-  } as never);
+  const handler = new PublishJobCommandHandler(
+    {
+      async findByIdAndEmployer() {
+        return { ...publishedJob, status: 'draft' };
+      },
+      async saveStatus() {
+        return publishedJob;
+      }
+    } as never,
+    stubOutboxRepository,
+    stubIdGenerator
+  );
 
   const result = await handler.execute({
     employerIdentityId: 'employer-1',
@@ -52,11 +59,15 @@ test('publish job transitions draft to published', async () => {
 });
 
 test('publish job rejects invalid transition', async () => {
-  const handler = new PublishJobCommandHandler({
-    async findByIdAndEmployer() {
-      return { ...publishedJob, status: 'archived' as const };
-    }
-  } as never);
+  const handler = new PublishJobCommandHandler(
+    {
+      async findByIdAndEmployer() {
+        return { ...publishedJob, status: 'archived' as const };
+      }
+    } as never,
+    stubOutboxRepository,
+    stubIdGenerator
+  );
 
   await assert.rejects(
     () =>

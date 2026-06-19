@@ -45,6 +45,15 @@ test('creates an employer profile successfully', async () => {
     profileId: 'employer-profile-1'
   });
   assert.equal(savedProfiles.length, 1);
+  assert.deepEqual(savedProfiles[0], {
+    address: '123 Street',
+    companyName: 'CareerHub',
+    contactName: 'Employer User',
+    contactPhone: '0987654321',
+    id: 'employer-profile-1',
+    identityId: 'identity-1',
+    industry: 'technology'
+  });
 });
 
 test('fails when profile already exists for identity', async () => {

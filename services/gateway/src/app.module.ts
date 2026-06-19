@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import {
   InMemoryMetricsRegistry,
   type MetricsRegistry
@@ -44,6 +45,7 @@ import { ResumesController } from './presentation/http/resumes/resumes.controlle
 import { EmployerJobsController } from './presentation/http/jobs/employer-jobs.controller';
 import { PublicJobsController } from './presentation/http/jobs/public-jobs.controller';
 import { CandidateApplicationsController } from './presentation/http/applications/candidate-applications.controller';
+import { CandidateDashboardController } from './presentation/http/dashboard/candidate-dashboard.controller';
 import { EmployerApplicationsController } from './presentation/http/applications/employer-applications.controller';
 import { CandidateInterviewsController } from './presentation/http/interviews/candidate-interviews.controller';
 import { EmployerInterviewsController } from './presentation/http/interviews/employer-interviews.controller';
@@ -114,6 +116,7 @@ function resolveGrpcProtoPath(
     AuthController,
     CandidateProfilesController,
     CandidateApplicationsController,
+    CandidateDashboardController,
     CandidateInterviewsController,
     CandidateOffersController,
     CompanyProfilesController,
@@ -129,7 +132,30 @@ function resolveGrpcProtoPath(
     SavedJobsController,
     GatewayController
   ],
-  imports: [createRuntimeConfigModule({ validate: validateGatewayEnvironment })],
+  imports: [
+    createRuntimeConfigModule({ validate: validateGatewayEnvironment }),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (
+        configService: ConfigService<GatewayEnvironmentVariables, true>
+      ) => {
+        const gatewayRuntimeConfig = getGatewayRuntimeConfig(configService);
+
+        return [
+          {
+            name: 'short',
+            ttl: gatewayRuntimeConfig.throttleShortTtlMs,
+            limit: gatewayRuntimeConfig.throttleShortLimit
+          },
+          {
+            name: 'medium',
+            ttl: gatewayRuntimeConfig.throttleMediumTtlMs,
+            limit: gatewayRuntimeConfig.throttleMediumLimit
+          }
+        ];
+      }
+    })
+  ],
   providers: [
     GatewayAuthService,
     GatewayProfileService,
@@ -159,6 +185,10 @@ function resolveGrpcProtoPath(
     {
       provide: GATEWAY_METRICS_TOKENS.registry,
       useFactory: (): MetricsRegistry => new InMemoryMetricsRegistry()
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard
     },
     {
       provide: APP_GUARD,

@@ -616,6 +616,24 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
     });
   }
 
+  async countCandidateInterviewsByStatuses(
+    candidateIdentityId: string,
+    localDate: string,
+    statuses: string[]
+  ): Promise<number> {
+    return this.prismaClient.interview.count({
+      where: {
+        candidateIdentityId,
+        date: {
+          gte: localDate
+        },
+        status: {
+          in: statuses
+        }
+      }
+    });
+  }
+
   async listEmployerInterviewsForDate(
     employerIdentityId: string,
     localDate: string,
@@ -635,5 +653,55 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
     });
 
     return records.map(mapInterviewRecord);
+  }
+
+  async listCandidateUpcomingInterviews(
+    candidateIdentityId: string,
+    localDate: string,
+    statuses: string[],
+    limit: number
+  ): Promise<ApplicationInterviewRecord[]> {
+    const records = await this.prismaClient.interview.findMany({
+      orderBy: [{ date: 'asc' }, { startTime: 'asc' }, { createdAt: 'desc' }],
+      take: limit,
+      where: {
+        candidateIdentityId,
+        date: {
+          gte: localDate
+        },
+        status: {
+          in: statuses
+        }
+      }
+    });
+
+    return records.map(mapInterviewRecord);
+  }
+
+  async listCandidateActiveOffers(
+    candidateIdentityId: string,
+    statuses: string[],
+    limit: number
+  ): Promise<ApplicationOfferRecord[]> {
+    const records = await this.prismaClient.jobOffer.findMany({
+      orderBy: [{ sentAt: 'desc' }, { createdAt: 'desc' }],
+      take: limit,
+      where: {
+        candidateIdentityId,
+        deletedAt: null,
+        status: {
+          in: statuses
+        }
+      }
+    });
+
+    const offers: ApplicationOfferRecord[] = [];
+
+    for (const record of records) {
+      const benefits = await this.loadOfferBenefits(record.id);
+      offers.push(mapOfferRecord(record, benefits));
+    }
+
+    return offers;
   }
 }

@@ -1,6 +1,7 @@
 import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import { ApplicationGrpcClient } from '../../infrastructure/transport/grpc/application-grpc.client';
 import { CandidateGrpcClient } from '../../infrastructure/transport/grpc/candidate-grpc.client';
+import { CommunicationGrpcClient } from '../../infrastructure/transport/grpc/communication-grpc.client';
 import { EmployerGrpcClient } from '../../infrastructure/transport/grpc/employer-grpc.client';
 import { JobGrpcClient } from '../../infrastructure/transport/grpc/job-grpc.client';
 
@@ -34,9 +35,86 @@ export class GatewayDashboardService {
   constructor(
     private readonly applicationGrpcClient: ApplicationGrpcClient,
     private readonly candidateGrpcClient: CandidateGrpcClient,
+    private readonly communicationGrpcClient: CommunicationGrpcClient,
     private readonly employerGrpcClient: EmployerGrpcClient,
     private readonly jobGrpcClient: JobGrpcClient
   ) {}
+
+  async getCandidateDashboard(input: { identityId: string; requestId?: string }) {
+    const localDate = resolveLocalDate();
+    const [dashboardData, savedJobs, notifications] = await Promise.all([
+      this.applicationGrpcClient.getCandidateDashboardData(
+        {
+          candidate_identity_id: input.identityId,
+          local_date: localDate
+        },
+        input.requestId
+      ),
+      this.candidateGrpcClient.listSavedJobsByIdentityId(
+        { identity_id: input.identityId },
+        input.requestId
+      ),
+      this.communicationGrpcClient.listNotifications(
+        { identity_id: input.identityId },
+        input.requestId
+      )
+    ]);
+
+    const jobIds = new Set<string>();
+
+    for (const item of dashboardData.recent_applications ?? []) {
+      jobIds.add(item.job_id);
+    }
+
+    for (const item of dashboardData.upcoming_interviews ?? []) {
+      jobIds.add(item.job_id);
+    }
+
+    for (const item of dashboardData.active_offers ?? []) {
+      jobIds.add(item.job_id);
+    }
+
+    const jobsLookup = await this.loadJobsLookup([...jobIds], input.requestId);
+
+    return {
+      activeOffers: (dashboardData.active_offers ?? []).map((offer) => ({
+        applicationId: offer.application_id,
+        expiresAt: offer.expires_at || null,
+        id: offer.id,
+        jobId: offer.job_id,
+        jobTitle: jobsLookup.get(offer.job_id)?.title ?? 'Job',
+        salary: offer.salary,
+        sentAt: offer.sent_at || null,
+        status: offer.status
+      })),
+      recentApplications: (dashboardData.recent_applications ?? []).map((application) => ({
+        applicationId: application.application_id,
+        appliedAt: application.applied_at,
+        id: application.application_id,
+        jobId: application.job_id,
+        jobTitle: jobsLookup.get(application.job_id)?.title ?? 'Job',
+        status: application.status,
+        updatedAt: application.updated_at
+      })),
+      summary: {
+        activeInterviews: dashboardData.summary?.active_interviews ?? 0,
+        activeOffers: dashboardData.summary?.active_offers ?? 0,
+        savedJobs: savedJobs.saved_jobs?.length ?? 0,
+        totalApplications: dashboardData.summary?.total_applications ?? 0,
+        unreadNotifications: notifications.unread_count ?? 0
+      },
+      upcomingInterviews: (dashboardData.upcoming_interviews ?? []).map((interview) => ({
+        applicationId: interview.application_id,
+        date: interview.date || null,
+        id: interview.id,
+        jobId: interview.job_id,
+        jobTitle: jobsLookup.get(interview.job_id)?.title ?? 'Job',
+        startTime: interview.start_time || null,
+        status: interview.status,
+        type: interview.type
+      }))
+    };
+  }
 
   async getEmployerDashboard(input: { identityId: string; requestId?: string }) {
     await this.ensureCompanyProfile(input.identityId, input.requestId);

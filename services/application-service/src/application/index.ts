@@ -19,6 +19,7 @@ export * from './errors/recruiter-note-not-found.error';
 export * from './ports';
 export * from './queries';
 export * from './services/application-operations.service';
+export * from './services/candidate-dashboard-operations.service';
 export * from './services/employer-dashboard-operations.service';
 export * from './services/interview-operations.service';
 export * from './services/offer-operations.service';

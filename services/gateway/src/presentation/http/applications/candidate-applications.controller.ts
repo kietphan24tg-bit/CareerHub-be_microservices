@@ -11,9 +11,12 @@ import { GatewayApplicationsService } from '../../../application/applications/ga
 import { CurrentUser } from '../../../auth/decorators/current-user.decorator';
 import { Roles } from '../../../auth/decorators/roles.decorator';
 import type { GatewayAuthenticatedUser } from '../../../auth/types/gateway-auth.types';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ApplyToJobRequestDto } from './dto/apply-to-job.request.dto';
 import { CandidateApplicationsQueryDto } from './dto/candidate-applications-query.dto';
 
+@ApiTags('Applications')
+@ApiBearerAuth()
 @Controller()
 @Roles('candidate')
 export class CandidateApplicationsController {

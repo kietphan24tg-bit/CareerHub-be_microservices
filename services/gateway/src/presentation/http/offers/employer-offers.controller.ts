@@ -16,7 +16,10 @@ import {
   CreateOfferRequestDto,
   UpdateOfferRequestDto
 } from './dto/offer-write.request.dto';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('Offers')
+@ApiBearerAuth()
 @Controller()
 @Roles('employer')
 export class EmployerOffersController {
