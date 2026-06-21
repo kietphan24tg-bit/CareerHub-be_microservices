@@ -9,6 +9,9 @@ coverage/
 **/src/generated/
 
 .env
+.env.prod
+.env.prod.*
+!.env.prod.example
 .env.local
 .env.*.local
 

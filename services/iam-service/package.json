@@ -41,6 +41,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy --schema ./prisma/schema.prisma",
     "prisma:migrate:dev": "prisma migrate dev --schema ./prisma/schema.prisma",
     "start": "node dist/services/iam-service/src/main.js",
-    "test": "powershell -Command \"if (Test-Path dist-test) { Remove-Item -Recurse -Force dist-test }; & ..\\..\\node_modules\\.bin\\tsc.cmd -p tsconfig.spec.json; node --test dist-test/**/*.spec.js\""
+    "test": "pnpm run prisma:generate && node ../../scripts/run-service-tests.mjs --service services/iam-service --mode unit",
+    "test:smoke": "pnpm run prisma:generate && node ../../scripts/run-service-tests.mjs --service services/iam-service --mode smoke --include request-password-reset.command-handler.spec.js --include iam-password-reset-mail.consumer.spec.js"
   }
 }

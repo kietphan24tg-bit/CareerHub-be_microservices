@@ -37,6 +37,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy --schema ./prisma/schema.prisma",
     "prisma:migrate:dev": "prisma migrate dev --schema ./prisma/schema.prisma",
     "start": "node dist/services/communication-service/src/main.js",
-    "test": "powershell -Command \"if (Test-Path dist-test) { Remove-Item -Recurse -Force dist-test }; & ..\\..\\node_modules\\.bin\\tsc.cmd -p tsconfig.spec.json; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; node --test dist-test/**/*.spec.js\""
+    "test": "pnpm run prisma:generate && node ../../scripts/run-service-tests.mjs --service services/communication-service --mode unit",
+    "test:smoke": "pnpm run prisma:generate && node ../../scripts/run-service-tests.mjs --service services/communication-service --mode smoke --include communication-notification.consumer.spec.js"
   }
 }

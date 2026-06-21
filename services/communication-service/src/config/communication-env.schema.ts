@@ -71,7 +71,12 @@ export function validateCommunicationEnvironment(
         : typeof config.MAIL_PORT === 'string' && Number.isFinite(Number(config.MAIL_PORT))
           ? Number(config.MAIL_PORT)
           : undefined,
-    MAIL_SECURE: config.MAIL_SECURE === true,
+    MAIL_SECURE:
+      typeof config.MAIL_SECURE === 'boolean'
+        ? config.MAIL_SECURE
+        : typeof config.MAIL_SECURE === 'string'
+          ? config.MAIL_SECURE.trim().toLowerCase() === 'true'
+          : undefined,
     MAIL_USER: typeof config.MAIL_USER === 'string' ? config.MAIL_USER : undefined,
     NOTIFICATION_MAX_RETRIES:
       typeof config.NOTIFICATION_MAX_RETRIES === 'number'

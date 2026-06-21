@@ -1,0 +1,8 @@
+node_modules/
+src/
+dist-test/
+*.spec.ts
+*.spec.js
+*.spec.d.ts
+tsconfig.json
+tsconfig.spec.json

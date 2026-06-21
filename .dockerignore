@@ -1,0 +1,24 @@
+# Git
+.git/
+.gitignore
+
+# Build artifacts (rebuilt inside Docker)
+**/dist/
+**/dist-test/
+**/coverage/
+**/.turbo/
+**/.cache/
+**/node_modules/
+
+# Env files (injected at runtime, never baked into images)
+**/.env
+**/.env.*
+!**/.env.example
+
+# Logs and temp files
+**/tmp/
+**/*.log
+
+# OS artifacts
+**/.DS_Store
+**/Thumbs.db

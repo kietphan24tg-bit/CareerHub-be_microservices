@@ -1,0 +1,277 @@
+x-shared-env: &shared-env
+  NODE_ENV: ${NODE_ENV:-production}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  LOG_PRETTY: ${LOG_PRETTY:-false}
+  OTEL_ENABLED: ${OTEL_ENABLED:-true}
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+  OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-}
+  HEALTH_ENABLED: ${HEALTH_ENABLED:-true}
+  METRICS_ENABLED: ${METRICS_ENABLED:-true}
+  HTTP_LOG_ENABLED: ${HTTP_LOG_ENABLED:-true}
+  BROKER_URL: ${BROKER_URL:?set BROKER_URL}
+  BROKER_EXCHANGE_PREFIX: ${BROKER_EXCHANGE_PREFIX:?set BROKER_EXCHANGE_PREFIX}
+  BROKER_QUEUE_PREFIX: ${BROKER_QUEUE_PREFIX:?set BROKER_QUEUE_PREFIX}
+  BROKER_DEAD_LETTER_PREFIX: ${BROKER_DEAD_LETTER_PREFIX:-dlq}
+  BROKER_DEAD_LETTER_ENABLED: ${BROKER_DEAD_LETTER_ENABLED:-true}
+  BROKER_DURABLE: ${BROKER_DURABLE:-true}
+  BROKER_PREFETCH_COUNT: ${BROKER_PREFETCH_COUNT:-10}
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  networks:
+    - careerhub
+
+services:
+  gateway:
+    <<: *service-defaults
+    image: kietphan24/careerhub-gateway:${IMAGE_TAG:-latest}
+    container_name: careerhub-gateway
+    ports:
+      - "${GATEWAY_HOST_PORT:-3000}:3000"
+    environment:
+      <<: *shared-env
+      SERVICE_NAME: gateway
+      PORT: 3000
+      APP_BASE_URL: ${APP_BASE_URL:-}
+      AUTH_REFRESH_COOKIE_DOMAIN: ${AUTH_REFRESH_COOKIE_DOMAIN:?set AUTH_REFRESH_COOKIE_DOMAIN}
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
+      AUTH_REFRESH_COOKIE_NAME: ${AUTH_REFRESH_COOKIE_NAME:-refresh_token}
+      AUTH_REFRESH_COOKIE_SECURE: ${AUTH_REFRESH_COOKIE_SECURE:-true}
+      GRPC_APPLICATION_URL: ${GRPC_APPLICATION_URL:-application-service:50055}
+      GRPC_CANDIDATE_URL: ${GRPC_CANDIDATE_URL:-candidate-service:50052}
+      GRPC_COMMUNICATION_URL: ${GRPC_COMMUNICATION_URL:-communication-service:50056}
+      GRPC_EMPLOYER_URL: ${GRPC_EMPLOYER_URL:-employer-service:50053}
+      GRPC_IAM_URL: ${GRPC_IAM_URL:-iam-service:50051}
+      GRPC_JOB_URL: ${GRPC_JOB_URL:-job-service:50054}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      RESUME_PRINT_BASE_URL: ${RESUME_PRINT_BASE_URL:-}
+      THROTTLE_MEDIUM_LIMIT: ${THROTTLE_MEDIUM_LIMIT:-100}
+      THROTTLE_MEDIUM_TTL_MS: ${THROTTLE_MEDIUM_TTL_MS:-60000}
+      THROTTLE_SHORT_LIMIT: ${THROTTLE_SHORT_LIMIT:-10}
+      THROTTLE_SHORT_TTL_MS: ${THROTTLE_SHORT_TTL_MS:-1000}
+
+  iam-service:
+    <<: *service-defaults
+    image: kietphan24/careerhub-iam-service:${IMAGE_TAG:-latest}
+    container_name: careerhub-iam-service
+    expose:
+      - "3001"
+      - "50051"
+    environment:
+      <<: *shared-env
+      SERVICE_NAME: iam-service
+      PORT: 3001
+      DATABASE_URL: ${IAM_DATABASE_URL:?set IAM_DATABASE_URL}
+      DIRECT_URL: ${IAM_DIRECT_URL:?set IAM_DIRECT_URL}
+      GRPC_IAM_URL: ${IAM_GRPC_BIND_URL:-0.0.0.0:50051}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      MAIL_FROM_ADDRESS: ${IAM_MAIL_FROM_ADDRESS:?set IAM_MAIL_FROM_ADDRESS}
+      MAIL_FROM_NAME: ${IAM_MAIL_FROM_NAME:-}
+      MAIL_HOST: ${IAM_MAIL_HOST:?set IAM_MAIL_HOST}
+      MAIL_PASSWORD: ${IAM_MAIL_PASSWORD:?set IAM_MAIL_PASSWORD}
+      MAIL_PORT: ${IAM_MAIL_PORT:?set IAM_MAIL_PORT}
+      MAIL_SECURE: ${IAM_MAIL_SECURE:?set IAM_MAIL_SECURE}
+      MAIL_USER: ${IAM_MAIL_USER:?set IAM_MAIL_USER}
+      PASSWORD_RESET_MAIL_CLAIM_TIMEOUT_MS: ${PASSWORD_RESET_MAIL_CLAIM_TIMEOUT_MS:-60000}
+      PASSWORD_RESET_MAIL_MAX_RETRIES: ${PASSWORD_RESET_MAIL_MAX_RETRIES:-3}
+      PASSWORD_RESET_SECRET: ${PASSWORD_RESET_SECRET:?set PASSWORD_RESET_SECRET}
+      PASSWORD_RESET_TOKEN_TTL_MS: ${PASSWORD_RESET_TOKEN_TTL_MS:-900000}
+      RESET_PASSWORD_URL_BASE: ${RESET_PASSWORD_URL_BASE:?set RESET_PASSWORD_URL_BASE}
+      OUTBOX_BACKLOG_INTERVAL_MS: ${IAM_OUTBOX_BACKLOG_INTERVAL_MS:-30000}
+      OUTBOX_BATCH_SIZE: ${IAM_OUTBOX_BATCH_SIZE:-20}
+      OUTBOX_CLEANUP_BATCH_SIZE: ${IAM_OUTBOX_CLEANUP_BATCH_SIZE:-100}
+      OUTBOX_CLEANUP_ENABLED: ${IAM_OUTBOX_CLEANUP_ENABLED:-true}
+      OUTBOX_CLEANUP_INTERVAL_MS: ${IAM_OUTBOX_CLEANUP_INTERVAL_MS:-60000}
+      OUTBOX_FAILED_RETENTION_MS: ${IAM_OUTBOX_FAILED_RETENTION_MS:-2592000000}
+      OUTBOX_MAX_RETRY_COUNT: ${IAM_OUTBOX_MAX_RETRY_COUNT:-5}
+      OUTBOX_POLL_INTERVAL_MS: ${IAM_OUTBOX_POLL_INTERVAL_MS:-5000}
+      OUTBOX_PROCESSED_RETENTION_MS: ${IAM_OUTBOX_PROCESSED_RETENTION_MS:-604800000}
+      OUTBOX_PUBLISH_CONCURRENCY: ${IAM_OUTBOX_PUBLISH_CONCURRENCY:-5}
+      OUTBOX_PUBLISH_ENABLED: ${IAM_OUTBOX_PUBLISH_ENABLED:-true}
+      OUTBOX_RETRY_DELAY_MS: ${IAM_OUTBOX_RETRY_DELAY_MS:-30000}
+      OUTBOX_STALE_PROCESSING_TIMEOUT_MS: ${IAM_OUTBOX_STALE_PROCESSING_TIMEOUT_MS:-60000}
+
+  candidate-service:
+    <<: *service-defaults
+    image: kietphan24/careerhub-candidate-service:${IMAGE_TAG:-latest}
+    container_name: careerhub-candidate-service
+    expose:
+      - "3002"
+      - "50052"
+    environment:
+      <<: *shared-env
+      SERVICE_NAME: candidate-service
+      PORT: 3002
+      DATABASE_URL: ${CANDIDATE_DATABASE_URL:?set CANDIDATE_DATABASE_URL}
+      DIRECT_URL: ${CANDIDATE_DIRECT_URL:?set CANDIDATE_DIRECT_URL}
+      GRPC_CANDIDATE_URL: ${CANDIDATE_GRPC_BIND_URL:-0.0.0.0:50052}
+
+  employer-service:
+    <<: *service-defaults
+    image: kietphan24/careerhub-employer-service:${IMAGE_TAG:-latest}
+    container_name: careerhub-employer-service
+    expose:
+      - "3003"
+      - "50053"
+    environment:
+      <<: *shared-env
+      SERVICE_NAME: employer-service
+      PORT: 3003
+      DATABASE_URL: ${EMPLOYER_DATABASE_URL:?set EMPLOYER_DATABASE_URL}
+      DIRECT_URL: ${EMPLOYER_DIRECT_URL:?set EMPLOYER_DIRECT_URL}
+      GRPC_EMPLOYER_URL: ${EMPLOYER_GRPC_BIND_URL:-0.0.0.0:50053}
+
+  job-service:
+    <<: *service-defaults
+    image: kietphan24/careerhub-job-service:${IMAGE_TAG:-latest}
+    container_name: careerhub-job-service
+    expose:
+      - "3004"
+      - "50054"
+    environment:
+      <<: *shared-env
+      SERVICE_NAME: job-service
+      PORT: 3004
+      DATABASE_URL: ${JOB_DATABASE_URL:?set JOB_DATABASE_URL}
+      DIRECT_URL: ${JOB_DIRECT_URL:?set JOB_DIRECT_URL}
+      GRPC_JOB_URL: ${JOB_GRPC_BIND_URL:-0.0.0.0:50054}
+      MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY:?set MEILISEARCH_API_KEY}
+      MEILISEARCH_HOST: ${MEILISEARCH_HOST:?set MEILISEARCH_HOST}
+      OUTBOX_BACKLOG_INTERVAL_MS: ${JOB_OUTBOX_BACKLOG_INTERVAL_MS:-30000}
+      OUTBOX_BATCH_SIZE: ${JOB_OUTBOX_BATCH_SIZE:-20}
+      OUTBOX_CLEANUP_BATCH_SIZE: ${JOB_OUTBOX_CLEANUP_BATCH_SIZE:-100}
+      OUTBOX_CLEANUP_ENABLED: ${JOB_OUTBOX_CLEANUP_ENABLED:-true}
+      OUTBOX_CLEANUP_INTERVAL_MS: ${JOB_OUTBOX_CLEANUP_INTERVAL_MS:-60000}
+      OUTBOX_MAX_RETRY_COUNT: ${JOB_OUTBOX_MAX_RETRY_COUNT:-5}
+      OUTBOX_POLL_INTERVAL_MS: ${JOB_OUTBOX_POLL_INTERVAL_MS:-5000}
+      OUTBOX_PROCESSED_RETENTION_MS: ${JOB_OUTBOX_PROCESSED_RETENTION_MS:-604800000}
+      OUTBOX_PUBLISH_ENABLED: ${JOB_OUTBOX_PUBLISH_ENABLED:-true}
+      OUTBOX_RETRY_DELAY_MS: ${JOB_OUTBOX_RETRY_DELAY_MS:-30000}
+      OUTBOX_STALE_PROCESSING_TIMEOUT_MS: ${JOB_OUTBOX_STALE_PROCESSING_TIMEOUT_MS:-60000}
+      REDIS_SEARCH_CACHE_TTL_S: ${REDIS_SEARCH_CACHE_TTL_S:-30}
+      REDIS_SLUG_CACHE_TTL_S: ${REDIS_SLUG_CACHE_TTL_S:-300}
+      REDIS_URL: ${REDIS_URL:?set REDIS_URL}
+
+  application-service:
+    <<: *service-defaults
+    image: kietphan24/careerhub-application-service:${IMAGE_TAG:-latest}
+    container_name: careerhub-application-service
+    expose:
+      - "3005"
+      - "50055"
+    environment:
+      <<: *shared-env
+      SERVICE_NAME: application-service
+      PORT: 3005
+      APP_BASE_URL: ${APPLICATION_APP_BASE_URL:?set APPLICATION_APP_BASE_URL}
+      DATABASE_URL: ${APPLICATION_DATABASE_URL:?set APPLICATION_DATABASE_URL}
+      DIRECT_URL: ${APPLICATION_DIRECT_URL:?set APPLICATION_DIRECT_URL}
+      GRPC_APPLICATION_URL: ${APPLICATION_GRPC_BIND_URL:-0.0.0.0:50055}
+      GRPC_JOB_URL: ${APPLICATION_GRPC_JOB_URL:-job-service:50054}
+      OUTBOX_BACKLOG_INTERVAL_MS: ${APPLICATION_OUTBOX_BACKLOG_INTERVAL_MS:-30000}
+      OUTBOX_BATCH_SIZE: ${APPLICATION_OUTBOX_BATCH_SIZE:-20}
+      OUTBOX_CLEANUP_BATCH_SIZE: ${APPLICATION_OUTBOX_CLEANUP_BATCH_SIZE:-100}
+      OUTBOX_CLEANUP_ENABLED: ${APPLICATION_OUTBOX_CLEANUP_ENABLED:-true}
+      OUTBOX_CLEANUP_INTERVAL_MS: ${APPLICATION_OUTBOX_CLEANUP_INTERVAL_MS:-60000}
+      OUTBOX_FAILED_RETENTION_MS: ${APPLICATION_OUTBOX_FAILED_RETENTION_MS:-2592000000}
+      OUTBOX_MAX_RETRY_COUNT: ${APPLICATION_OUTBOX_MAX_RETRY_COUNT:-5}
+      OUTBOX_POLL_INTERVAL_MS: ${APPLICATION_OUTBOX_POLL_INTERVAL_MS:-5000}
+      OUTBOX_PROCESSED_RETENTION_MS: ${APPLICATION_OUTBOX_PROCESSED_RETENTION_MS:-604800000}
+      OUTBOX_PUBLISH_CONCURRENCY: ${APPLICATION_OUTBOX_PUBLISH_CONCURRENCY:-5}
+      OUTBOX_PUBLISH_ENABLED: ${APPLICATION_OUTBOX_PUBLISH_ENABLED:-true}
+      OUTBOX_RETRY_DELAY_MS: ${APPLICATION_OUTBOX_RETRY_DELAY_MS:-30000}
+      OUTBOX_STALE_PROCESSING_TIMEOUT_MS: ${APPLICATION_OUTBOX_STALE_PROCESSING_TIMEOUT_MS:-60000}
+      REDIS_DASHBOARD_CACHE_TTL_S: ${REDIS_DASHBOARD_CACHE_TTL_S:-120}
+      REDIS_URL: ${REDIS_URL:?set REDIS_URL}
+
+  communication-service:
+    <<: *service-defaults
+    image: kietphan24/careerhub-communication-service:${IMAGE_TAG:-latest}
+    container_name: careerhub-communication-service
+    expose:
+      - "3006"
+      - "50056"
+    environment:
+      <<: *shared-env
+      SERVICE_NAME: communication-service
+      PORT: 3006
+      DATABASE_URL: ${COMMUNICATION_DATABASE_URL:?set COMMUNICATION_DATABASE_URL}
+      DIRECT_URL: ${COMMUNICATION_DIRECT_URL:?set COMMUNICATION_DIRECT_URL}
+      GRPC_COMMUNICATION_URL: ${COMMUNICATION_GRPC_BIND_URL:-0.0.0.0:50056}
+      GRPC_IAM_URL: ${COMMUNICATION_GRPC_IAM_URL:-iam-service:50051}
+      MAIL_DELIVERY_CLAIM_TIMEOUT_MS: ${MAIL_DELIVERY_CLAIM_TIMEOUT_MS:-60000}
+      MAIL_FROM_ADDRESS: ${COMMUNICATION_MAIL_FROM_ADDRESS:?set COMMUNICATION_MAIL_FROM_ADDRESS}
+      MAIL_FROM_NAME: ${COMMUNICATION_MAIL_FROM_NAME:-}
+      MAIL_HOST: ${COMMUNICATION_MAIL_HOST:?set COMMUNICATION_MAIL_HOST}
+      MAIL_INTERVIEW_MAX_RETRIES: ${MAIL_INTERVIEW_MAX_RETRIES:-3}
+      MAIL_OFFER_MAX_RETRIES: ${MAIL_OFFER_MAX_RETRIES:-3}
+      MAIL_PASSWORD: ${COMMUNICATION_MAIL_PASSWORD:?set COMMUNICATION_MAIL_PASSWORD}
+      MAIL_PORT: ${COMMUNICATION_MAIL_PORT:?set COMMUNICATION_MAIL_PORT}
+      MAIL_SECURE: ${COMMUNICATION_MAIL_SECURE:?set COMMUNICATION_MAIL_SECURE}
+      MAIL_USER: ${COMMUNICATION_MAIL_USER:?set COMMUNICATION_MAIL_USER}
+      NOTIFICATION_MAX_RETRIES: ${NOTIFICATION_MAX_RETRIES:-3}
+
+  postgres:
+    <<: *service-defaults
+    image: postgres:17-alpine
+    container_name: careerhub-postgres
+    profiles: ["infra"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-careerhub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-careerhub}
+    ports:
+      - "${POSTGRES_HOST_PORT:-55432}:5432"
+    volumes:
+      - careerhub-postgres-data:/var/lib/postgresql/data
+
+  rabbitmq:
+    <<: *service-defaults
+    image: rabbitmq:4-management-alpine
+    container_name: careerhub-rabbitmq
+    profiles: ["infra"]
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-careerhub}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-change-me-rabbitmq}
+    ports:
+      - "${RABBITMQ_HOST_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_HOST_PORT:-15672}:15672"
+    volumes:
+      - careerhub-rabbitmq-data:/var/lib/rabbitmq
+
+  redis:
+    <<: *service-defaults
+    image: redis:7-alpine
+    container_name: careerhub-redis
+    profiles: ["infra"]
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    volumes:
+      - careerhub-redis-data:/data
+
+  meilisearch:
+    <<: *service-defaults
+    image: getmeili/meilisearch:v1.8
+    container_name: careerhub-meilisearch
+    profiles: ["infra"]
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-change-me-meili}
+      MEILI_ENV: production
+    ports:
+      - "${MEILISEARCH_HOST_PORT:-7700}:7700"
+    volumes:
+      - careerhub-meilisearch-data:/meili_data
+
+networks:
+  careerhub:
+    name: careerhub-network
+
+volumes:
+  careerhub-postgres-data:
+  careerhub-rabbitmq-data:
+  careerhub-redis-data:
+  careerhub-meilisearch-data:

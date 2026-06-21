@@ -3,14 +3,30 @@ services:
     image: prom/prometheus:v3.5.0
     container_name: careerhub-prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
+      - /bin/sh
+      - -c
+      - >-
+        sed
+        -e "s|__CLOUDAMQP_PROMETHEUS_SCHEME__|$${CLOUDAMQP_PROMETHEUS_SCHEME}|g"
+        -e "s|__CLOUDAMQP_PROMETHEUS_PATH__|$${CLOUDAMQP_PROMETHEUS_PATH}|g"
+        -e "s|__CLOUDAMQP_PROMETHEUS_USERNAME__|$${CLOUDAMQP_PROMETHEUS_USERNAME}|g"
+        -e "s|__CLOUDAMQP_PROMETHEUS_PASSWORD__|$${CLOUDAMQP_PROMETHEUS_PASSWORD}|g"
+        -e "s|__CLOUDAMQP_PROMETHEUS_TARGET__|$${CLOUDAMQP_PROMETHEUS_TARGET}|g"
+        /etc/prometheus/prometheus.tpl.yml > /tmp/prometheus.yml
+        && exec /bin/prometheus --config.file=/tmp/prometheus.yml
+    environment:
+      CLOUDAMQP_PROMETHEUS_SCHEME: ${CLOUDAMQP_PROMETHEUS_SCHEME:-https}
+      CLOUDAMQP_PROMETHEUS_PATH: ${CLOUDAMQP_PROMETHEUS_PATH:-/metrics/detailed}
+      CLOUDAMQP_PROMETHEUS_USERNAME: ${CLOUDAMQP_PROMETHEUS_USERNAME:-}
+      CLOUDAMQP_PROMETHEUS_PASSWORD: ${CLOUDAMQP_PROMETHEUS_PASSWORD:-}
+      CLOUDAMQP_PROMETHEUS_TARGET: ${CLOUDAMQP_PROMETHEUS_TARGET:-}
     ports:
       - '9092:9090'
     restart: unless-stopped
+    networks:
+      - careerhub
     volumes:
-      - ./infrastructure/observability/stack/prometheus/prometheus.generated.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infrastructure/observability/stack/prometheus/prometheus.cloudamqp.yml.template:/etc/prometheus/prometheus.tpl.yml:ro
 
   loki:
     image: grafana/loki:3.5.3
@@ -20,6 +36,8 @@ services:
     ports:
       - '3100:3100'
     restart: unless-stopped
+    networks:
+      - careerhub
     volumes:
       - ./infrastructure/observability/stack/loki/loki-config.yml:/etc/loki/config.yml:ro
 
@@ -28,9 +46,9 @@ services:
     container_name: careerhub-promtail
     command:
       - '-config.file=/etc/promtail/config.yml'
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
     restart: unless-stopped
+    networks:
+      - careerhub
     volumes:
       - ./infrastructure/observability/stack/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
       - ./tmp/logs:/var/log/careerhub:ro
@@ -45,6 +63,8 @@ services:
       - '4317:4317'
       - '4318:4318'
     restart: unless-stopped
+    networks:
+      - careerhub
     volumes:
       - ./infrastructure/observability/stack/tempo/tempo.yml:/etc/tempo/config.yml:ro
 
@@ -67,6 +87,13 @@ services:
     ports:
       - '3300:3000'
     restart: unless-stopped
+    networks:
+      - careerhub
     volumes:
       - ./infrastructure/observability/stack/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./infrastructure/observability/stack/grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+networks:
+  careerhub:
+    external: true
+    name: careerhub-network

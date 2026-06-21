@@ -71,8 +71,8 @@ These topologies should exist after startup:
 Useful commands:
 
 ```bash
-rabbitmqadmin list queues name messages
-rabbitmqadmin list exchanges name type
+rabbitmqadmin list queues name durable messages arguments
+rabbitmqadmin list exchanges name type durable
 ```
 
 Code references:
@@ -96,11 +96,16 @@ This matters because RabbitMQ does not let you mutate queue TTL or dead-letter a
 
 These must be true for the producer side:
 
-- [ ] `application-service` writes business state and outbox record in the same DB transaction
-- [ ] notification events are published by outbox worker, not inline from HTTP/gRPC handler path
-- [ ] outbox worker marks records `processed` on success
-- [ ] outbox worker increments retry and schedules next attempt on publish failure
-- [ ] processed outbox retention and cleanup are enabled as intended
+- [x] `application-service` writes business state and outbox record in the same DB transaction
+  > Verified: `prisma-application-write-transaction.ts` wraps `applicationRepository`, `outboxRepository`, and `recruitmentRepository` in a single `prisma.transaction()` call.
+- [x] notification events are published by outbox worker, not inline from HTTP/gRPC handler path
+  > Verified: `application-outbox.processor.ts` polls via `setInterval` in `onModuleInit`. No inline publish in HTTP/gRPC handlers.
+- [x] outbox worker marks records `processed` on success
+  > Verified: `outbox.processor.ts` -> `publishClaimedRecord` -> `markProcessed(record.id, new Date())` on success.
+- [x] outbox worker increments retry and schedules next attempt on publish failure
+  > Verified: `buildFailureRecord` returns `retryCount + 1` and `nextRetryAt` with exponential backoff (`retryDelayMs * 2^(retryCount-1)`).
+- [x] processed outbox retention and cleanup are enabled as intended
+  > Verified: `runCleanupCycle` deletes `processed` records older than `outboxProcessedRetentionMs` and `failed` records older than `outboxFailedRetentionMs`.
 
 Code references:
 
@@ -111,10 +116,14 @@ Code references:
 
 ### Communication consumer
 
-- [ ] malformed payload is acknowledged
-- [ ] unsupported payload is acknowledged
-- [ ] valid processing failure is parked in DLQ when DLQ is enabled
-- [ ] valid processing failure does not requeue forever in production mode
+- [x] malformed payload is acknowledged
+  > Verified: JSON parse error path -> `channel.ack(message)`, reason=`malformed_payload`.
+- [x] unsupported payload is acknowledged
+  > Verified: `!isNotificationRequestedEvent(parsed)` path -> `channel.ack(message)`, reason=`unsupported_payload`.
+- [x] valid processing failure is parked in DLQ when DLQ is enabled
+  > Verified: when `brokerDeadLetterEnabled=true` and retries exhausted -> `channel.nack(message, false, false)` (requeue=false, sent to DLX).
+- [x] valid processing failure does not requeue forever in production mode
+  > Verified: when `brokerDeadLetterEnabled=true`, nack uses `requeue=false`. Infinite requeue only occurs when DLQ is explicitly disabled (dev mode).
 
 Reference:
 
@@ -122,12 +131,18 @@ Reference:
 
 ### IAM mail consumer
 
-- [ ] malformed payload is acknowledged
-- [ ] unsupported payload is acknowledged
-- [ ] duplicate or in-flight token is acknowledged
-- [ ] transient mail failures go through bounded retry
-- [ ] exhausted retries end in DLQ when DLQ is enabled
-- [ ] configuration errors end in DLQ when DLQ is enabled
+- [x] malformed payload is acknowledged
+  > Verified: JSON parse error path -> `channel.ack(message)`, reason=`malformed_payload`.
+- [x] unsupported payload is acknowledged
+  > Verified: `!isPasswordResetRequestedEvent(parsed)` path -> `channel.ack(message)`, reason=`unsupported_payload`.
+- [x] duplicate or in-flight token is acknowledged
+  > Verified: `!claimed` path (token already being processed) -> `channel.ack(message)`, reason=`duplicate_or_in_flight`.
+- [x] transient mail failures go through bounded retry
+  > Verified: `retryCount < maxRetryCount` -> `publishToRabbitMqRetryQueue` to TTL retry queue -> `channel.ack(message)`.
+- [x] exhausted retries end in DLQ when DLQ is enabled
+  > Verified: `retryCount >= maxRetryCount` + `brokerDeadLetterEnabled=true` -> `channel.nack(message, false, false)`.
+- [x] configuration errors end in DLQ when DLQ is enabled
+  > Verified: `MailConfigurationError` catch + `brokerDeadLetterEnabled=true` -> `channel.nack(message, false, false)`, reason=`dead_lettered`.
 
 Reference:
 
@@ -135,7 +150,7 @@ Reference:
 
 ## 6. Manual Verification Sign-Off
 
-Run these checks in a non-prod environment:
+Run these checks against CloudAMQP (or a production-like environment with `BROKER_DEAD_LETTER_ENABLED=true`).
 
 - [ ] Trigger one notification event that succeeds end-to-end
 - [ ] Force one valid notification event to fail and confirm it reaches `dlq.communication.notifications`
@@ -145,10 +160,94 @@ Run these checks in a non-prod environment:
 - [ ] Replay one communication DLQ message successfully
 - [ ] Replay one IAM mail DLQ message successfully
 
-Local live-test note:
+### Operator setup
 
-- Password reset live verification now uses an in-process SMTP sink in the gateway test harness instead of MailHog.
-- If `iam.password-reset-mail` was redeclared with older queue arguments, delete the stale queue before rerunning live verification.
+Export your topology prefixes once before running the checks:
+
+```bash
+export BROKER_QUEUE_PREFIX="<queue-prefix>"
+export BROKER_EXCHANGE_PREFIX="<exchange-prefix>"
+export BROKER_DEAD_LETTER_PREFIX="${BROKER_DEAD_LETTER_PREFIX:-dlq}"
+```
+
+Optional CloudAMQP HTTP API equivalent:
+
+```bash
+curl -u "$RABBITMQ_USER:$RABBITMQ_PASSWORD" \
+  "https://$RABBITMQ_HOST/api/queues/%2F/${BROKER_QUEUE_PREFIX}dlq.communication.notifications"
+```
+
+### Notification event - success path
+
+```bash
+# 1. Submit a job application via gateway (triggers application-service outbox publish)
+# 2. Confirm the main queue exists and receives traffic
+rabbitmqadmin list queues name messages | grep "${BROKER_QUEUE_PREFIX}communication.notifications"
+# 3. Watch communication-service logs for a successful outcome
+```
+
+### Notification event - force DLQ path
+
+```bash
+# 1. Temporarily break communication-service processing (for example wrong DATABASE_URL), then restart it.
+# 2. Submit one application event through gateway.
+# 3. Inspect the main queue and DLQ until the message is parked.
+rabbitmqadmin list queues name messages | grep "${BROKER_QUEUE_PREFIX}communication.notifications"
+rabbitmqadmin list queues name messages | grep "${BROKER_QUEUE_PREFIX}dlq.communication.notifications"
+# 4. Inspect one parked message without removing it.
+rabbitmqadmin get queue="${BROKER_QUEUE_PREFIX}dlq.communication.notifications" ackmode=ack_requeue_true count=1
+# 5. Restore the broken dependency, then replay.
+pnpm ops:communication-dlq list --count 5
+pnpm ops:communication-dlq replay --dry-run --count 1
+pnpm ops:communication-dlq replay --count 1
+```
+
+### Password reset mail - success path
+
+```bash
+# 1. POST /auth/request-password-reset with a valid email.
+# 2. Confirm the main queue exists and receives traffic.
+rabbitmqadmin list queues name messages | grep "${BROKER_QUEUE_PREFIX}iam.password-reset-mail"
+# 3. Watch iam-service logs for "Password reset mail sent and acknowledged".
+```
+
+### Password reset mail - retry queue flow
+
+```bash
+# 1. Set MAIL_HOST to an unreachable host and restart iam-service.
+# 2. Trigger one password reset request.
+# 3. Inspect all retry queues and the DLQ as the message advances.
+rabbitmqadmin list queues name messages arguments | grep "${BROKER_QUEUE_PREFIX}iam.password-reset-mail"
+rabbitmqadmin list queues name messages arguments | grep "${BROKER_QUEUE_PREFIX}iam.password-reset-mail.retry.30s"
+rabbitmqadmin list queues name messages arguments | grep "${BROKER_QUEUE_PREFIX}iam.password-reset-mail.retry.2m"
+rabbitmqadmin list queues name messages arguments | grep "${BROKER_QUEUE_PREFIX}iam.password-reset-mail.retry.10m"
+rabbitmqadmin list queues name messages arguments | grep "${BROKER_QUEUE_PREFIX}dlq.iam.password-reset-mail"
+# 4. Inspect one parked DLQ message without removing it.
+rabbitmqadmin get queue="${BROKER_QUEUE_PREFIX}dlq.iam.password-reset-mail" ackmode=ack_requeue_true count=1
+```
+
+### IAM DLQ replay
+
+```bash
+pnpm ops:iam-email-dlq list --count 5
+pnpm ops:iam-email-dlq replay --dry-run --count 1
+# Fix the root cause first (for example restore MAIL_HOST), then:
+pnpm ops:iam-email-dlq replay --count 1
+# Confirm the message leaves the DLQ and iam-service logs success.
+rabbitmqadmin list queues name messages | grep "${BROKER_QUEUE_PREFIX}dlq.iam.password-reset-mail"
+```
+
+### Queue migration note
+
+If `iam.password-reset-mail` or its retry queues existed before with different TTL args, delete them first:
+
+```bash
+rabbitmqadmin delete queue name="${BROKER_QUEUE_PREFIX}iam.password-reset-mail"
+rabbitmqadmin delete queue name="${BROKER_QUEUE_PREFIX}iam.password-reset-mail.retry.30s"
+rabbitmqadmin delete queue name="${BROKER_QUEUE_PREFIX}iam.password-reset-mail.retry.2m"
+rabbitmqadmin delete queue name="${BROKER_QUEUE_PREFIX}iam.password-reset-mail.retry.10m"
+# Then restart iam-service so queues are re-declared with the correct arguments.
+```
 
 Recommended replay order:
 
@@ -156,7 +255,7 @@ Recommended replay order:
 2. dry-run
 3. replay one message
 4. verify consumer success
-5. replay larger batch only if needed
+5. replay a larger batch only if needed
 
 ## 7. Observability Sign-Off
 
@@ -191,13 +290,20 @@ CLI references:
 
 This RabbitMQ phase is done when all statements below are true:
 
-- [ ] producer-side events that matter are published through transactional outbox
-- [ ] no important production consumer still relies on infinite requeue as the normal failure model
-- [ ] failed valid messages are durably parked in broker DLQ where required
+- [x] producer-side events that matter are published through transactional outbox
+  > Verified from code: `application-service` and `iam-service` both use transactional outbox (section 4).
+- [x] no important production consumer still relies on infinite requeue as the normal failure model
+  > Verified from code: both consumers nack with `requeue=false` when `BROKER_DEAD_LETTER_ENABLED=true` (section 5).
+- [x] failed valid messages are durably parked in broker DLQ where required
+  > Verified from code: DLQ topology is asserted on startup and consumers nack correctly (section 5).
 - [ ] replay tooling exists and works for current DLQs
-- [ ] rollout instructions exist for queue migration and redeclare constraints
+  > Code exists in `broker-ops`. "Works" still requires manual verification from sections 6 and 8.
+- [x] rollout instructions exist for queue migration and redeclare constraints
+  > Documented in section 3 and the queue migration note above.
 - [ ] observability is sufficient to detect, inspect, and replay failures safely
+  > Pending section 7 verification in a production-like environment.
 - [ ] team knows which failures should be fixed and replayed vs acknowledged and dropped
+  > Documented in `docs/notification-consumer-dlq.md` and `docs/iam-password-reset-mail-dlq.md`. Tick after team review.
 
 ## 10. What Can Wait For Next Phase
 
