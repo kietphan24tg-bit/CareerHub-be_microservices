@@ -1,0 +1,1 @@
+export const GRPC_CLIENT_OPTIONS = Symbol('GRPC_CLIENT_OPTIONS');

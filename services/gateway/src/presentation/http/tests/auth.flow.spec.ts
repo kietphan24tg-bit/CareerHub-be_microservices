@@ -43,6 +43,7 @@ const gatewayRuntimeConfig = {
   grpcEmployerUrl: '127.0.0.1:50053',
   grpcIamUrl: '127.0.0.1:50051',
   grpcJobUrl: '127.0.0.1:50054',
+  grpcWorkflowUrl: '127.0.0.1:50057',
   jwtRefreshExpiresIn: '7d',
   throttleMediumLimit: 100,
   throttleMediumTtlMs: 60_000,

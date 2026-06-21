@@ -13,7 +13,8 @@ import {
   COMMUNICATION_GRPC_PACKAGE_NAME,
   EMPLOYER_GRPC_PACKAGE_NAME,
   IAM_GRPC_PACKAGE_NAME,
-  JOB_GRPC_PACKAGE_NAME
+  JOB_GRPC_PACKAGE_NAME,
+  WORKFLOW_GRPC_PACKAGE_NAME
 } from '@careerhub/contracts';
 import { createRuntimeConfigModule } from '@careerhub/infrastructure';
 import { ConfigService } from '@nestjs/config';
@@ -38,6 +39,7 @@ import { ApplicationGrpcClient } from './infrastructure/transport/grpc/applicati
 import { CommunicationGrpcClient } from './infrastructure/transport/grpc/communication-grpc.client';
 import { EmployerGrpcClient } from './infrastructure/transport/grpc/employer-grpc.client';
 import { JobGrpcClient } from './infrastructure/transport/grpc/job-grpc.client';
+import { WorkflowGrpcClient } from './infrastructure/transport/grpc/workflow-grpc.client';
 import { AuthController } from './presentation/http/auth/auth.controller';
 import { CandidateProfilesController } from './presentation/http/candidate-profiles/candidate-profiles.controller';
 import { CompanyProfilesController } from './presentation/http/company-profiles/company-profiles.controller';
@@ -73,7 +75,14 @@ import {
 } from './config/gateway.constants';
 
 function resolveGrpcProtoPath(
-  serviceName: 'application' | 'candidate' | 'communication' | 'employer' | 'iam' | 'job'
+  serviceName:
+    | 'application'
+    | 'candidate'
+    | 'communication'
+    | 'employer'
+    | 'iam'
+    | 'job'
+    | 'workflow'
 ): string {
   const distRelativePath = join(
     __dirname,
@@ -182,6 +191,7 @@ function resolveGrpcProtoPath(
     EmployerGrpcClient,
     IamGrpcClient,
     JobGrpcClient,
+    WorkflowGrpcClient,
     {
       provide: GATEWAY_METRICS_TOKENS.registry,
       useFactory: (): MetricsRegistry => new InMemoryMetricsRegistry()
@@ -238,6 +248,11 @@ function resolveGrpcProtoPath(
           packageName: JOB_GRPC_PACKAGE_NAME,
           protoPath: resolveGrpcProtoPath('job'),
           serviceUrl: gatewayRuntimeConfig.grpcJobUrl
+        },
+        workflow: {
+          packageName: WORKFLOW_GRPC_PACKAGE_NAME,
+          protoPath: resolveGrpcProtoPath('workflow'),
+          serviceUrl: gatewayRuntimeConfig.grpcWorkflowUrl
         }
       })
     }

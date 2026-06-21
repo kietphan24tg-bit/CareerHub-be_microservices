@@ -2,6 +2,7 @@ import {
     BadRequestException,
     ConflictException,
     ForbiddenException,
+    GatewayTimeoutException,
     HttpException,
     InternalServerErrorException,
     NotFoundException,
@@ -19,6 +20,7 @@ const HTTP_EXCEPTION_BY_RPC_CODE: Record<string, HttpExceptionCtor> = {
     DUPLICATE_APPLICATION: ConflictException,
     FORBIDDEN: ForbiddenException,
     FORBIDDEN_APPLICATION_ACCESS: ForbiddenException,
+    GATEWAY_TIMEOUT: GatewayTimeoutException,
     INTERVIEW_APPLICATION_STATE_INVALID: BadRequestException,
     INTERVIEW_NOT_FOUND: NotFoundException,
     INTERVIEW_RESPONSE_STATE_INVALID: BadRequestException,
@@ -44,6 +46,7 @@ const HTTP_EXCEPTION_BY_RPC_CODE: Record<string, HttpExceptionCtor> = {
 
 const HTTP_EXCEPTION_BY_GRPC_STATUS: Record<number, HttpExceptionCtor> = {
     3: BadRequestException,
+    4: GatewayTimeoutException,
     5: NotFoundException,
     6: ConflictException,
     7: ForbiddenException,
