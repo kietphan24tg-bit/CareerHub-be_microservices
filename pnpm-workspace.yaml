@@ -2,6 +2,7 @@ packages:
   - 'infrastructure'
   - 'packages/*'
   - 'services/*'
+forceLegacyDeploy: true
 allowBuilds:
   '@nestjs/core': set this to true or false
   '@prisma/engines': set this to true or false
