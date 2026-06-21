@@ -96,12 +96,12 @@ export function validateWorkflowEnvironment(
   );
   const workflowRecoveryPollIntervalMs = parsePositiveInteger(
     config.WORKFLOW_RECOVERY_POLL_INTERVAL_MS,
-    15_000,
+    5_000,
     'WORKFLOW_RECOVERY_POLL_INTERVAL_MS'
   );
   const workflowRecoveryStaleAfterMs = parsePositiveInteger(
     config.WORKFLOW_RECOVERY_STALE_AFTER_MS,
-    30_000,
+    10_000,
     'WORKFLOW_RECOVERY_STALE_AFTER_MS'
   );
 

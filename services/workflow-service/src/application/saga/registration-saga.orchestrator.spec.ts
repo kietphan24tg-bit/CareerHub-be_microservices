@@ -840,6 +840,633 @@ test('recoverStaleSagas resumes forward progress for a stale candidate registrat
   );
 });
 
+test('recoverStaleSagas completes a failed profile creation after verifying the profile already exists downstream', async () => {
+  const recoverableSaga: RegistrationSagaRecord = {
+    ...createSagaRecord({
+      email: 'candidate@example.com',
+      flow: 'candidate_registration',
+      id: 'saga-recovery-profile-existing',
+      profilePayload: {
+        kind: 'candidate',
+        payload: {
+          fullName: 'Candidate User',
+          phone: '0123456789'
+        }
+      },
+      requestId: 'req-recovery-profile-existing',
+      role: 'candidate',
+      steps: [
+        {
+          id: 'step-1',
+          stepName: REGISTRATION_SAGA_STEP_NAMES.registerIdentity
+        },
+        {
+          id: 'step-2',
+          stepName: REGISTRATION_SAGA_STEP_NAMES.createProfile
+        },
+        {
+          id: 'step-3',
+          stepName: REGISTRATION_SAGA_STEP_NAMES.activateIdentity
+        }
+      ]
+    }),
+    identityId: 'identity-recovery-profile-existing',
+    lastStep: REGISTRATION_SAGA_STEP_NAMES.createProfile,
+    status: 'FAILED',
+    steps: [
+      {
+        ...createSagaRecord({
+          email: 'candidate@example.com',
+          flow: 'candidate_registration',
+          id: 'saga-recovery-profile-existing',
+          profilePayload: {
+            kind: 'candidate',
+            payload: {
+              fullName: 'Candidate User',
+              phone: '0123456789'
+            }
+          },
+          requestId: 'req-recovery-profile-existing',
+          role: 'candidate',
+          steps: [
+            {
+              id: 'step-1',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.registerIdentity
+            },
+            {
+              id: 'step-2',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.createProfile
+            },
+            {
+              id: 'step-3',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.activateIdentity
+            }
+          ]
+        }).steps[0],
+        completedAt: new Date('2026-06-20T00:00:10.000Z'),
+        resultSnapshot: {
+          identityId: 'identity-recovery-profile-existing',
+          status: 'pending_profile'
+        },
+        startedAt: new Date('2026-06-20T00:00:05.000Z'),
+        status: 'COMPLETED'
+      },
+      {
+        ...createSagaRecord({
+          email: 'candidate@example.com',
+          flow: 'candidate_registration',
+          id: 'saga-recovery-profile-existing',
+          profilePayload: {
+            kind: 'candidate',
+            payload: {
+              fullName: 'Candidate User',
+              phone: '0123456789'
+            }
+          },
+          requestId: 'req-recovery-profile-existing',
+          role: 'candidate',
+          steps: [
+            {
+              id: 'step-1',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.registerIdentity
+            },
+            {
+              id: 'step-2',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.createProfile
+            },
+            {
+              id: 'step-3',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.activateIdentity
+            }
+          ]
+        }).steps[1],
+        lastError: 'profile create failed',
+        startedAt: new Date('2026-06-20T00:00:15.000Z'),
+        status: 'FAILED'
+      },
+      {
+        ...createSagaRecord({
+          email: 'candidate@example.com',
+          flow: 'candidate_registration',
+          id: 'saga-recovery-profile-existing',
+          profilePayload: {
+            kind: 'candidate',
+            payload: {
+              fullName: 'Candidate User',
+              phone: '0123456789'
+            }
+          },
+          requestId: 'req-recovery-profile-existing',
+          role: 'candidate',
+          steps: [
+            {
+              id: 'step-1',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.registerIdentity
+            },
+            {
+              id: 'step-2',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.createProfile
+            },
+            {
+              id: 'step-3',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.activateIdentity
+            }
+          ]
+        }).steps[2],
+        status: 'PENDING'
+      }
+    ]
+  };
+  const calls: string[] = [];
+  const { orchestrator, repositoryState } = createOrchestrator({
+    candidateClient: {
+      async createCandidateProfile() {
+        throw new Error('unused');
+      },
+      async deleteCandidateProfileCompensation() {
+        throw new Error('unused');
+      },
+      async getCandidateProfileByIdentityId() {
+        calls.push('candidate.getProfile');
+        return {
+          identity_id: 'identity-recovery-profile-existing',
+          profile_id: 'candidate-profile-existing'
+        };
+      }
+    },
+    employerClient: {
+      async createEmployerProfile() {
+        throw new Error('unused');
+      },
+      async deleteEmployerProfileCompensation() {
+        throw new Error('unused');
+      },
+      async getEmployerProfileByIdentityId() {
+        throw new Error('unused');
+      }
+    },
+    iamClient: {
+      async activateIdentity() {
+        calls.push('iam.activate');
+        return {
+          identity_id: 'identity-recovery-profile-existing',
+          status: 'active'
+        };
+      },
+      async cancelPendingIdentity() {
+        throw new Error('unused');
+      },
+      async getCurrentIdentity() {
+        throw new Error('unused');
+      },
+      async registerIdentity() {
+        throw new Error('unused');
+      }
+    },
+    recoverableSagas: [recoverableSaga]
+  });
+
+  const claimed = await orchestrator.recoverStaleSagas({
+    limit: 10,
+    staleBefore: new Date('2026-06-20T01:00:00.000Z')
+  });
+
+  assert.equal(claimed, 1);
+  assert.deepEqual(calls, ['candidate.getProfile', 'iam.activate']);
+  assert.ok(
+    repositoryState.stepPatches.some(
+      ({ patch, stepName }) =>
+        stepName === REGISTRATION_SAGA_STEP_NAMES.createProfile &&
+        patch.status === 'COMPLETED' &&
+        patch.resultSnapshot?.recoveredByRead === true
+    )
+  );
+  assert.ok(
+    repositoryState.sagaPatches.some(
+      ({ patch }) => patch.status === 'COMPLETED'
+    )
+  );
+});
+
+test('recoverStaleSagas keeps a failed profile creation pending retry when downstream verification is transiently unavailable', async () => {
+  const recoverableSaga: RegistrationSagaRecord = {
+    ...createSagaRecord({
+      email: 'candidate@example.com',
+      flow: 'candidate_registration',
+      id: 'saga-recovery-profile-transient',
+      profilePayload: {
+        kind: 'candidate',
+        payload: {
+          fullName: 'Candidate User',
+          phone: '0123456789'
+        }
+      },
+      requestId: 'req-recovery-profile-transient',
+      role: 'candidate',
+      steps: [
+        {
+          id: 'step-1',
+          stepName: REGISTRATION_SAGA_STEP_NAMES.registerIdentity
+        },
+        {
+          id: 'step-2',
+          stepName: REGISTRATION_SAGA_STEP_NAMES.createProfile
+        },
+        {
+          id: 'step-3',
+          stepName: REGISTRATION_SAGA_STEP_NAMES.activateIdentity
+        }
+      ]
+    }),
+    identityId: 'identity-recovery-profile-transient',
+    lastStep: REGISTRATION_SAGA_STEP_NAMES.createProfile,
+    status: 'FAILED',
+    steps: [
+      {
+        ...createSagaRecord({
+          email: 'candidate@example.com',
+          flow: 'candidate_registration',
+          id: 'saga-recovery-profile-transient',
+          profilePayload: {
+            kind: 'candidate',
+            payload: {
+              fullName: 'Candidate User',
+              phone: '0123456789'
+            }
+          },
+          requestId: 'req-recovery-profile-transient',
+          role: 'candidate',
+          steps: [
+            {
+              id: 'step-1',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.registerIdentity
+            },
+            {
+              id: 'step-2',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.createProfile
+            },
+            {
+              id: 'step-3',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.activateIdentity
+            }
+          ]
+        }).steps[0],
+        completedAt: new Date('2026-06-20T00:00:10.000Z'),
+        resultSnapshot: {
+          identityId: 'identity-recovery-profile-transient',
+          status: 'pending_profile'
+        },
+        startedAt: new Date('2026-06-20T00:00:05.000Z'),
+        status: 'COMPLETED'
+      },
+      {
+        ...createSagaRecord({
+          email: 'candidate@example.com',
+          flow: 'candidate_registration',
+          id: 'saga-recovery-profile-transient',
+          profilePayload: {
+            kind: 'candidate',
+            payload: {
+              fullName: 'Candidate User',
+              phone: '0123456789'
+            }
+          },
+          requestId: 'req-recovery-profile-transient',
+          role: 'candidate',
+          steps: [
+            {
+              id: 'step-1',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.registerIdentity
+            },
+            {
+              id: 'step-2',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.createProfile
+            },
+            {
+              id: 'step-3',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.activateIdentity
+            }
+          ]
+        }).steps[1],
+        lastError: 'profile create failed',
+        startedAt: new Date('2026-06-20T00:00:15.000Z'),
+        status: 'FAILED'
+      },
+      {
+        ...createSagaRecord({
+          email: 'candidate@example.com',
+          flow: 'candidate_registration',
+          id: 'saga-recovery-profile-transient',
+          profilePayload: {
+            kind: 'candidate',
+            payload: {
+              fullName: 'Candidate User',
+              phone: '0123456789'
+            }
+          },
+          requestId: 'req-recovery-profile-transient',
+          role: 'candidate',
+          steps: [
+            {
+              id: 'step-1',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.registerIdentity
+            },
+            {
+              id: 'step-2',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.createProfile
+            },
+            {
+              id: 'step-3',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.activateIdentity
+            }
+          ]
+        }).steps[2],
+        status: 'PENDING'
+      }
+    ]
+  };
+  const calls: string[] = [];
+  const { orchestrator, repositoryState } = createOrchestrator({
+    candidateClient: {
+      async createCandidateProfile() {
+        throw new Error('unused');
+      },
+      async deleteCandidateProfileCompensation() {
+        calls.push('candidate.deleteCompensation');
+        return {
+          compensated: true
+        };
+      },
+      async getCandidateProfileByIdentityId() {
+        calls.push('candidate.getProfile');
+        throw Object.assign(new Error('candidate temporarily unavailable'), {
+          code: 'INTERNAL'
+        });
+      }
+    },
+    employerClient: {
+      async createEmployerProfile() {
+        throw new Error('unused');
+      },
+      async deleteEmployerProfileCompensation() {
+        throw new Error('unused');
+      },
+      async getEmployerProfileByIdentityId() {
+        throw new Error('unused');
+      }
+    },
+    iamClient: {
+      async activateIdentity() {
+        throw new Error('unused');
+      },
+      async cancelPendingIdentity() {
+        calls.push('iam.cancelPending');
+        return {
+          cancelled: true
+        };
+      },
+      async getCurrentIdentity() {
+        throw new Error('unused');
+      },
+      async registerIdentity() {
+        throw new Error('unused');
+      }
+    },
+    recoverableSagas: [recoverableSaga]
+  });
+
+  const claimed = await orchestrator.recoverStaleSagas({
+    limit: 10,
+    staleBefore: new Date('2026-06-20T01:00:00.000Z')
+  });
+
+  assert.equal(claimed, 1);
+  assert.deepEqual(calls, ['candidate.getProfile']);
+  assert.ok(
+    repositoryState.sagaPatches.some(
+      ({ patch }) => patch.status === 'FAILED'
+    )
+  );
+  assert.equal(
+    repositoryState.sagaPatches.some(
+      ({ patch }) =>
+        patch.status === 'COMPENSATING' || patch.status === 'COMPENSATED'
+    ),
+    false
+  );
+});
+
+test('recoverStaleSagas completes a stale activation failure when IAM already activated the identity', async () => {
+  const recoverableSaga: RegistrationSagaRecord = {
+    ...createSagaRecord({
+      email: 'candidate@example.com',
+      flow: 'candidate_registration',
+      id: 'saga-recovery-activation-active',
+      profilePayload: {
+        kind: 'candidate',
+        payload: {
+          fullName: 'Candidate User',
+          phone: '0123456789'
+        }
+      },
+      requestId: 'req-recovery-activation-active',
+      role: 'candidate',
+      steps: [
+        {
+          id: 'step-1',
+          stepName: REGISTRATION_SAGA_STEP_NAMES.registerIdentity
+        },
+        {
+          id: 'step-2',
+          stepName: REGISTRATION_SAGA_STEP_NAMES.createProfile
+        },
+        {
+          id: 'step-3',
+          stepName: REGISTRATION_SAGA_STEP_NAMES.activateIdentity
+        }
+      ]
+    }),
+    identityId: 'identity-recovery-activation-active',
+    lastStep: REGISTRATION_SAGA_STEP_NAMES.activateIdentity,
+    profileId: 'candidate-profile-recovery-activation-active',
+    status: 'FAILED',
+    steps: [
+      {
+        ...createSagaRecord({
+          email: 'candidate@example.com',
+          flow: 'candidate_registration',
+          id: 'saga-recovery-activation-active',
+          profilePayload: {
+            kind: 'candidate',
+            payload: {
+              fullName: 'Candidate User',
+              phone: '0123456789'
+            }
+          },
+          requestId: 'req-recovery-activation-active',
+          role: 'candidate',
+          steps: [
+            {
+              id: 'step-1',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.registerIdentity
+            },
+            {
+              id: 'step-2',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.createProfile
+            },
+            {
+              id: 'step-3',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.activateIdentity
+            }
+          ]
+        }).steps[0],
+        completedAt: new Date('2026-06-20T00:00:10.000Z'),
+        resultSnapshot: {
+          identityId: 'identity-recovery-activation-active',
+          status: 'pending_profile'
+        },
+        startedAt: new Date('2026-06-20T00:00:05.000Z'),
+        status: 'COMPLETED'
+      },
+      {
+        ...createSagaRecord({
+          email: 'candidate@example.com',
+          flow: 'candidate_registration',
+          id: 'saga-recovery-activation-active',
+          profilePayload: {
+            kind: 'candidate',
+            payload: {
+              fullName: 'Candidate User',
+              phone: '0123456789'
+            }
+          },
+          requestId: 'req-recovery-activation-active',
+          role: 'candidate',
+          steps: [
+            {
+              id: 'step-1',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.registerIdentity
+            },
+            {
+              id: 'step-2',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.createProfile
+            },
+            {
+              id: 'step-3',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.activateIdentity
+            }
+          ]
+        }).steps[1],
+        completedAt: new Date('2026-06-20T00:00:20.000Z'),
+        resultSnapshot: {
+          profileId: 'candidate-profile-recovery-activation-active'
+        },
+        startedAt: new Date('2026-06-20T00:00:15.000Z'),
+        status: 'COMPLETED'
+      },
+      {
+        ...createSagaRecord({
+          email: 'candidate@example.com',
+          flow: 'candidate_registration',
+          id: 'saga-recovery-activation-active',
+          profilePayload: {
+            kind: 'candidate',
+            payload: {
+              fullName: 'Candidate User',
+              phone: '0123456789'
+            }
+          },
+          requestId: 'req-recovery-activation-active',
+          role: 'candidate',
+          steps: [
+            {
+              id: 'step-1',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.registerIdentity
+            },
+            {
+              id: 'step-2',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.createProfile
+            },
+            {
+              id: 'step-3',
+              stepName: REGISTRATION_SAGA_STEP_NAMES.activateIdentity
+            }
+          ]
+        }).steps[2],
+        lastError: 'activation failed',
+        startedAt: new Date('2026-06-20T00:00:25.000Z'),
+        status: 'FAILED'
+      }
+    ]
+  };
+  const calls: string[] = [];
+  const { orchestrator, repositoryState } = createOrchestrator({
+    candidateClient: {
+      async createCandidateProfile() {
+        throw new Error('unused');
+      },
+      async deleteCandidateProfileCompensation() {
+        throw new Error('unused');
+      },
+      async getCandidateProfileByIdentityId() {
+        throw new Error('unused');
+      }
+    },
+    employerClient: {
+      async createEmployerProfile() {
+        throw new Error('unused');
+      },
+      async deleteEmployerProfileCompensation() {
+        throw new Error('unused');
+      },
+      async getEmployerProfileByIdentityId() {
+        throw new Error('unused');
+      }
+    },
+    iamClient: {
+      async activateIdentity() {
+        throw new Error('unused');
+      },
+      async cancelPendingIdentity() {
+        throw new Error('unused');
+      },
+      async getCurrentIdentity() {
+        calls.push('iam.getCurrentIdentity');
+        return {
+          email: 'candidate@example.com',
+          identity_id: 'identity-recovery-activation-active',
+          role: 'candidate',
+          status: 'active'
+        };
+      },
+      async registerIdentity() {
+        throw new Error('unused');
+      }
+    },
+    recoverableSagas: [recoverableSaga]
+  });
+
+  const claimed = await orchestrator.recoverStaleSagas({
+    limit: 10,
+    staleBefore: new Date('2026-06-20T01:00:00.000Z')
+  });
+
+  assert.equal(claimed, 1);
+  assert.deepEqual(calls, ['iam.getCurrentIdentity']);
+  assert.equal(
+    repositoryState.sagaPatches.some(
+      ({ patch }) =>
+        patch.status === 'COMPENSATING' || patch.status === 'COMPENSATED'
+    ),
+    false
+  );
+  assert.ok(
+    repositoryState.sagaPatches.some(
+      ({ patch }) => patch.status === 'COMPLETED'
+    )
+  );
+});
+
 test('recoverStaleSagas retries compensation for a stale activation failure', async () => {
   const recoverableSaga: RegistrationSagaRecord = {
     ...createSagaRecord({
@@ -1023,7 +1650,10 @@ test('recoverStaleSagas retries compensation for a stale activation failure', as
         };
       },
       async getCurrentIdentity() {
-        throw new Error('unused');
+        calls.push('iam.getCurrentIdentity');
+        throw Object.assign(new Error('identity missing'), {
+          code: 'NOT_FOUND'
+        });
       },
       async registerIdentity() {
         throw new Error('unused');
@@ -1038,6 +1668,7 @@ test('recoverStaleSagas retries compensation for a stale activation failure', as
   });
 
   assert.equal(claimed, 1);
+  assert.equal(calls.includes('iam.getCurrentIdentity'), true);
   assert.equal(calls.includes('candidate.deleteCompensation'), true);
   assert.equal(calls.includes('iam.cancelPending'), true);
   assert.ok(

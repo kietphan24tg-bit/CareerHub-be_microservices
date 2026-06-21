@@ -45,6 +45,20 @@ test('maps gateway timeout code to gateway timeout response', () => {
   });
 });
 
+test('maps grpc unavailable error to service unavailable with clean message', () => {
+  const exception = mapRpcErrorToHttpException({
+    code: 14,
+    message: '14 UNAVAILABLE: No connection established. Last error: null. Resolution note: '
+  });
+
+  assert.equal(exception.getStatus(), HttpStatus.SERVICE_UNAVAILABLE);
+  assert.deepEqual(exception.getResponse(), {
+    code: 'UNAVAILABLE',
+    details: undefined,
+    message: 'No connection established. Last error: null. Resolution note: '
+  });
+});
+
 test('maps grpc unknown invalid refresh token error to unauthorized', () => {
   const exception = mapRpcErrorToHttpException({
     code: 'UNKNOWN',

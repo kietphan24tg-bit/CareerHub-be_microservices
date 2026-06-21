@@ -18,7 +18,8 @@ export type RegistrationSagaStatus =
   | 'COMPLETED'
   | 'FAILED'
   | 'COMPENSATED'
-  | 'COMPENSATION_FAILED';
+  | 'COMPENSATION_FAILED'
+  | 'ABANDONED';
 
 export type CandidateRegistrationProfilePayload = {
   fullName: string;

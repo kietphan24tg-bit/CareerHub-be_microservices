@@ -249,7 +249,7 @@ export class RegistrationSagaOrchestrator {
     const identityId = this.resolveIdentityId(saga);
 
     if (!identityId) {
-      await this.failSaga(
+      await this.abandonSaga(
         saga.id,
         REGISTRATION_SAGA_STEP_NAMES.registerIdentity,
         new Error(
@@ -266,27 +266,17 @@ export class RegistrationSagaOrchestrator {
     }
 
     if (createProfileStep.status === 'FAILED') {
-      await this.resumeCompensation({
-        compensateProfile: false,
-        failedStep: REGISTRATION_SAGA_STEP_NAMES.createProfile,
+      await this.recoverFailedCreateProfileStep({
         identityId,
-        reason: 'resuming compensation after profile creation failure',
-        requestId: saga.requestId ?? undefined,
-        role: saga.role,
-        sagaId: saga.id
+        saga
       });
       return;
     }
 
     if (activateIdentityStep.status === 'FAILED') {
-      await this.resumeCompensation({
-        compensateProfile: true,
-        failedStep: REGISTRATION_SAGA_STEP_NAMES.activateIdentity,
+      await this.recoverFailedActivateIdentityStep({
         identityId,
-        reason: 'resuming compensation after identity activation failure',
-        requestId: saga.requestId ?? undefined,
-        role: saga.role,
-        sagaId: saga.id
+        saga
       });
       return;
     }
@@ -314,7 +304,7 @@ export class RegistrationSagaOrchestrator {
     }
 
     if (registerIdentityStep.status !== 'COMPLETED') {
-      await this.failSaga(
+      await this.abandonSaga(
         saga.id,
         REGISTRATION_SAGA_STEP_NAMES.registerIdentity,
         new Error(
@@ -326,7 +316,7 @@ export class RegistrationSagaOrchestrator {
 
     if (createProfileStep.status !== 'COMPLETED') {
       if (!saga.profilePayload) {
-        await this.failSaga(
+        await this.abandonSaga(
           saga.id,
           REGISTRATION_SAGA_STEP_NAMES.createProfile,
           new Error(
@@ -458,6 +448,64 @@ export class RegistrationSagaOrchestrator {
     }
   }
 
+  private async recoverFailedCreateProfileStep(input: {
+    identityId: string;
+    saga: RegistrationSagaRecord;
+  }): Promise<void> {
+    let existingProfile: ExistingProfileRecord | null;
+
+    try {
+      existingProfile = await this.loadExistingProfile(
+        input.identityId,
+        input.saga.role,
+        input.saga.requestId ?? undefined
+      );
+    } catch (error) {
+      await this.failSaga(
+        input.saga.id,
+        REGISTRATION_SAGA_STEP_NAMES.createProfile,
+        error
+      );
+      return;
+    }
+
+    if (existingProfile) {
+      this.logger.warn(
+        `Recovered failed profile creation for saga ${input.saga.id} by reading downstream profile state`
+      );
+      await this.completeStep(
+        input.saga.id,
+        REGISTRATION_SAGA_STEP_NAMES.createProfile,
+        {
+          profileId: existingProfile.profileId,
+          recoveredByRead: true
+        },
+        {
+          profileId: existingProfile.profileId
+        }
+      );
+
+      await this.runActivateIdentityStep({
+        email: input.saga.email,
+        identityId: input.identityId,
+        requestId: input.saga.requestId ?? undefined,
+        role: input.saga.role,
+        sagaId: input.saga.id
+      });
+      return;
+    }
+
+    await this.resumeCompensation({
+      compensateProfile: false,
+      failedStep: REGISTRATION_SAGA_STEP_NAMES.createProfile,
+      identityId: input.identityId,
+      reason: 'resuming compensation after profile creation failure',
+      requestId: input.saga.requestId ?? undefined,
+      role: input.saga.role,
+      sagaId: input.saga.id
+    });
+  }
+
   private async runActivateIdentityStep(input: {
     email: string;
     identityId: string;
@@ -528,6 +576,48 @@ export class RegistrationSagaOrchestrator {
       });
       throw error;
     }
+  }
+
+  private async recoverFailedActivateIdentityStep(input: {
+    identityId: string;
+    saga: RegistrationSagaRecord;
+  }): Promise<void> {
+    let currentIdentity: GetCurrentIdentityResponse | null;
+
+    try {
+      currentIdentity = await this.readCurrentIdentityOrNull(
+        input.identityId,
+        input.saga.requestId ?? undefined
+      );
+    } catch (error) {
+      await this.failSaga(
+        input.saga.id,
+        REGISTRATION_SAGA_STEP_NAMES.activateIdentity,
+        error
+      );
+      return;
+    }
+
+    if (currentIdentity?.status === 'active') {
+      this.logger.warn(
+        `Recovered failed identity activation for saga ${input.saga.id} because the identity is already active downstream`
+      );
+      await this.completeSagaFromCurrentIdentity(
+        input.saga.id,
+        currentIdentity
+      );
+      return;
+    }
+
+    await this.resumeCompensation({
+      compensateProfile: true,
+      failedStep: REGISTRATION_SAGA_STEP_NAMES.activateIdentity,
+      identityId: input.identityId,
+      reason: 'resuming compensation after identity activation failure',
+      requestId: input.saga.requestId ?? undefined,
+      role: input.saga.role,
+      sagaId: input.saga.id
+    });
   }
 
   private async createProfile(
@@ -787,6 +877,35 @@ export class RegistrationSagaOrchestrator {
         status: 'FAILED'
       })
     ]);
+  }
+
+  // Marks a saga as terminally unrecoverable so the recovery poller stops
+  // re-claiming it. Used for dead-ends with nothing left to do or roll back
+  // (e.g. identity was never created, or persisted state is incomplete).
+  private async abandonSaga(
+    sagaId: string,
+    stepName: RegistrationSagaStepName,
+    error: unknown
+  ): Promise<void> {
+    const failureCode = getErrorCode(error);
+    const failureMessage = getErrorMessage(error);
+
+    await Promise.all([
+      this.registrationSagaRepository.updateSaga(sagaId, {
+        failureCode,
+        failureMessage,
+        lastStep: stepName,
+        status: 'ABANDONED'
+      }),
+      this.registrationSagaRepository.updateStep(sagaId, stepName, {
+        lastError: failureMessage,
+        status: 'FAILED'
+      })
+    ]);
+
+    this.logger.warn(
+      `Registration saga ${sagaId} abandoned at ${stepName}: ${failureMessage}`
+    );
   }
 
   private async compensateIdentityRegistration(
