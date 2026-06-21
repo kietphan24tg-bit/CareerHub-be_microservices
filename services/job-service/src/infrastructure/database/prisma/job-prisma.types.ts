@@ -1,4 +1,5 @@
 import type { PrismaClientLike } from '@careerhub/infrastructure';
+import type { OutboxRecord } from '@careerhub/contracts';
 
 export type JobPersistenceRecord = {
   benefitsJson: string | null;
@@ -71,11 +72,11 @@ export type OutboxPersistenceRecord = {
   lastError: string | null;
   nextRetryAt: Date | null;
   occurredAt: Date;
-  payload: unknown;
+  payload: OutboxRecord['payload'];
   processedAt: Date | null;
   processingAt: Date | null;
   retryCount: number;
-  status: string;
+  status: OutboxRecord['status'];
 };
 
 export type OutboxModelDelegate = {

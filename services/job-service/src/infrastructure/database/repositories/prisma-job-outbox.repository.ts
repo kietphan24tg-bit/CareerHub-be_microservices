@@ -1,6 +1,9 @@
 import type { OutboxBacklogSummary, OutboxRepository } from '../../../application';
 import type { OutboxRecord } from '@careerhub/contracts';
-import type { JobPrismaClient } from '../prisma/job-prisma.types';
+import type {
+  JobPrismaClient,
+  OutboxPersistenceRecord
+} from '../prisma/job-prisma.types';
 
 function toOutboxRecord(record: {
   eventName: string;
@@ -77,6 +80,49 @@ export class PrismaJobOutboxRepository implements OutboxRepository {
     });
 
     return result.count;
+  }
+
+  async deleteFailedBatch(cutoff: Date, limit: number): Promise<number> {
+    const records = await this.prismaClient.outbox.findMany({
+      orderBy: { occurredAt: 'asc' },
+      select: { id: true },
+      take: limit,
+      where: {
+        nextRetryAt: null,
+        occurredAt: { lt: cutoff },
+        status: 'failed'
+      }
+    });
+
+    if (records.length === 0) return 0;
+
+    const result = await this.prismaClient.outbox.deleteMany({
+      where: { id: { in: records.map((r) => (r as { id: string }).id) } }
+    });
+
+    return result.count;
+  }
+
+  async findAndClaimPendingBatch(processingAt: Date, limit: number): Promise<OutboxRecord[]> {
+    const raw = this.prismaClient as unknown as {
+      $queryRawUnsafe: <T>(query: string, ...values: unknown[]) => Promise<T>;
+    };
+    const records = await raw.$queryRawUnsafe<OutboxPersistenceRecord[]>(
+      `UPDATE outbox
+       SET status = 'processing', processing_at = $1
+       WHERE id IN (
+         SELECT id FROM outbox
+         WHERE status = 'pending'
+         ORDER BY occurred_at ASC
+         LIMIT $2
+         FOR UPDATE SKIP LOCKED
+       )
+       RETURNING *`,
+      processingAt,
+      limit
+    );
+
+    return records.map((record) => toOutboxRecord(record));
   }
 
   async findPendingBatch(limit: number): Promise<OutboxRecord[]> {

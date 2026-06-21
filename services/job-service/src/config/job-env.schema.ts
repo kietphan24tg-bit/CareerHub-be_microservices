@@ -12,8 +12,10 @@ export type JobEnvironmentVariables = BaseEnvironmentVariables & {
   OUTBOX_CLEANUP_BATCH_SIZE: number;
   OUTBOX_CLEANUP_ENABLED: boolean;
   OUTBOX_CLEANUP_INTERVAL_MS: number;
+  OUTBOX_FAILED_RETENTION_MS: number;
   OUTBOX_MAX_RETRY_COUNT: number;
   OUTBOX_POLL_INTERVAL_MS: number;
+  OUTBOX_PUBLISH_CONCURRENCY: number;
   OUTBOX_PROCESSED_RETENTION_MS: number;
   OUTBOX_PUBLISH_ENABLED: boolean;
   OUTBOX_RETRY_DELAY_MS: number;
@@ -98,8 +100,18 @@ export function validateJobEnvironment(
       'OUTBOX_CLEANUP_INTERVAL_MS',
       60_000
     ),
+    OUTBOX_FAILED_RETENTION_MS: readPositiveNumber(
+      config,
+      'OUTBOX_FAILED_RETENTION_MS',
+      7 * 24 * 60 * 60 * 1000
+    ),
     OUTBOX_MAX_RETRY_COUNT: readPositiveNumber(config, 'OUTBOX_MAX_RETRY_COUNT', 5),
     OUTBOX_POLL_INTERVAL_MS: readPositiveNumber(config, 'OUTBOX_POLL_INTERVAL_MS', 5_000),
+    OUTBOX_PUBLISH_CONCURRENCY: readPositiveNumber(
+      config,
+      'OUTBOX_PUBLISH_CONCURRENCY',
+      5
+    ),
     OUTBOX_PROCESSED_RETENTION_MS: readPositiveNumber(
       config,
       'OUTBOX_PROCESSED_RETENTION_MS',

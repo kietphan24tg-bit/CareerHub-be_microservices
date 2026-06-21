@@ -10,9 +10,11 @@ export type JobRuntimeConfig = {
   outboxCleanupBatchSize: number;
   outboxCleanupEnabled: boolean;
   outboxCleanupIntervalMs: number;
+  outboxFailedRetentionMs: number;
   outboxMaxRetryCount: number;
   outboxPollIntervalMs: number;
   outboxProcessedRetentionMs: number;
+  outboxPublishConcurrency: number;
   outboxPublishEnabled: boolean;
   outboxRetryDelayMs: number;
   outboxStaleProcessingTimeoutMs: number;
@@ -36,9 +38,11 @@ export function getJobRuntimeConfig(
     outboxCleanupBatchSize: configService.getOrThrow('OUTBOX_CLEANUP_BATCH_SIZE'),
     outboxCleanupEnabled: configService.getOrThrow('OUTBOX_CLEANUP_ENABLED'),
     outboxCleanupIntervalMs: configService.getOrThrow('OUTBOX_CLEANUP_INTERVAL_MS'),
+    outboxFailedRetentionMs: configService.getOrThrow('OUTBOX_FAILED_RETENTION_MS'),
     outboxMaxRetryCount: configService.getOrThrow('OUTBOX_MAX_RETRY_COUNT'),
     outboxPollIntervalMs: configService.getOrThrow('OUTBOX_POLL_INTERVAL_MS'),
     outboxProcessedRetentionMs: configService.getOrThrow('OUTBOX_PROCESSED_RETENTION_MS'),
+    outboxPublishConcurrency: configService.getOrThrow('OUTBOX_PUBLISH_CONCURRENCY'),
     outboxPublishEnabled: configService.getOrThrow('OUTBOX_PUBLISH_ENABLED'),
     outboxRetryDelayMs: configService.getOrThrow('OUTBOX_RETRY_DELAY_MS'),
     outboxStaleProcessingTimeoutMs: configService.getOrThrow(
