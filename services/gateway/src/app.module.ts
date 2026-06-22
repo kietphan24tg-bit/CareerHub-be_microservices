@@ -1,10 +1,10 @@
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import {
   InMemoryMetricsRegistry,
+  createRuntimeConfigModule,
+  resolveGrpcProtoPath,
   type MetricsRegistry
 } from '@careerhub/infrastructure';
 import {
@@ -15,7 +15,6 @@ import {
   IAM_GRPC_PACKAGE_NAME,
   JOB_GRPC_PACKAGE_NAME
 } from '@careerhub/contracts';
-import { createRuntimeConfigModule } from '@careerhub/infrastructure';
 import { ConfigService } from '@nestjs/config';
 import { GatewayAuthService } from './application/auth/gateway-auth.service';
 import { GatewayProfileService } from './application/profiles/gateway-profile.service';
@@ -71,45 +70,6 @@ import {
   GATEWAY_METRICS_TOKENS,
   GATEWAY_RUNTIME_CONFIG
 } from './config/gateway.constants';
-
-function resolveGrpcProtoPath(
-  serviceName: 'application' | 'candidate' | 'communication' | 'employer' | 'iam' | 'job'
-): string {
-  const distRelativePath = join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    serviceName,
-    'v1',
-    `${serviceName}.proto`
-  );
-
-  if (existsSync(distRelativePath)) {
-    return distRelativePath;
-  }
-
-  return join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    serviceName,
-    'v1',
-    `${serviceName}.proto`
-  );
-}
 
 @Module({
   controllers: [
