@@ -10,7 +10,8 @@ export type GrpcServiceName =
   | 'communication'
   | 'employer'
   | 'iam'
-  | 'job';
+  | 'job'
+  | 'workflow';
 
 export function resolveGrpcProtoPath(serviceName: GrpcServiceName): string {
   const contractsRoot = dirname(

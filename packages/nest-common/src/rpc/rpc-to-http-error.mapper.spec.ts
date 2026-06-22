@@ -31,6 +31,34 @@ test('maps grpc invalid argument error to bad request with clean message', () =>
   });
 });
 
+test('maps gateway timeout code to gateway timeout response', () => {
+  const exception = mapRpcErrorToHttpException({
+    code: 'GATEWAY_TIMEOUT',
+    message: 'Downstream identity service timed out'
+  });
+
+  assert.equal(exception.getStatus(), HttpStatus.GATEWAY_TIMEOUT);
+  assert.deepEqual(exception.getResponse(), {
+    code: 'GATEWAY_TIMEOUT',
+    details: undefined,
+    message: 'Downstream identity service timed out'
+  });
+});
+
+test('maps grpc unavailable error to service unavailable with clean message', () => {
+  const exception = mapRpcErrorToHttpException({
+    code: 14,
+    message: '14 UNAVAILABLE: No connection established. Last error: null. Resolution note: '
+  });
+
+  assert.equal(exception.getStatus(), HttpStatus.SERVICE_UNAVAILABLE);
+  assert.deepEqual(exception.getResponse(), {
+    code: 'UNAVAILABLE',
+    details: undefined,
+    message: 'No connection established. Last error: null. Resolution note: '
+  });
+});
+
 test('maps grpc unknown invalid refresh token error to unauthorized', () => {
   const exception = mapRpcErrorToHttpException({
     code: 'UNKNOWN',

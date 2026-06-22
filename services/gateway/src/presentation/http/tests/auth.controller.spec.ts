@@ -3,8 +3,11 @@ import test from 'node:test';
 import { BadRequestException } from '@nestjs/common';
 import { AuthController } from '../auth/auth.controller';
 
+let capturedCandidateRequestId: string | undefined;
+
 const gatewayAuthService = {
   async registerCandidate(input: unknown) {
+    capturedCandidateRequestId = (input as { requestId?: string }).requestId;
     return {
       ...(input as Record<string, unknown>),
       role: 'candidate',
@@ -40,6 +43,7 @@ const gatewayRuntimeConfig = {
   grpcEmployerUrl: '127.0.0.1:50053',
   grpcIamUrl: '127.0.0.1:50051',
   grpcJobUrl: '127.0.0.1:50054',
+  grpcWorkflowUrl: '127.0.0.1:50057',
   jwtRefreshExpiresIn: '7d',
   throttleMediumLimit: 100,
   throttleMediumTtlMs: 60_000,
@@ -62,7 +66,7 @@ test('registerCandidate throws when password confirmation does not match', async
         fullName: 'Test User',
         password: '12345678',
         phone: '01234567'
-      }),
+      }, { headers: {} }),
     (error: unknown) =>
       error instanceof BadRequestException &&
       JSON.stringify(error.getResponse()).includes(
@@ -72,6 +76,7 @@ test('registerCandidate throws when password confirmation does not match', async
 });
 
 test('registerCandidate forwards payload when password confirmation matches', async () => {
+  capturedCandidateRequestId = undefined;
   const controller = new AuthController(
     gatewayAuthService as never,
     gatewayRuntimeConfig
@@ -84,10 +89,17 @@ test('registerCandidate forwards payload when password confirmation matches', as
     fullName: 'Test User',
     password: '12345678',
     phone: '01234567'
-  });
+  }, { headers: {} });
 
   assert.equal(response.message, 'Candidate registered successfully');
   assert.equal(response.data.role, 'candidate');
+  assert.equal(typeof capturedCandidateRequestId, 'string');
+
+  if (typeof capturedCandidateRequestId !== 'string') {
+    throw new Error('Expected controller to forward a generated requestId');
+  }
+
+  assert.ok(String(capturedCandidateRequestId).length > 0);
 });
 
 test('requestPasswordReset returns a generic success payload', async () => {

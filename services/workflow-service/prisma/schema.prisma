@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model RegistrationSaga {
+  id             String                 @id @db.VarChar(64)
+  flow           String                 @db.VarChar(64)
+  requestId      String?                @unique @map("request_id") @db.VarChar(128)
+  status         String                 @db.VarChar(64)
+  lastStep       String?                @map("last_step") @db.VarChar(64)
+  email          String
+  role           String                 @db.VarChar(32)
+  identityId     String?                @unique @map("identity_id") @db.VarChar(64)
+  profileId      String?                @map("profile_id") @db.VarChar(64)
+  profilePayloadJson String?            @map("profile_payload_json")
+  failureCode    String?                @map("failure_code") @db.VarChar(128)
+  failureMessage String?                @map("failure_message")
+  completedAt    DateTime?              @map("completed_at")
+  compensatedAt  DateTime?              @map("compensated_at")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+  steps          RegistrationSagaStep[]
+
+  @@index([flow, status])
+  @@map("registration_sagas")
+}
+
+model RegistrationSagaStep {
+  id                 String           @id @db.VarChar(64)
+  sagaId             String           @map("saga_id") @db.VarChar(64)
+  stepName           String           @map("step_name") @db.VarChar(64)
+  status             String           @db.VarChar(64)
+  compensationStatus String           @default("NOT_REQUIRED") @map("compensation_status") @db.VarChar(64)
+  attempts           Int              @default(0)
+  lastError          String?          @map("last_error")
+  resultSnapshotJson String?          @map("result_snapshot_json")
+  startedAt          DateTime?        @map("started_at")
+  completedAt        DateTime?        @map("completed_at")
+  compensatedAt      DateTime?        @map("compensated_at")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  saga               RegistrationSaga @relation(fields: [sagaId], references: [id], onDelete: Cascade)
+
+  @@unique([sagaId, stepName])
+  @@index([sagaId, status])
+  @@index([sagaId, compensationStatus])
+  @@map("registration_saga_steps")
+}

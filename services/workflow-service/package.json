@@ -1,0 +1,40 @@
+{
+  "name": "@careerhub/workflow-service",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@careerhub/contracts": "workspace:*",
+    "@careerhub/infrastructure": "workspace:*",
+    "@careerhub/nest-common": "workspace:*",
+    "@careerhub/shared-kernel": "workspace:*",
+    "@grpc/grpc-js": "^1.14.4",
+    "@grpc/proto-loader": "^0.8.1",
+    "@nestjs/common": "^11.1.19",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/core": "^11.1.24",
+    "@nestjs/microservices": "^11.1.24",
+    "@nestjs/platform-express": "^11.1.24",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "@prisma/client-runtime-utils": "^7.8.0",
+    "pg": "^8.16.3",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "^11.1.19",
+    "prisma": "^7.8.0",
+    "supertest": "^7.1.1"
+  },
+  "scripts": {
+    "build": "pnpm -C ../.. build:packages && tsc -p tsconfig.json",
+    "dev": "pnpm run build && node dist/services/workflow-service/src/main.js",
+    "prisma:generate": "prisma generate --schema ./prisma/schema.prisma",
+    "prisma:migrate:deploy": "prisma migrate deploy --schema ./prisma/schema.prisma",
+    "prisma:migrate:dev": "prisma migrate dev --schema ./prisma/schema.prisma",
+    "start": "node dist/services/workflow-service/src/main.js",
+    "test": "powershell -Command \"if (Test-Path dist-test) { Remove-Item -Recurse -Force dist-test }; & ..\\..\\node_modules\\.bin\\tsc.cmd -p tsconfig.spec.json; node --test dist-test/**/*.spec.js\""
+  }
+}

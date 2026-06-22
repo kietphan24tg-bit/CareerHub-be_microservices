@@ -12,6 +12,7 @@ export type GatewayRuntimeConfig = {
   grpcEmployerUrl: string;
   grpcIamUrl: string;
   grpcJobUrl: string;
+  grpcWorkflowUrl: string;
   jwtRefreshExpiresIn: string;
   throttleMediumLimit: number;
   throttleMediumTtlMs: number;
@@ -36,6 +37,7 @@ export function getGatewayRuntimeConfig(
     grpcEmployerUrl: configService.getOrThrow('GRPC_EMPLOYER_URL'),
     grpcIamUrl: configService.getOrThrow('GRPC_IAM_URL'),
     grpcJobUrl: configService.getOrThrow('GRPC_JOB_URL'),
+    grpcWorkflowUrl: configService.getOrThrow('GRPC_WORKFLOW_URL'),
     jwtRefreshExpiresIn: configService.getOrThrow('JWT_REFRESH_EXPIRES_IN'),
     throttleMediumLimit: configService.getOrThrow('THROTTLE_MEDIUM_LIMIT'),
     throttleMediumTtlMs: configService.getOrThrow('THROTTLE_MEDIUM_TTL_MS'),

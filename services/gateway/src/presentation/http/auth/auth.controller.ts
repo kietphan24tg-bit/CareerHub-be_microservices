@@ -13,6 +13,11 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags } from '@nestjs/swagger';
+import {
+  generateRequestId,
+  getRequestIdFromHttpRequest,
+  type RequestWithId
+} from '@careerhub/infrastructure';
 import { GatewayAuthService } from '../../../application/auth/gateway-auth.service';
 import { CurrentUser } from '../../../auth/decorators/current-user.decorator';
 import { Public } from '../../../auth/decorators/public.decorator';
@@ -32,6 +37,8 @@ type CookieRequest = {
     cookie?: string;
   };
 };
+
+type RequestIdRequest = Pick<RequestWithId, 'headers' | 'id'>;
 
 type CookieResponse = {
   clearCookie: (name: string, options: Record<string, unknown>) => void;
@@ -60,6 +67,10 @@ const AUTH_PASSWORD_RESET_THROTTLE = { medium: { limit: 5, ttl: 60_000 } } as co
 const AUTH_REFRESH_THROTTLE = { medium: { limit: 20, ttl: 60_000 } } as const;
 const AUTH_LOGOUT_THROTTLE = { medium: { limit: 30, ttl: 60_000 } } as const;
 
+function resolveRequestId(request: RequestIdRequest): string {
+  return getRequestIdFromHttpRequest(request) ?? generateRequestId();
+}
+
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
@@ -80,7 +91,7 @@ export class AuthController {
   @Throttle(AUTH_REGISTER_THROTTLE)
   async registerCandidate(
     @Body() dto: CandidateRegisterRequestDto,
-    @Headers('x-request-id') requestId?: string
+    @Req() request: RequestIdRequest
   ) {
     validatePasswordConfirmation(dto.password, dto.confirmPassword);
 
@@ -91,7 +102,7 @@ export class AuthController {
         fullName: dto.fullName,
         password: dto.password,
         phone: dto.phone,
-        requestId
+        requestId: resolveRequestId(request)
       }),
       message: 'Candidate registered successfully'
     };
@@ -102,7 +113,7 @@ export class AuthController {
   @Throttle(AUTH_REGISTER_THROTTLE)
   async registerEmployer(
     @Body() dto: EmployerRegisterRequestDto,
-    @Headers('x-request-id') requestId?: string
+    @Req() request: RequestIdRequest
   ) {
     validatePasswordConfirmation(dto.password, dto.confirmPassword);
 
@@ -116,7 +127,7 @@ export class AuthController {
         industry: dto.industry,
         password: dto.password,
         phone: dto.phone,
-        requestId
+        requestId: resolveRequestId(request)
       }),
       message: 'Employer registered successfully'
     };

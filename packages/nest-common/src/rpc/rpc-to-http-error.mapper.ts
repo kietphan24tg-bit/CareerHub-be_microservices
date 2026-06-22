@@ -2,9 +2,11 @@ import {
     BadRequestException,
     ConflictException,
     ForbiddenException,
+    GatewayTimeoutException,
     HttpException,
     InternalServerErrorException,
     NotFoundException,
+    ServiceUnavailableException,
     UnauthorizedException
 } from '@nestjs/common';
 import type { RpcErrorPayload } from './rpc-error.mapper';
@@ -19,6 +21,7 @@ const HTTP_EXCEPTION_BY_RPC_CODE: Record<string, HttpExceptionCtor> = {
     DUPLICATE_APPLICATION: ConflictException,
     FORBIDDEN: ForbiddenException,
     FORBIDDEN_APPLICATION_ACCESS: ForbiddenException,
+    GATEWAY_TIMEOUT: GatewayTimeoutException,
     INTERVIEW_APPLICATION_STATE_INVALID: BadRequestException,
     INTERVIEW_NOT_FOUND: NotFoundException,
     INTERVIEW_RESPONSE_STATE_INVALID: BadRequestException,
@@ -39,14 +42,17 @@ const HTTP_EXCEPTION_BY_RPC_CODE: Record<string, HttpExceptionCtor> = {
     PERMISSION_DENIED: ForbiddenException,
     UNAUTHENTICATED: UnauthorizedException,
     UNAUTHORIZED: UnauthorizedException,
+    UNAVAILABLE: ServiceUnavailableException,
     VALIDATION_ERROR: BadRequestException
 };
 
 const HTTP_EXCEPTION_BY_GRPC_STATUS: Record<number, HttpExceptionCtor> = {
     3: BadRequestException,
+    4: GatewayTimeoutException,
     5: NotFoundException,
     6: ConflictException,
     7: ForbiddenException,
+    14: ServiceUnavailableException,
     13: InternalServerErrorException,
     16: UnauthorizedException
 };

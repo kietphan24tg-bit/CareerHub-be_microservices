@@ -13,7 +13,8 @@ import {
   COMMUNICATION_GRPC_PACKAGE_NAME,
   EMPLOYER_GRPC_PACKAGE_NAME,
   IAM_GRPC_PACKAGE_NAME,
-  JOB_GRPC_PACKAGE_NAME
+  JOB_GRPC_PACKAGE_NAME,
+  WORKFLOW_GRPC_PACKAGE_NAME
 } from '@careerhub/contracts';
 import { ConfigService } from '@nestjs/config';
 import { GatewayAuthService } from './application/auth/gateway-auth.service';
@@ -37,6 +38,7 @@ import { ApplicationGrpcClient } from './infrastructure/transport/grpc/applicati
 import { CommunicationGrpcClient } from './infrastructure/transport/grpc/communication-grpc.client';
 import { EmployerGrpcClient } from './infrastructure/transport/grpc/employer-grpc.client';
 import { JobGrpcClient } from './infrastructure/transport/grpc/job-grpc.client';
+import { WorkflowGrpcClient } from './infrastructure/transport/grpc/workflow-grpc.client';
 import { AuthController } from './presentation/http/auth/auth.controller';
 import { CandidateProfilesController } from './presentation/http/candidate-profiles/candidate-profiles.controller';
 import { CompanyProfilesController } from './presentation/http/company-profiles/company-profiles.controller';
@@ -142,6 +144,7 @@ import {
     EmployerGrpcClient,
     IamGrpcClient,
     JobGrpcClient,
+    WorkflowGrpcClient,
     {
       provide: GATEWAY_METRICS_TOKENS.registry,
       useFactory: (): MetricsRegistry => new InMemoryMetricsRegistry()
@@ -198,6 +201,11 @@ import {
           packageName: JOB_GRPC_PACKAGE_NAME,
           protoPath: resolveGrpcProtoPath('job'),
           serviceUrl: gatewayRuntimeConfig.grpcJobUrl
+        },
+        workflow: {
+          packageName: WORKFLOW_GRPC_PACKAGE_NAME,
+          protoPath: resolveGrpcProtoPath('workflow'),
+          serviceUrl: gatewayRuntimeConfig.grpcWorkflowUrl
         }
       })
     }
