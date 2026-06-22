@@ -2,8 +2,9 @@ services:
   prometheus:
     image: prom/prometheus:v3.5.0
     container_name: careerhub-prometheus
-    command:
+    entrypoint:
       - /bin/sh
+    command:
       - -c
       - >-
         sed

@@ -31,6 +31,7 @@ export * from './outbox/outbox.types';
 export * from './transport/rpc/rpc-error.mapper';
 export * from './transport/rpc/rpc-to-http-error.mapper';
 export * from './transport/grpc/grpc-request-context';
+export * from './transport/grpc/resolve-grpc-proto-path';
 export * from './transport/rabbitmq/rabbitmq-consumer-retry';
 export * from './transport/rabbitmq/rabbitmq-dead-letter-topology';
 export * from './transport/rabbitmq/rabbitmq-outbox.publisher';
