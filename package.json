@@ -9,6 +9,9 @@
   "scripts": {
     "build:packages": "pnpm --filter @careerhub/shared-kernel build && pnpm --filter @careerhub/contracts build && pnpm --filter @careerhub/infrastructure build && pnpm --filter @careerhub/nest-common build",
     "install:all": "pnpm install",
+    "migrate:monolith": "node scripts/migrate-monolith-to-microservices.mjs",
+    "seed:reference-data": "node scripts/seed-reference-data.mjs",
+    "verify:monolith-mapping": "node scripts/verify-monolith-mapping.mjs",
     "local:infra:down": "docker compose -f docker-compose.local.yml down",
     "local:infra:up": "docker compose -f docker-compose.local.yml up -d",
     "prisma:migrate:deploy:all": "pnpm --filter @careerhub/iam-service run prisma:migrate:deploy && pnpm --filter @careerhub/application-service run prisma:migrate:deploy && pnpm --filter @careerhub/candidate-service run prisma:migrate:deploy && pnpm --filter @careerhub/employer-service run prisma:migrate:deploy && pnpm --filter @careerhub/job-service run prisma:migrate:deploy && pnpm --filter @careerhub/communication-service run prisma:migrate:deploy",
@@ -41,6 +44,7 @@
     "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
+    "pg": "^8.16.3",
     "@types/amqplib": "^0.10.7",
     "@types/node": "^24.0.0",
     "typescript": "^5.8.2"
