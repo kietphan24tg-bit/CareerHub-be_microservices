@@ -325,12 +325,12 @@ test('converts application errors into RpcException payloads', async () => {
       }
 
       const payload = (error as { getError: () => unknown }).getError() as {
-        code?: string;
+        code?: number;
         message?: string;
       };
 
       return (
-        payload.code === 'UNAUTHORIZED' &&
+        payload.code === 16 &&
         payload.message === 'Invalid access token'
       );
     }
@@ -441,12 +441,12 @@ test('converts conflict application errors into ALREADY_EXISTS gRPC payloads', a
       }
 
       const payload = (error as { getError: () => unknown }).getError() as {
-        code?: string;
+        code?: number;
         message?: string;
       };
 
       return (
-        payload.code === 'CONFLICT' &&
+        payload.code === 6 &&
         payload.message === 'Identity already exists for email: user@example.com'
       );
     }
@@ -478,12 +478,12 @@ test('converts not-found application errors into NOT_FOUND gRPC payloads', async
       }
 
       const payload = (error as { getError: () => unknown }).getError() as {
-        code?: string;
+        code?: number;
         message?: string;
       };
 
       return (
-        payload.code === 'NOT_FOUND' &&
+        payload.code === 5 &&
         payload.message === 'Identity not found: missing-identity'
       );
     }
