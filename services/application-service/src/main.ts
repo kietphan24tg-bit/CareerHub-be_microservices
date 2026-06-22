@@ -1,6 +1,4 @@
 import 'reflect-metadata';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import Redis from 'ioredis';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
@@ -9,6 +7,7 @@ import {
   configureHttpRuntime,
   getRuntimeConfig,
   initializeOpenTelemetry,
+  resolveGrpcProtoPath,
   type EnvironmentVariables,
   type ReadinessCheck,
   type PrismaReadinessCheck
@@ -24,43 +23,6 @@ import {
   type ApplicationEnvironmentVariables
 } from './config';
 import { APPLICATION_PRISMA_TOKENS } from './infrastructure';
-
-function resolveApplicationProtoPath(): string {
-  const distRelativePath = join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    'application',
-    'v1',
-    'application.proto'
-  );
-
-  if (existsSync(distRelativePath)) {
-    return distRelativePath;
-  }
-
-  return join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    'application',
-    'v1',
-    'application.proto'
-  );
-}
 
 function createRedisReadinessCheck(redis: Redis, name: string): ReadinessCheck {
   return {
@@ -115,7 +77,7 @@ async function bootstrap() {
         oneofs: true
       },
       package: APPLICATION_GRPC_PACKAGE_NAME,
-      protoPath: resolveApplicationProtoPath(),
+      protoPath: resolveGrpcProtoPath('application'),
       url: applicationRuntimeConfig.grpcApplicationUrl
     },
     transport: Transport.GRPC

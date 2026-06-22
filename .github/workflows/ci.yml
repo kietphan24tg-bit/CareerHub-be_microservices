@@ -83,6 +83,11 @@ jobs:
           pnpm --filter @careerhub/communication-service run prisma:generate
           pnpm --filter @careerhub/communication-service build
 
+      - name: Type-check workflow-service
+        run: |
+          pnpm --filter @careerhub/workflow-service run prisma:generate
+          pnpm --filter @careerhub/workflow-service build
+
   unit_tests_core:
     name: Run portable core service tests
     runs-on: ubuntu-latest

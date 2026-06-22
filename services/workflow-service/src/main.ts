@@ -1,6 +1,4 @@
 import 'reflect-metadata';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -8,6 +6,7 @@ import {
   configureHttpRuntime,
   getRuntimeConfig,
   initializeOpenTelemetry,
+  resolveGrpcProtoPath,
   type EnvironmentVariables,
   type PrismaReadinessCheck
 } from '@careerhub/infrastructure';
@@ -22,43 +21,6 @@ import {
   type WorkflowEnvironmentVariables
 } from './config';
 import { WORKFLOW_PRISMA_TOKENS } from './infrastructure';
-
-function resolveWorkflowProtoPath(): string {
-  const distRelativePath = join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    'workflow',
-    'v1',
-    'workflow.proto'
-  );
-
-  if (existsSync(distRelativePath)) {
-    return distRelativePath;
-  }
-
-  return join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    'workflow',
-    'v1',
-    'workflow.proto'
-  );
-}
 
 async function bootstrap() {
   const app = await NestFactory.create(WorkflowModule, {
@@ -89,7 +51,7 @@ async function bootstrap() {
         oneofs: true
       },
       package: WORKFLOW_GRPC_PACKAGE_NAME,
-      protoPath: resolveWorkflowProtoPath(),
+      protoPath: resolveGrpcProtoPath('workflow'),
       url: workflowRuntimeConfig.grpcWorkflowUrl
     },
     transport: Transport.GRPC

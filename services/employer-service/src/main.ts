@@ -1,6 +1,4 @@
 import 'reflect-metadata';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -8,6 +6,7 @@ import {
   configureHttpRuntime,
   getRuntimeConfig,
   initializeOpenTelemetry,
+  resolveGrpcProtoPath,
   type PrismaReadinessCheck,
   type EnvironmentVariables
 } from '@careerhub/infrastructure';
@@ -22,43 +21,6 @@ import {
   type EmployerEnvironmentVariables
 } from './config';
 import { EMPLOYER_PRISMA_TOKENS } from './infrastructure';
-
-function resolveEmployerProtoPath(): string {
-  const distRelativePath = join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    'employer',
-    'v1',
-    'employer.proto'
-  );
-
-  if (existsSync(distRelativePath)) {
-    return distRelativePath;
-  }
-
-  return join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    'employer',
-    'v1',
-    'employer.proto'
-  );
-}
 
 async function bootstrap() {
   const app = await NestFactory.create(EmployerModule, {
@@ -90,7 +52,7 @@ async function bootstrap() {
           oneofs: true
         },
         package: EMPLOYER_GRPC_PACKAGE_NAME,
-        protoPath: resolveEmployerProtoPath(),
+        protoPath: resolveGrpcProtoPath('employer'),
         url: employerRuntimeConfig.grpcEmployerUrl
       },
       transport: Transport.GRPC

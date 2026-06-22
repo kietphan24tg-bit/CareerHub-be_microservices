@@ -1,6 +1,4 @@
 import 'reflect-metadata';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -8,6 +6,7 @@ import {
   configureHttpRuntime,
   getRuntimeConfig,
   initializeOpenTelemetry,
+  resolveGrpcProtoPath,
   type MetricsRegistry,
   type PrismaReadinessCheck,
   type EnvironmentVariables
@@ -20,43 +19,6 @@ import {
 import { IamModule } from './iam.module';
 import { getIamRuntimeConfig, type IamEnvironmentVariables } from './config';
 import { IAM_METRICS_TOKENS, IAM_PRISMA_TOKENS } from './infrastructure';
-
-function resolveIamProtoPath(): string {
-  const distRelativePath = join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    'iam',
-    'v1',
-    'iam.proto'
-  );
-
-  if (existsSync(distRelativePath)) {
-    return distRelativePath;
-  }
-
-  return join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    'iam',
-    'v1',
-    'iam.proto'
-  );
-}
 
 async function bootstrap() {
   const app = await NestFactory.create(IamModule, {
@@ -90,7 +52,7 @@ async function bootstrap() {
           oneofs: true
         },
         package: IAM_GRPC_PACKAGE_NAME,
-        protoPath: resolveIamProtoPath(),
+        protoPath: resolveGrpcProtoPath('iam'),
         url: iamRuntimeConfig.grpcIamUrl
       },
       transport: Transport.GRPC

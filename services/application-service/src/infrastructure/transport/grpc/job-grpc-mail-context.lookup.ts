@@ -1,5 +1,3 @@
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import {
   credentials,
   loadPackageDefinition,
@@ -14,7 +12,7 @@ import {
   type ListJobsByIdsRequest,
   type ListJobsByIdsResponse
 } from '@careerhub/contracts';
-import { createGrpcMetadata } from '@careerhub/infrastructure';
+import { createGrpcMetadata, resolveGrpcProtoPath } from '@careerhub/infrastructure';
 import type {
   JobMailContext,
   JobMailContextLookup
@@ -27,62 +25,6 @@ type JobGrpcServiceClient = {
     callback: (error: ServiceError | null, response: ListJobsByIdsResponse) => void
   ): ClientUnaryCall;
 };
-
-function resolveGrpcProtoPath(serviceName: 'job'): string {
-  const cwdRelativePath = join(
-    process.cwd(),
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    serviceName,
-    'v1',
-    `${serviceName}.proto`
-  );
-
-  if (existsSync(cwdRelativePath)) {
-    return cwdRelativePath;
-  }
-
-  const distRelativePath = join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    serviceName,
-    'v1',
-    `${serviceName}.proto`
-  );
-
-  if (existsSync(distRelativePath)) {
-    return distRelativePath;
-  }
-
-  return join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    serviceName,
-    'v1',
-    `${serviceName}.proto`
-  );
-}
 
 function resolveGrpcNamespace(
   packageDefinition: Record<string, unknown>,

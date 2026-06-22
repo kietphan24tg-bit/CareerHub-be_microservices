@@ -1,6 +1,4 @@
 import 'reflect-metadata';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -8,6 +6,7 @@ import {
   configureHttpRuntime,
   getRuntimeConfig,
   initializeOpenTelemetry,
+  resolveGrpcProtoPath,
   type EnvironmentVariables,
   type PrismaReadinessCheck
 } from '@careerhub/infrastructure';
@@ -22,43 +21,6 @@ import {
   type CommunicationEnvironmentVariables
 } from './config';
 import { COMMUNICATION_PRISMA_TOKENS } from './infrastructure';
-
-function resolveCommunicationProtoPath(): string {
-  const distRelativePath = join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    'communication',
-    'v1',
-    'communication.proto'
-  );
-
-  if (existsSync(distRelativePath)) {
-    return distRelativePath;
-  }
-
-  return join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    'communication',
-    'v1',
-    'communication.proto'
-  );
-}
 
 async function bootstrap() {
   const app = await NestFactory.create(CommunicationModule, {
@@ -90,7 +52,7 @@ async function bootstrap() {
           oneofs: true
         },
         package: COMMUNICATION_GRPC_PACKAGE_NAME,
-        protoPath: resolveCommunicationProtoPath(),
+        protoPath: resolveGrpcProtoPath('communication'),
         url: communicationRuntimeConfig.grpcCommunicationUrl
       },
       transport: Transport.GRPC

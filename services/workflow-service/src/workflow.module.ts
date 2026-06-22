@@ -1,6 +1,7 @@
 import {
   createPrismaModule,
-  createRuntimeConfigModule
+  createRuntimeConfigModule,
+  resolveGrpcProtoPath
 } from '@careerhub/infrastructure';
 import {
   CANDIDATE_GRPC_PACKAGE_NAME,
@@ -31,47 +32,6 @@ import {
 } from './infrastructure';
 import { WorkflowGrpcController } from './presentation';
 import type { WorkflowEnvironmentVariables, WorkflowRuntimeConfig } from './config';
-
-function resolveGrpcProtoPath(
-  serviceName: 'candidate' | 'employer' | 'iam'
-): string {
-  const { existsSync } = require('node:fs') as typeof import('node:fs');
-  const { join } = require('node:path') as typeof import('node:path');
-  const distRelativePath = join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    serviceName,
-    'v1',
-    `${serviceName}.proto`
-  );
-
-  if (existsSync(distRelativePath)) {
-    return distRelativePath;
-  }
-
-  return join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    serviceName,
-    'v1',
-    `${serviceName}.proto`
-  );
-}
 
 @Module({
   controllers: [WorkflowGrpcController],

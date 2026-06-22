@@ -1,6 +1,4 @@
 import 'reflect-metadata';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import Redis from 'ioredis';
 import { MeiliSearch } from 'meilisearch';
 import { NestFactory } from '@nestjs/core';
@@ -10,6 +8,7 @@ import {
   configureHttpRuntime,
   getRuntimeConfig,
   initializeOpenTelemetry,
+  resolveGrpcProtoPath,
   type ReadinessCheck,
   type PrismaReadinessCheck,
   type EnvironmentVariables
@@ -25,60 +24,6 @@ import {
   type JobEnvironmentVariables
 } from './config';
 import { JOB_PRISMA_TOKENS } from './infrastructure';
-
-function resolveJobProtoPath(): string {
-  const cwdRelativePath = join(
-    process.cwd(),
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    'job',
-    'v1',
-    'job.proto'
-  );
-
-  if (existsSync(cwdRelativePath)) {
-    return cwdRelativePath;
-  }
-
-  const distRelativePath = join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    'job',
-    'v1',
-    'job.proto'
-  );
-
-  if (existsSync(distRelativePath)) {
-    return distRelativePath;
-  }
-
-  return join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    '..',
-    'packages',
-    'contracts',
-    'src',
-    'grpc',
-    'job',
-    'v1',
-    'job.proto'
-  );
-}
 
 function createRedisReadinessCheck(redis: Redis, name: string): ReadinessCheck {
   return {
@@ -157,7 +102,7 @@ async function bootstrap() {
           oneofs: true
         },
         package: JOB_GRPC_PACKAGE_NAME,
-        protoPath: resolveJobProtoPath(),
+        protoPath: resolveGrpcProtoPath('job'),
         url: jobRuntimeConfig.grpcJobUrl
       },
       transport: Transport.GRPC
