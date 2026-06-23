@@ -25,6 +25,7 @@ type JobDocument = {
   description: string | null;
   employerIdentityId: string;
   employmentType: string | null;
+  experienceLevel: string;
   expiresAt: number | null;
   isRemote: boolean;
   level: string | null;
@@ -32,6 +33,7 @@ type JobDocument = {
   responsibilities: string[];
   salaryMax: number | null;
   salaryMin: number | null;
+  saturdayPolicy: string;
   slug: string;
   status: string;
   title: string;
@@ -55,10 +57,12 @@ function toDocument(job: JobRecord): JobDocument {
     currency: job.currency,
     employerIdentityId: job.employerIdentityId,
     employmentType: job.employmentType,
+    experienceLevel: job.experienceLevel,
     isRemote: job.isRemote,
     level: job.level,
     salaryMax: job.salaryMax,
     salaryMin: job.salaryMin,
+    saturdayPolicy: job.saturdayPolicy,
     status: job.status,
     benefits: job.benefits,
     requirements: job.requirements,
@@ -87,6 +91,7 @@ function fromDocument(doc: JobDocument): JobRecord {
     description: doc.description,
     employerIdentityId: doc.employerIdentityId,
     employmentType: doc.employmentType,
+    experienceLevel: doc.experienceLevel,
     expiresAt: doc.expiresAt ? new Date(doc.expiresAt) : null,
     id: doc.id,
     isRemote: doc.isRemote,
@@ -95,6 +100,7 @@ function fromDocument(doc: JobDocument): JobRecord {
     responsibilities: doc.responsibilities,
     salaryMax: doc.salaryMax,
     salaryMin: doc.salaryMin,
+    saturdayPolicy: doc.saturdayPolicy,
     slug: doc.slug,
     status: doc.status as JobRecord['status'],
     title: doc.title,
@@ -132,6 +138,14 @@ function buildFilter(filter: ListPublicJobsFilter): string {
   if (filter.location) {
     const escaped = filter.location.replace(/"/g, '\\"');
     parts.push(`(city = "${escaped}" OR country = "${escaped}")`);
+  }
+
+  if (filter.saturdayPolicy) {
+    parts.push(`saturdayPolicy = "${filter.saturdayPolicy}"`);
+  }
+
+  if (filter.experienceLevel) {
+    parts.push(`experienceLevel = "${filter.experienceLevel}"`);
   }
 
   parts.push('status = "published"');
@@ -222,12 +236,14 @@ export class MeilisearchJobRepository implements JobSearchRepository, JobSearchI
       'status',
       'slug',
       'employmentType',
+      'experienceLevel',
       'level',
       'category',
       'companyIndustry',
       'isRemote',
       'salaryMin',
       'salaryMax',
+      'saturdayPolicy',
       'city',
       'country'
     ]);

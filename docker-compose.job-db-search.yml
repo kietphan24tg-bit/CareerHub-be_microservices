@@ -1,0 +1,5 @@
+services:
+  job-service:
+    environment:
+      MEILISEARCH_HOST: ""
+      MEILISEARCH_API_KEY: ""

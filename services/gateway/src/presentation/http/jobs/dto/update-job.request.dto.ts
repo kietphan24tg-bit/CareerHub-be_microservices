@@ -14,6 +14,18 @@ import {
 
 const employmentTypes = ['fulltime', 'parttime', 'intern', 'contract'] as const;
 const jobLevels = ['intern', 'fresher', 'junior', 'mid', 'senior', 'lead'] as const;
+const saturdayPolicies = ['unspecified', 'works_saturday', 'off_saturday'] as const;
+const experienceLevels = [
+  'unspecified',
+  'none',
+  'under_1',
+  'y1',
+  'y2',
+  'y3',
+  'y4',
+  'y5',
+  'over_5'
+] as const;
 
 function trimOptional(value: unknown) {
   if (value === null) {
@@ -71,6 +83,14 @@ export class UpdateJobRequestDto {
   @IsOptional()
   @IsIn(jobLevels)
   level?: (typeof jobLevels)[number] | null;
+
+  @IsOptional()
+  @IsIn(saturdayPolicies)
+  saturdayPolicy?: (typeof saturdayPolicies)[number] | null;
+
+  @IsOptional()
+  @IsIn(experienceLevels)
+  experienceLevel?: (typeof experienceLevels)[number] | null;
 
   @Transform(({ value }) => trimOptional(value))
   @IsOptional()

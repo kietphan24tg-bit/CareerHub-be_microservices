@@ -45,16 +45,21 @@ export class ListPublicJobsQueryHandler {
       ? await this.jobSearchRepository.search(filter)
       : await this.jobRepository.listPublic(filter);
 
+    const resolved =
+      this.jobSearchRepository && result.total === 0
+        ? await this.jobRepository.listPublic(filter)
+        : result;
+
     if (this.jobSearchRepository && this.jobSearchCache) {
-      await this.jobSearchCache.set(filter, result).catch(() => undefined);
+      await this.jobSearchCache.set(filter, resolved).catch(() => undefined);
     }
 
     return {
-      items: result.items,
+      items: resolved.items,
       meta: {
         page,
         pageSize,
-        total: result.total
+        total: resolved.total
       }
     };
   }

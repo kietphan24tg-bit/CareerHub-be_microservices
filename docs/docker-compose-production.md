@@ -48,9 +48,23 @@ docker compose -f docker-compose.prod.yml up -d
 
 Because the Docker Hub repositories are public, read-only pulls normally do not require `docker login`.
 
-## 4. Optional self-hosted infra profile
+## 4. Redis is bundled with app services
 
-If you also want Compose to run RabbitMQ, Redis, Meilisearch, and PostgreSQL on the same host:
+`docker compose up -d` always starts the local `redis` container. `job-service` and
+`application-service` wait for Redis to become healthy before starting.
+
+Default connection inside the Compose network:
+
+```bash
+REDIS_URL=redis://redis:6379
+```
+
+You can omit `REDIS_URL` in `.env.prod` and Compose will use that default. If you use a
+managed Redis provider instead, set `REDIS_URL` to the external URL.
+
+## 5. Optional self-hosted infra profile
+
+If you also want Compose to run RabbitMQ, Meilisearch, and PostgreSQL on the same host:
 
 ```bash
 docker compose -f docker-compose.prod.yml --profile infra pull
@@ -60,11 +74,11 @@ docker compose -f docker-compose.prod.yml --profile infra up -d
 Notes:
 
 - this profile is optional
-- managed services such as CloudAMQP or hosted PostgreSQL still work fine; just do not enable the profile
+- managed services such as CloudAMQP, hosted PostgreSQL, or hosted Meilisearch still work fine; just do not enable the profile
 - SMTP is not containerized here; keep using your external mail provider
 - override the default placeholder passwords and keys before using the infra profile for anything real
 
-## 5. Migration still runs separately
+## 6. Migration still runs separately
 
 Do **not** rely on Compose startup to run Prisma migrations.
 

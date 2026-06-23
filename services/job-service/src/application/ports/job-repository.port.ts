@@ -16,6 +16,7 @@ export type JobRecord = {
   description: string | null;
   employerIdentityId: string;
   employmentType: string | null;
+  experienceLevel: string;
   expiresAt: Date | null;
   id: string;
   isRemote: boolean;
@@ -24,6 +25,7 @@ export type JobRecord = {
   responsibilities: string[];
   salaryMax: number | null;
   salaryMin: number | null;
+  saturdayPolicy: string;
   slug: string;
   status: JobStatus;
   title: string;
@@ -34,6 +36,7 @@ export type ListPublicJobsFilter = {
   category?: string;
   companyIndustry?: string;
   employmentType?: string;
+  experienceLevel?: string;
   keyword?: string;
   location?: string;
   page: number;
@@ -41,6 +44,7 @@ export type ListPublicJobsFilter = {
   remoteOnly?: boolean;
   salaryMax?: number;
   salaryMin?: number;
+  saturdayPolicy?: string;
   sort?: 'newest' | 'salary_asc' | 'salary_desc';
 };
 
@@ -65,6 +69,7 @@ export type CreateJobData = {
   description: string | null;
   employerIdentityId: string;
   employmentType: string | null;
+  experienceLevel: string;
   expiresAt: Date | null;
   id: string;
   isRemote: boolean;
@@ -73,6 +78,7 @@ export type CreateJobData = {
   responsibilities: string[];
   salaryMax: number | null;
   salaryMin: number | null;
+  saturdayPolicy: string;
   slug: string;
   title: string;
 };
@@ -85,6 +91,7 @@ export type UpdateJobPatch = {
   currency?: string | null;
   description?: string | null;
   employmentType?: string | null;
+  experienceLevel?: string;
   expiresAt?: Date | null;
   isRemote?: boolean;
   level?: string | null;
@@ -92,6 +99,7 @@ export type UpdateJobPatch = {
   responsibilities?: string[] | null;
   salaryMax?: number | null;
   salaryMin?: number | null;
+  saturdayPolicy?: string;
   slug?: string;
   title?: string;
 };

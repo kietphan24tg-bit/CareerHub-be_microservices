@@ -50,6 +50,7 @@ import {
 } from '../../../application';
 import { mapErrorToJobGrpcException } from '../mappers/grpc-error.mapper';
 import { toGrpcJobMessage } from '../mappers/job-message.mapper';
+import { resolveListPublicJobsSalaryFilter } from '../mappers/list-public-jobs-request.mapper';
 import { toGrpcSavedJobSummary } from '../mappers/saved-job-summary.mapper';
 
 @Controller()
@@ -76,17 +77,19 @@ export class JobGrpcController {
     request: ListPublicJobsRequest
   ): Promise<ListPublicJobsResponse> {
     try {
+      const salaryFilter = resolveListPublicJobsSalaryFilter(request);
       const result = await this.listPublicJobsQueryHandler.execute({
         category: request.category,
         companyIndustry: request.company_industry,
         employmentType: request.employment_type,
+        experienceLevel: request.experience_level,
         keyword: request.keyword,
         location: request.location,
         page: request.page ?? 1,
         pageSize: request.page_size ?? 20,
         remoteOnly: request.remote_only,
-        salaryMax: request.salary_max,
-        salaryMin: request.salary_min,
+        ...salaryFilter,
+        saturdayPolicy: request.saturday_policy,
         sort: (request.sort as 'newest' | 'salary_asc' | 'salary_desc' | undefined) ??
           'newest'
       });
@@ -207,6 +210,7 @@ export class JobGrpcController {
         description: request.description,
         employerIdentityId: request.employer_identity_id,
         employmentType: request.employment_type,
+        experienceLevel: request.experience_level,
         expiresAt: request.expires_at,
         isRemote: request.is_remote,
         level: request.level,
@@ -214,6 +218,7 @@ export class JobGrpcController {
         responsibilities: request.responsibilities,
         salaryMax: request.salary_max,
         salaryMin: request.salary_min,
+        saturdayPolicy: request.saturday_policy,
         title: request.title
       });
 
@@ -263,6 +268,11 @@ export class JobGrpcController {
           : clearFields.has('employment_type')
             ? null
             : undefined,
+        experienceLevel: updatedFields.has('experience_level')
+          ? request.experience_level
+          : clearFields.has('experience_level')
+            ? 'unspecified'
+            : undefined,
         expiresAt: updatedFields.has('expires_at')
           ? request.expires_at
           : clearFields.has('expires_at')
@@ -283,6 +293,11 @@ export class JobGrpcController {
           : undefined,
         salaryMax: updatedFields.has('salary_max') ? request.salary_max : undefined,
         salaryMin: updatedFields.has('salary_min') ? request.salary_min : undefined,
+        saturdayPolicy: updatedFields.has('saturday_policy')
+          ? request.saturday_policy
+          : clearFields.has('saturday_policy')
+            ? 'unspecified'
+            : undefined,
         title: updatedFields.has('title') ? request.title : undefined
       });
 

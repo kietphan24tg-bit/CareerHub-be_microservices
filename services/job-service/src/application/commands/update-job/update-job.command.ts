@@ -7,6 +7,7 @@ export type UpdateJobCommand = {
   description?: string | null;
   employerIdentityId: string;
   employmentType?: string | null;
+  experienceLevel?: string;
   expiresAt?: string | null;
   isRemote?: boolean;
   jobId: string;
@@ -15,5 +16,6 @@ export type UpdateJobCommand = {
   responsibilities?: string[];
   salaryMax?: number;
   salaryMin?: number;
+  saturdayPolicy?: string;
   title?: string;
 };

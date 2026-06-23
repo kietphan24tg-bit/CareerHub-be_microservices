@@ -30,6 +30,8 @@ model Job {
   salaryMin            Decimal?  @map("salary_min") @db.Decimal(12, 2)
   salaryMax            Decimal?  @map("salary_max") @db.Decimal(12, 2)
   currency             String?
+  saturdayPolicy       String    @default("unspecified") @map("saturday_policy") @db.VarChar(32)
+  experienceLevel      String    @default("unspecified") @map("experience_level") @db.VarChar(32)
   status               String    @default("draft")
   expiresAt            DateTime? @map("expires_at")
   createdAt            DateTime  @default(now()) @map("created_at")

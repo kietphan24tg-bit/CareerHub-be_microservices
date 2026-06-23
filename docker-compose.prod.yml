@@ -129,6 +129,9 @@ services:
     <<: *service-defaults
     image: kietphan24/careerhub-job-service:${IMAGE_TAG:-latest}
     container_name: careerhub-job-service
+    depends_on:
+      redis:
+        condition: service_healthy
     expose:
       - "3004"
       - "50054"
@@ -154,12 +157,15 @@ services:
       OUTBOX_STALE_PROCESSING_TIMEOUT_MS: ${JOB_OUTBOX_STALE_PROCESSING_TIMEOUT_MS:-60000}
       REDIS_SEARCH_CACHE_TTL_S: ${REDIS_SEARCH_CACHE_TTL_S:-30}
       REDIS_SLUG_CACHE_TTL_S: ${REDIS_SLUG_CACHE_TTL_S:-300}
-      REDIS_URL: ${REDIS_URL:?set REDIS_URL}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
 
   application-service:
     <<: *service-defaults
     image: kietphan24/careerhub-application-service:${IMAGE_TAG:-latest}
     container_name: careerhub-application-service
+    depends_on:
+      redis:
+        condition: service_healthy
     expose:
       - "3005"
       - "50055"
@@ -186,7 +192,7 @@ services:
       OUTBOX_RETRY_DELAY_MS: ${APPLICATION_OUTBOX_RETRY_DELAY_MS:-30000}
       OUTBOX_STALE_PROCESSING_TIMEOUT_MS: ${APPLICATION_OUTBOX_STALE_PROCESSING_TIMEOUT_MS:-60000}
       REDIS_DASHBOARD_CACHE_TTL_S: ${REDIS_DASHBOARD_CACHE_TTL_S:-120}
-      REDIS_URL: ${REDIS_URL:?set REDIS_URL}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
 
   communication-service:
     <<: *service-defaults
@@ -270,8 +276,13 @@ services:
     <<: *service-defaults
     image: redis:7-alpine
     container_name: careerhub-redis
-    profiles: ["infra"]
     command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
     ports:
       - "${REDIS_HOST_PORT:-6379}:6379"
     volumes:

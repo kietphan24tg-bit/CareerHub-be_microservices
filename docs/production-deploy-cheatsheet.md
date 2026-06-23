@@ -84,20 +84,33 @@ Observability joins the same Docker network as the app stack and scrapes service
 
 ---
 
-## 4. Optional infra profile
+## 4. Redis starts with app services
 
-If you want Docker Compose to also run self-hosted infra from `docker-compose.prod.yml`, use:
+`docker compose up -d` now always includes the bundled `redis` container. You do not need
+`--profile infra` for Redis.
+
+Default:
+
+```bash
+REDIS_URL=redis://redis:6379
+```
+
+## 5. Optional infra profile
+
+If you want Docker Compose to also run self-hosted PostgreSQL, RabbitMQ, or Meilisearch from
+`docker-compose.prod.yml`, use:
 
 ```bash
 docker compose --env-file .env.prod -f docker-compose.prod.yml --profile infra pull
 docker compose --env-file .env.prod -f docker-compose.prod.yml --profile infra up -d
 ```
 
-This is optional. If you use external PostgreSQL, CloudAMQP, or hosted Redis/Meilisearch, do not enable the profile.
+This is optional. If you use external PostgreSQL, CloudAMQP, or hosted Meilisearch, do not
+enable the profile.
 
 ---
 
-## 5. Verify after deploy
+## 6. Verify after deploy
 
 Minimum checks:
 

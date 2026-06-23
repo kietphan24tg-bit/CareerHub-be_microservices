@@ -53,6 +53,7 @@ function mapRecord(record: JobPersistenceRecord): JobRecord {
     description: record.description,
     employerIdentityId: record.employerIdentityId,
     employmentType: record.employmentType,
+    experienceLevel: record.experienceLevel,
     expiresAt: record.expiresAt,
     id: record.id,
     isRemote: record.isRemote,
@@ -61,6 +62,7 @@ function mapRecord(record: JobPersistenceRecord): JobRecord {
     responsibilities: parseJobList(record.responsibilitiesJson),
     salaryMax: mapDecimal(record.salaryMax),
     salaryMin: mapDecimal(record.salaryMin),
+    saturdayPolicy: record.saturdayPolicy,
     slug: record.slug,
     status: record.status as JobStatus,
     title: record.title,
@@ -128,7 +130,9 @@ function buildPublicJobWhere(
       : {}),
     ...(filter.salaryMax !== undefined
       ? { salaryMin: { lte: filter.salaryMax } }
-      : {})
+      : {}),
+    ...(filter.saturdayPolicy ? { saturdayPolicy: filter.saturdayPolicy } : {}),
+    ...(filter.experienceLevel ? { experienceLevel: filter.experienceLevel } : {})
   };
 }
 
@@ -165,6 +169,9 @@ function mapUpdatePatch(patch: UpdateJobPatch) {
     ...(patch.employmentType !== undefined
       ? { employmentType: patch.employmentType }
       : {}),
+    ...(patch.experienceLevel !== undefined
+      ? { experienceLevel: patch.experienceLevel }
+      : {}),
     ...(patch.level !== undefined ? { level: patch.level } : {}),
     ...(patch.category !== undefined ? { category: patch.category } : {}),
     ...(patch.city !== undefined ? { city: patch.city } : {}),
@@ -172,6 +179,9 @@ function mapUpdatePatch(patch: UpdateJobPatch) {
     ...(patch.isRemote !== undefined ? { isRemote: patch.isRemote } : {}),
     ...(patch.salaryMin !== undefined ? { salaryMin: patch.salaryMin } : {}),
     ...(patch.salaryMax !== undefined ? { salaryMax: patch.salaryMax } : {}),
+    ...(patch.saturdayPolicy !== undefined
+      ? { saturdayPolicy: patch.saturdayPolicy }
+      : {}),
     ...(patch.currency !== undefined ? { currency: patch.currency } : {}),
     ...(patch.expiresAt !== undefined ? { expiresAt: patch.expiresAt } : {})
   };
@@ -196,6 +206,7 @@ export class PrismaJobRepository implements JobRepository {
         description: data.description,
         employerIdentityId: data.employerIdentityId,
         employmentType: data.employmentType,
+        experienceLevel: data.experienceLevel,
         expiresAt: data.expiresAt,
         id: data.id,
         isRemote: data.isRemote,
@@ -204,6 +215,7 @@ export class PrismaJobRepository implements JobRepository {
         responsibilitiesJson: stringifyJobList(data.responsibilities),
         salaryMax: data.salaryMax,
         salaryMin: data.salaryMin,
+        saturdayPolicy: data.saturdayPolicy,
         slug: data.slug,
         status: 'draft',
         title: data.title

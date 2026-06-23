@@ -49,6 +49,9 @@ export class UpdateJobCommandHandler {
       ...(command.employmentType !== undefined
         ? { employmentType: command.employmentType }
         : {}),
+      ...(command.experienceLevel !== undefined
+        ? { experienceLevel: command.experienceLevel }
+        : {}),
       ...(command.level !== undefined ? { level: command.level } : {}),
       ...(command.category !== undefined
         ? { category: command.category?.trim() || null }
@@ -62,6 +65,9 @@ export class UpdateJobCommandHandler {
       ...(command.isRemote !== undefined ? { isRemote: command.isRemote } : {}),
       ...(command.salaryMin !== undefined ? { salaryMin: command.salaryMin } : {}),
       ...(command.salaryMax !== undefined ? { salaryMax: command.salaryMax } : {}),
+      ...(command.saturdayPolicy !== undefined
+        ? { saturdayPolicy: command.saturdayPolicy }
+        : {}),
       ...(command.currency !== undefined
         ? { currency: command.currency?.trim() || null }
         : {}),

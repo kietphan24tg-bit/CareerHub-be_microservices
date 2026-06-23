@@ -48,6 +48,7 @@ export class CreateJobCommandHandler {
           description: command.description?.trim() || null,
           employerIdentityId: job.employerIdentityId,
           employmentType: command.employmentType ?? null,
+          experienceLevel: command.experienceLevel ?? 'unspecified',
           expiresAt: command.expiresAt ? new Date(command.expiresAt) : null,
           id: job.id.toString(),
           isRemote: command.isRemote ?? false,
@@ -56,6 +57,7 @@ export class CreateJobCommandHandler {
           responsibilities: command.responsibilities ?? [],
           salaryMax: command.salaryMax ?? null,
           salaryMin: command.salaryMin ?? null,
+          saturdayPolicy: command.saturdayPolicy ?? 'unspecified',
           slug,
           title: command.title.trim()
         })

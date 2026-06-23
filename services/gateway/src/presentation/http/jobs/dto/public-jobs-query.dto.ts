@@ -3,6 +3,18 @@ import { IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, Max, Min } from
 
 const employmentTypes = ['fulltime', 'parttime', 'intern', 'contract'] as const;
 const jobSortOptions = ['newest', 'salary_asc', 'salary_desc'] as const;
+const saturdayPolicies = ['works_saturday', 'off_saturday', 'unspecified'] as const;
+const experienceLevels = [
+  'none',
+  'under_1',
+  'y1',
+  'y2',
+  'y3',
+  'y4',
+  'y5',
+  'over_5',
+  'unspecified'
+] as const;
 
 function trimOptional(value: unknown) {
   return typeof value === 'string' ? value.trim() : value;
@@ -63,6 +75,14 @@ export class PublicJobsQueryDto {
   @IsOptional()
   @IsIn(jobSortOptions)
   sort: (typeof jobSortOptions)[number] = 'newest';
+
+  @IsOptional()
+  @IsIn(saturdayPolicies)
+  saturdayPolicy?: (typeof saturdayPolicies)[number];
+
+  @IsOptional()
+  @IsIn(experienceLevels)
+  experienceLevel?: (typeof experienceLevels)[number];
 
   @Type(() => Number)
   @IsOptional()

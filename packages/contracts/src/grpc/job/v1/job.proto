@@ -58,6 +58,8 @@ message JobMessage {
   int32 application_count = 22;
   JobCompany company = 23;
   repeated string null_fields = 24;
+  string saturday_policy = 25;
+  string experience_level = 26;
 }
 
 message SavedJobSummary {
@@ -93,6 +95,8 @@ message ListPublicJobsRequest {
   int32 page = 10;
   int32 page_size = 11;
   string request_id = 12;
+  string saturday_policy = 13;
+  string experience_level = 14;
 }
 
 message ListPublicJobsResponse {
@@ -155,6 +159,8 @@ message CreateJobRequest {
   string currency = 20;
   string expires_at = 21;
   string request_id = 22;
+  string saturday_policy = 23;
+  string experience_level = 24;
 }
 
 message CreateJobResponse {
@@ -182,6 +188,8 @@ message UpdateJobRequest {
   string currency = 18;
   string expires_at = 19;
   string request_id = 20;
+  string saturday_policy = 21;
+  string experience_level = 22;
 }
 
 message UpdateJobResponse {

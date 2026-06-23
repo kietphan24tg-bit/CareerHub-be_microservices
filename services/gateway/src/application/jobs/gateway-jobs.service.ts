@@ -29,6 +29,7 @@ export class GatewayJobsService {
     category?: string;
     companyIndustry?: string;
     employmentType?: string;
+    experienceLevel?: string;
     keyword?: string;
     location?: string;
     page?: number;
@@ -37,6 +38,7 @@ export class GatewayJobsService {
     requestId?: string;
     salaryMax?: number;
     salaryMin?: number;
+    saturdayPolicy?: string;
     sort?: string;
   }) {
     const response = await this.jobGrpcClient.listPublicJobs(
@@ -44,6 +46,7 @@ export class GatewayJobsService {
         category: input.category,
         company_industry: input.companyIndustry,
         employment_type: input.employmentType,
+        experience_level: input.experienceLevel,
         keyword: input.keyword,
         location: input.location,
         page: input.page,
@@ -51,6 +54,7 @@ export class GatewayJobsService {
         remote_only: input.remoteOnly,
         salary_max: input.salaryMax,
         salary_min: input.salaryMin,
+        saturday_policy: input.saturdayPolicy,
         sort: input.sort
       },
       input.requestId
@@ -123,6 +127,7 @@ export class GatewayJobsService {
     currency?: string;
     description?: string;
     employmentType?: string;
+    experienceLevel?: string;
     expiresAt?: string;
     identityId: string;
     isRemote?: boolean;
@@ -132,6 +137,7 @@ export class GatewayJobsService {
     responsibilities?: string[];
     salaryMax?: number;
     salaryMin?: number;
+    saturdayPolicy?: string;
     title: string;
   }): Promise<GatewayHttpJob> {
     const company = await this.resolveEmployerCompany(input.identityId, input.requestId);
@@ -150,6 +156,7 @@ export class GatewayJobsService {
         description: input.description,
         employer_identity_id: input.identityId,
         employment_type: input.employmentType,
+        experience_level: input.experienceLevel,
         expires_at: input.expiresAt,
         is_remote: input.isRemote,
         level: input.level,
@@ -157,6 +164,7 @@ export class GatewayJobsService {
         responsibilities: input.responsibilities,
         salary_max: input.salaryMax,
         salary_min: input.salaryMin,
+        saturday_policy: input.saturdayPolicy,
         title: input.title
       },
       input.requestId
@@ -173,6 +181,7 @@ export class GatewayJobsService {
     currency?: string | null;
     description?: string | null;
     employmentType?: string | null;
+    experienceLevel?: string | null;
     expiresAt?: string | null;
     identityId: string;
     isRemote?: boolean;
@@ -183,6 +192,7 @@ export class GatewayJobsService {
     responsibilities?: string[];
     salaryMax?: number | null;
     salaryMin?: number | null;
+    saturdayPolicy?: string | null;
     title?: string;
   }): Promise<GatewayHttpJob> {
     const { clearFields, updatedFields } = this.collectFieldChanges(input);
@@ -198,6 +208,7 @@ export class GatewayJobsService {
         employer_identity_id: input.identityId,
         employment_type: input.employmentType ?? undefined,
         expires_at: input.expiresAt ?? undefined,
+        experience_level: input.experienceLevel ?? undefined,
         is_remote: input.isRemote,
         job_id: input.jobId,
         level: input.level ?? undefined,
@@ -205,6 +216,7 @@ export class GatewayJobsService {
         responsibilities: input.responsibilities,
         salary_max: input.salaryMax ?? undefined,
         salary_min: input.salaryMin ?? undefined,
+        saturday_policy: input.saturdayPolicy ?? undefined,
         title: input.title,
         updated_fields: updatedFields
       },
@@ -296,6 +308,7 @@ export class GatewayJobsService {
       currency: 'currency',
       description: 'description',
       employmentType: 'employment_type',
+      experienceLevel: 'experience_level',
       expiresAt: 'expires_at',
       isRemote: 'is_remote',
       level: 'level',
@@ -303,6 +316,7 @@ export class GatewayJobsService {
       responsibilities: 'responsibilities',
       salaryMax: 'salary_max',
       salaryMin: 'salary_min',
+      saturdayPolicy: 'saturday_policy',
       title: 'title'
     };
 

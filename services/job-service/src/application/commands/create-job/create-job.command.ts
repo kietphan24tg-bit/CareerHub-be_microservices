@@ -12,6 +12,7 @@ export type CreateJobCommand = {
   description?: string;
   employerIdentityId: string;
   employmentType?: string;
+  experienceLevel?: string;
   expiresAt?: string;
   isRemote?: boolean;
   level?: string;
@@ -19,5 +20,6 @@ export type CreateJobCommand = {
   responsibilities?: string[];
   salaryMax?: number;
   salaryMin?: number;
+  saturdayPolicy?: string;
   title: string;
 };

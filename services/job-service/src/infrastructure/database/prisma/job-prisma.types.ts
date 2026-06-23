@@ -16,6 +16,7 @@ export type JobPersistenceRecord = {
   description: string | null;
   employerIdentityId: string;
   employmentType: string | null;
+  experienceLevel: string;
   expiresAt: Date | null;
   id: string;
   isRemote: boolean;
@@ -24,6 +25,7 @@ export type JobPersistenceRecord = {
   responsibilitiesJson: string | null;
   salaryMax: unknown;
   salaryMin: unknown;
+  saturdayPolicy: string;
   slug: string;
   status: string;
   title: string;
@@ -44,6 +46,7 @@ export type JobCreateInput = {
   description: string | null;
   employerIdentityId: string;
   employmentType: string | null;
+  experienceLevel: string;
   expiresAt: Date | null;
   id: string;
   isRemote: boolean;
@@ -52,6 +55,7 @@ export type JobCreateInput = {
   responsibilitiesJson: string | null;
   salaryMax: number | null;
   salaryMin: number | null;
+  saturdayPolicy: string;
   slug: string;
   status: string;
   title: string;

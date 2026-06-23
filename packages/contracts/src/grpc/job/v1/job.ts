@@ -27,6 +27,7 @@ export type JobMessage = {
   currency: string;
   description: string;
   employment_type: string;
+  experience_level: string;
   expires_at: string;
   id: string;
   is_remote: boolean;
@@ -36,6 +37,7 @@ export type JobMessage = {
   responsibilities: string[];
   salary_max: number;
   salary_min: number;
+  saturday_policy: string;
   slug: string;
   status: string;
   title: string;
@@ -66,6 +68,7 @@ export type ListPublicJobsRequest = {
   category?: string;
   company_industry?: string;
   employment_type?: string;
+  experience_level?: string;
   keyword?: string;
   location?: string;
   page?: number;
@@ -74,6 +77,7 @@ export type ListPublicJobsRequest = {
   request_id?: string;
   salary_max?: number;
   salary_min?: number;
+  saturday_policy?: string;
   sort?: string;
 };
 
@@ -128,6 +132,7 @@ export type CreateJobRequest = {
   description?: string;
   employer_identity_id: string;
   employment_type?: string;
+  experience_level?: string;
   expires_at?: string;
   is_remote?: boolean;
   level?: string;
@@ -136,6 +141,7 @@ export type CreateJobRequest = {
   responsibilities?: string[];
   salary_max?: number;
   salary_min?: number;
+  saturday_policy?: string;
   title: string;
 };
 
@@ -153,6 +159,7 @@ export type UpdateJobRequest = {
   description?: string;
   employer_identity_id: string;
   employment_type?: string;
+  experience_level?: string;
   expires_at?: string;
   is_remote?: boolean;
   job_id: string;
@@ -162,6 +169,7 @@ export type UpdateJobRequest = {
   responsibilities?: string[];
   salary_max?: number;
   salary_min?: number;
+  saturday_policy?: string;
   title?: string;
   updated_fields?: string[];
 };

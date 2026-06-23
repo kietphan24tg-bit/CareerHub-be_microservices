@@ -19,6 +19,7 @@ export type GatewayHttpJob = {
   currency: string | null;
   description: string | null;
   employmentType: string | null;
+  experienceLevel: string;
   expiresAt: string | null;
   id: string;
   isRemote: boolean;
@@ -27,6 +28,7 @@ export type GatewayHttpJob = {
   responsibilities: string[];
   salaryMax: number | null;
   salaryMin: number | null;
+  saturdayPolicy: string;
   slug: string;
   status: string;
   title: string;
@@ -84,6 +86,7 @@ export function toGatewayHttpJob(job: JobMessage): GatewayHttpJob {
     currency: nullableString(job.currency, nullFields, 'currency'),
     description: nullableString(job.description, nullFields, 'description'),
     employmentType: nullableString(job.employment_type, nullFields, 'employment_type'),
+    experienceLevel: job.experience_level || 'unspecified',
     expiresAt: nullableString(job.expires_at, nullFields, 'expires_at'),
     id: job.id,
     isRemote: job.is_remote,
@@ -92,6 +95,7 @@ export function toGatewayHttpJob(job: JobMessage): GatewayHttpJob {
     responsibilities: job.responsibilities ?? [],
     salaryMax: nullableNumber(job.salary_max, nullFields, 'salary_max'),
     salaryMin: nullableNumber(job.salary_min, nullFields, 'salary_min'),
+    saturdayPolicy: job.saturday_policy || 'unspecified',
     slug: job.slug,
     status: job.status,
     title: job.title,
