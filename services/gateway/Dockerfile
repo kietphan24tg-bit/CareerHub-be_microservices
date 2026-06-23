@@ -34,14 +34,21 @@ RUN pnpm --filter @careerhub/gateway build
 RUN pnpm deploy --filter @careerhub/gateway --prod /deploy
 
 # ─── Stage 2: Runner ─────────────────────────────────────────────────────────
-FROM node:20-alpine AS runner
+# Playwright Chromium is required for resume PDF export (headless print page).
+FROM node:20-bookworm-slim AS runner
 
-RUN apk add --no-cache dumb-init
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends dumb-init \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY --from=builder /deploy ./
 
 ENV NODE_ENV=production
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+RUN npx playwright install --with-deps chromium
+
 EXPOSE 3000
 
 ENTRYPOINT ["dumb-init", "--"]

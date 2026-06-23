@@ -26,6 +26,8 @@ services:
     <<: *service-defaults
     image: kietphan24/careerhub-gateway:${IMAGE_TAG:-latest}
     container_name: careerhub-gateway
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "${GATEWAY_HOST_PORT:-3000}:3000"
     environment:
