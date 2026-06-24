@@ -49,6 +49,7 @@ export type ListPublicJobsFilter = {
 };
 
 export type ListEmployerJobsFilter = {
+  category?: string;
   employerIdentityId: string;
   page: number;
   pageSize: number;

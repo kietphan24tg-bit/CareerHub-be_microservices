@@ -119,6 +119,7 @@ message ListEmployerJobsRequest {
   int32 page = 3;
   int32 page_size = 4;
   string request_id = 5;
+  string category = 6;
 }
 
 message ListEmployerJobsResponse {

@@ -130,6 +130,7 @@ export class JobGrpcController {
   ): Promise<ListEmployerJobsResponse> {
     try {
       const result = await this.listEmployerJobsQueryHandler.execute({
+        category: request.category,
         employerIdentityId: request.employer_identity_id,
         page: request.page ?? 1,
         pageSize: request.page_size ?? 20,

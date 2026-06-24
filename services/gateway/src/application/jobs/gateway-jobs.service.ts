@@ -76,6 +76,7 @@ export class GatewayJobsService {
   }
 
   async listEmployerJobs(input: {
+    category?: string;
     identityId: string;
     page?: number;
     pageSize?: number;
@@ -84,6 +85,7 @@ export class GatewayJobsService {
   }) {
     const response = await this.jobGrpcClient.listEmployerJobs(
       {
+        category: input.category,
         employer_identity_id: input.identityId,
         page: input.page,
         page_size: input.pageSize,

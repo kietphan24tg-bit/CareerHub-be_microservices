@@ -22,6 +22,7 @@ export class ListEmployerJobsQueryHandler {
     const page = query.page > 0 ? query.page : 1;
     const pageSize = query.pageSize > 0 ? Math.min(query.pageSize, 50) : 20;
     const result = await this.jobRepository.listEmployer({
+      category: query.category?.trim() || undefined,
       employerIdentityId: query.employerIdentityId.trim(),
       page,
       pageSize,

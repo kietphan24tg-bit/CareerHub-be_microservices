@@ -96,6 +96,7 @@ export type GetPublicJobBySlugResponse = {
 };
 
 export type ListEmployerJobsRequest = {
+  category?: string;
   employer_identity_id: string;
   page?: number;
   page_size?: number;

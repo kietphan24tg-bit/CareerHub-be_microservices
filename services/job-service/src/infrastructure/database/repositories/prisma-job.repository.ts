@@ -287,7 +287,8 @@ export class PrismaJobRepository implements JobRepository {
   ): Promise<{ items: JobRecord[]; total: number }> {
     const where: JobWhereInput = {
       employerIdentityId: filter.employerIdentityId,
-      ...(filter.status ? { status: filter.status } : {})
+      ...(filter.status ? { status: filter.status } : {}),
+      ...(filter.category ? { category: filter.category } : {})
     };
 
     const [items, total] = await Promise.all([

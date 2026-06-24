@@ -1,7 +1,11 @@
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class EmployerJobsQueryDto {
+  @IsOptional()
+  @IsString()
+  category?: string;
+
   @IsOptional()
   @IsIn(['draft', 'published', 'closed', 'archived'])
   status?: string;
