@@ -46,6 +46,8 @@ import {
   type ListCandidateOffersForApplicationResponse,
   type ListEmployerInterviewsRequest,
   type ListEmployerInterviewsResponse,
+  type ListEmployerOffersRequest,
+  type ListEmployerOffersResponse,
   type ListEmployerOffersForApplicationRequest,
   type ListEmployerOffersForApplicationResponse,
   type ListJobApplicationsRequest,
@@ -96,6 +98,7 @@ import {
   ListCandidateApplicationsQueryHandler,
   ListCandidateOffersForApplicationQueryHandler,
   ListEmployerInterviewsQueryHandler,
+  ListEmployerOffersQueryHandler,
   ListEmployerOffersForApplicationQueryHandler,
   ListJobApplicationsQueryHandler,
   ListRecruiterNotesQueryHandler,
@@ -158,6 +161,7 @@ export class ApplicationGrpcController {
     private readonly listCandidateApplicationsQueryHandler: ListCandidateApplicationsQueryHandler,
     private readonly listCandidateOffersForApplicationQueryHandler: ListCandidateOffersForApplicationQueryHandler,
     private readonly listEmployerInterviewsQueryHandler: ListEmployerInterviewsQueryHandler,
+    private readonly listEmployerOffersQueryHandler: ListEmployerOffersQueryHandler,
     private readonly listEmployerOffersForApplicationQueryHandler: ListEmployerOffersForApplicationQueryHandler,
     private readonly listJobApplicationsQueryHandler: ListJobApplicationsQueryHandler,
     private readonly listRecruiterNotesQueryHandler: ListRecruiterNotesQueryHandler,
@@ -637,6 +641,32 @@ export class ApplicationGrpcController {
       return {
         deleted: result.deleted,
         id: result.id
+      };
+    } catch (error) {
+      throw mapErrorToApplicationGrpcException(error);
+    }
+  }
+
+  @GrpcMethod(APPLICATION_GRPC_SERVICE_NAME, 'ListEmployerOffers')
+  async listEmployerOffers(
+    request: ListEmployerOffersRequest
+  ): Promise<ListEmployerOffersResponse> {
+    try {
+      const result = await this.listEmployerOffersQueryHandler.execute({
+        employerIdentityId: request.employer_identity_id,
+        page: request.page ?? 1,
+        pageSize: request.page_size ?? 20,
+        status: request.status,
+        workModel: request.work_model
+      });
+
+      return {
+        items: result.items.map(toGrpcOfferDetailMessage),
+        meta: {
+          page: result.meta.page,
+          page_size: result.meta.pageSize,
+          total: result.meta.total
+        }
       };
     } catch (error) {
       throw mapErrorToApplicationGrpcException(error);

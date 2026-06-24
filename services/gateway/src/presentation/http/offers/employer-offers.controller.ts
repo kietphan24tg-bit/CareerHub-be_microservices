@@ -6,7 +6,8 @@ import {
   Headers,
   Param,
   Patch,
-  Post
+  Post,
+  Query
 } from '@nestjs/common';
 import { GatewayOffersService } from '../../../application/offers/gateway-offers.service';
 import { CurrentUser } from '../../../auth/decorators/current-user.decorator';
@@ -16,6 +17,7 @@ import {
   CreateOfferRequestDto,
   UpdateOfferRequestDto
 } from './dto/offer-write.request.dto';
+import { EmployerOffersQueryDto } from './dto/employer-offers-query.dto';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Offers')
@@ -30,6 +32,22 @@ export class EmployerOffersController {
     return {
       data: await this.gatewayOffersService.listBenefitCatalog(requestId),
       message: 'Offer benefit catalog loaded successfully'
+    };
+  }
+
+  @Get('employer/offers')
+  async listEmployerOffers(
+    @CurrentUser() user: GatewayAuthenticatedUser,
+    @Query() query: EmployerOffersQueryDto,
+    @Headers('x-request-id') requestId?: string
+  ) {
+    return {
+      data: await this.gatewayOffersService.listEmployerOffers({
+        ...query,
+        identityId: user.id,
+        requestId
+      }),
+      message: 'Offers loaded successfully'
     };
   }
 

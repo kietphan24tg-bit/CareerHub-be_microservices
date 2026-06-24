@@ -21,6 +21,7 @@ import type {
   ApplicationWriteTransaction,
   BenefitCatalogRecord,
   IdGenerator,
+  PaginatedOfferListResult,
   RecruitmentRepository
 } from '../ports';
 import { normalizeNullableString } from './interview-schedule.utils';
@@ -82,6 +83,15 @@ function buildOfferStatusChangedEvent(
   );
 }
 
+function normalizeOfferListFilter(value?: string) {
+  const normalized = value?.trim();
+  if (!normalized || normalized === 'all') {
+    return undefined;
+  }
+
+  return normalized;
+}
+
 export class OfferOperations {
   constructor(
     private readonly applicationRepository: ApplicationRepository,
@@ -94,6 +104,24 @@ export class OfferOperations {
 
   async listBenefitCatalog(): Promise<BenefitCatalogRecord[]> {
     return this.recruitmentRepository.listBenefitCatalog();
+  }
+
+  async listEmployerOffersPage(input: {
+    employerIdentityId: string;
+    page?: number;
+    pageSize?: number;
+    status?: string;
+    workModel?: string;
+  }): Promise<PaginatedOfferListResult> {
+    const employerIdentityId = input.employerIdentityId.trim();
+    await this.recruitmentRepository.expireOpenOffersForEmployer(employerIdentityId, new Date());
+
+    return this.recruitmentRepository.listEmployerOffersPage(employerIdentityId, {
+      page: input.page,
+      pageSize: input.pageSize,
+      status: normalizeOfferListFilter(input.status),
+      workModel: normalizeOfferListFilter(input.workModel)
+    });
   }
 
   async createDraftOffer(

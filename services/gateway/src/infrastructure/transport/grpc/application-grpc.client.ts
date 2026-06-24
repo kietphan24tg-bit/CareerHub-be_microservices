@@ -51,6 +51,8 @@ import type {
   ListCandidateOffersForApplicationResponse,
   ListEmployerInterviewsRequest,
   ListEmployerInterviewsResponse,
+  ListEmployerOffersRequest,
+  ListEmployerOffersResponse,
   ListEmployerOffersForApplicationRequest,
   ListEmployerOffersForApplicationResponse,
   ListJobApplicationsRequest,
@@ -238,6 +240,11 @@ type ApplicationGrpcServiceClient = {
     request: SoftDeleteOfferRequest,
     metadata: Metadata,
     callback: (error: ServiceError | null, response: SoftDeleteOfferResponse) => void
+  ): ClientUnaryCall;
+  ListEmployerOffers(
+    request: ListEmployerOffersRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ListEmployerOffersResponse) => void
   ): ClientUnaryCall;
   ListEmployerOffersForApplication(
     request: ListEmployerOffersForApplicationRequest,
@@ -789,6 +796,19 @@ export class ApplicationGrpcClient {
       'SoftDeleteOffer',
       (client, payload, metadata, callback) =>
         client.SoftDeleteOffer(payload, metadata, callback),
+      this.withRequestId(request, requestId),
+      requestId
+    );
+  }
+
+  async listEmployerOffers(
+    request: ListEmployerOffersRequest,
+    requestId?: string
+  ): Promise<ListEmployerOffersResponse> {
+    return this.invokeUnary(
+      'ListEmployerOffers',
+      (client, payload, metadata, callback) =>
+        client.ListEmployerOffers(payload, metadata, callback),
       this.withRequestId(request, requestId),
       requestId
     );

@@ -74,6 +74,8 @@ import {
 
   ListEmployerInterviewsQueryHandler,
 
+  ListEmployerOffersQueryHandler,
+
   ListEmployerOffersForApplicationQueryHandler,
 
   ListJobApplicationsQueryHandler,
@@ -737,6 +739,18 @@ import { ApplicationGrpcController } from './presentation';
       useFactory: (offerOperations: OfferOperations) =>
 
         new ListBenefitCatalogQueryHandler(offerOperations)
+
+    },
+
+    {
+
+      provide: ListEmployerOffersQueryHandler,
+
+      inject: [OfferOperations],
+
+      useFactory: (offerOperations: OfferOperations) =>
+
+        new ListEmployerOffersQueryHandler(offerOperations)
 
     },
 

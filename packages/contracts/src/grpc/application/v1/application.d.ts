@@ -465,6 +465,18 @@ export type SoftDeleteOfferResponse = {
     deleted: boolean;
     id: string;
 };
+export type ListEmployerOffersRequest = {
+    employer_identity_id: string;
+    request_id?: string;
+    status?: string;
+    work_model?: string;
+    page?: number;
+    page_size?: number;
+};
+export type ListEmployerOffersResponse = {
+    items: OfferDetailMessage[];
+    meta?: ListEmployerInterviewsPaginationMeta;
+};
 export type ListEmployerOffersForApplicationRequest = {
     application_id: string;
     employer_identity_id: string;

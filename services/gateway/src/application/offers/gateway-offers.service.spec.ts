@@ -36,60 +36,108 @@ const baseOfferMessage = {
   work_model: 'hybrid'
 };
 
-test('gateway offers list benefit catalog maps items', async () => {
-  const service = new GatewayOffersService({
-    async listBenefitCatalog(_payload: Record<string, unknown>, requestId?: string) {
-      assert.equal(requestId, 'req-1');
+function createService(
+  applicationClient: Record<string, unknown>,
+  candidateClient: Record<string, unknown> = {
+    async getCandidateProfileByIdentityId() {
+      return { profile: { full_name: 'Jane Candidate' } };
+    }
+  },
+  jobClient: Record<string, unknown> = {
+    async listJobsByIds() {
       return {
         items: [
           {
-            code: 'annual_leave',
-            description: 'Paid time off days in addition to public holidays',
-            has_monetary_value_default: false,
-            id: 'bc-annual_leave',
-            is_active: true,
-            is_selectable: true,
-            label: 'Annual Leave',
-            null_fields: [],
-            requires_amount: false,
-            requires_annual_leave_days: true,
-            requires_frequency: false,
-            sort_order: 5
+            city: 'Ho Chi Minh City',
+            country: 'VN',
+            currency: 'USD',
+            id: 'job-1',
+            is_remote: false,
+            salary_max: '6000',
+            salary_min: '4000',
+            status: 'published',
+            title: 'Senior Engineer'
           }
         ]
       };
+    }
+  }
+) {
+  return new GatewayOffersService(
+    applicationClient as never,
+    candidateClient as never,
+    jobClient as never
+  );
+}
+
+function unusedApplicationClient(overrides: Record<string, unknown> = {}) {
+  return {
+    async acceptOffer() {
+      throw new Error('unused');
     },
     async createOffer() {
       throw new Error('unused');
     },
-    async sendOffer() {
-      throw new Error('unused');
-    },
-    async updateOffer() {
-      throw new Error('unused');
-    },
-    async softDeleteOffer() {
-      throw new Error('unused');
-    },
-    async listEmployerOffersForApplication() {
-      throw new Error('unused');
-    },
-    async getEmployerOffer() {
-      throw new Error('unused');
-    },
-    async listCandidateOffersForApplication() {
+    async declineOffer() {
       throw new Error('unused');
     },
     async getCandidateOffer() {
       throw new Error('unused');
     },
-    async acceptOffer() {
+    async getEmployerOffer() {
       throw new Error('unused');
     },
-    async declineOffer() {
+    async listBenefitCatalog() {
+      return { items: [] };
+    },
+    async listCandidateOffersForApplication() {
       throw new Error('unused');
-    }
-  } as never);
+    },
+    async listEmployerOffers() {
+      throw new Error('unused');
+    },
+    async listEmployerOffersForApplication() {
+      throw new Error('unused');
+    },
+    async sendOffer() {
+      throw new Error('unused');
+    },
+    async softDeleteOffer() {
+      throw new Error('unused');
+    },
+    async updateOffer() {
+      throw new Error('unused');
+    },
+    ...overrides
+  };
+}
+
+test('gateway offers list benefit catalog maps items', async () => {
+  const service = createService(
+    unusedApplicationClient({
+      async listBenefitCatalog(_payload: Record<string, unknown>, requestId?: string) {
+        assert.equal(requestId, 'req-1');
+        return {
+          items: [
+            {
+              code: 'annual_leave',
+              description: 'Paid time off days in addition to public holidays',
+              has_monetary_value_default: false,
+              id: 'bc-annual_leave',
+              is_active: true,
+              is_selectable: true,
+              label: 'Annual Leave',
+              null_fields: [],
+              requires_amount: false,
+              requires_annual_leave_days: true,
+              requires_frequency: false,
+              sort_order: 5
+            }
+          ]
+        };
+      }
+    })
+  );
 
   const result = await service.listBenefitCatalog('req-1');
 
@@ -98,44 +146,42 @@ test('gateway offers list benefit catalog maps items', async () => {
   assert.equal(result[0]?.requiresAnnualLeaveDays, true);
 });
 
+test('gateway offers list employer enriches items with candidate and job snapshots', async () => {
+  const service = createService(
+    unusedApplicationClient({
+      async listEmployerOffers(payload: Record<string, unknown>) {
+        assert.equal(payload.employer_identity_id, 'employer-1');
+        return {
+          items: [baseOfferMessage],
+          meta: { page: 1, page_size: 20, total: 1 }
+        };
+      }
+    })
+  );
+
+  const result = await service.listEmployerOffers({
+    identityId: 'employer-1',
+    page: 1,
+    pageSize: 20,
+    requestId: 'req-1'
+  });
+
+  assert.equal(result.items.length, 1);
+  assert.equal(result.meta.total, 1);
+  assert.equal(result.items[0]?.candidateName, 'Jane Candidate');
+  assert.equal(result.items[0]?.jobTitle, 'Senior Engineer');
+});
+
 test('gateway offers create passes identity and maps offer detail', async () => {
   const calls: Array<Record<string, unknown>> = [];
-  const service = new GatewayOffersService({
-    async listBenefitCatalog() {
-      return { items: [] };
-    },
-    async createOffer(payload: Record<string, unknown>, requestId?: string) {
-      calls.push({ ...payload, requestId });
-      return { offer: baseOfferMessage };
-    },
-    async sendOffer() {
-      throw new Error('unused');
-    },
-    async updateOffer() {
-      throw new Error('unused');
-    },
-    async softDeleteOffer() {
-      throw new Error('unused');
-    },
-    async listEmployerOffersForApplication() {
-      throw new Error('unused');
-    },
-    async getEmployerOffer() {
-      throw new Error('unused');
-    },
-    async listCandidateOffersForApplication() {
-      throw new Error('unused');
-    },
-    async getCandidateOffer() {
-      throw new Error('unused');
-    },
-    async acceptOffer() {
-      throw new Error('unused');
-    },
-    async declineOffer() {
-      throw new Error('unused');
-    }
-  } as never);
+  const service = createService(
+    unusedApplicationClient({
+      async createOffer(payload: Record<string, unknown>, requestId?: string) {
+        calls.push({ ...payload, requestId });
+        return { offer: baseOfferMessage };
+      }
+    })
+  );
 
   const result = await service.createOffer({
     applicationId: 'application-1',
@@ -152,42 +198,14 @@ test('gateway offers create passes identity and maps offer detail', async () => 
 
 test('gateway offers send passes identity and offer id', async () => {
   const calls: Array<Record<string, unknown>> = [];
-  const service = new GatewayOffersService({
-    async listBenefitCatalog() {
-      return { items: [] };
-    },
-    async createOffer() {
-      throw new Error('unused');
-    },
-    async sendOffer(payload: Record<string, unknown>, requestId?: string) {
-      calls.push({ ...payload, requestId });
-      return { offer: { ...baseOfferMessage, sent_at: '2026-06-13T00:00:00.000Z', status: 'sent' } };
-    },
-    async updateOffer() {
-      throw new Error('unused');
-    },
-    async softDeleteOffer() {
-      throw new Error('unused');
-    },
-    async listEmployerOffersForApplication() {
-      throw new Error('unused');
-    },
-    async getEmployerOffer() {
-      throw new Error('unused');
-    },
-    async listCandidateOffersForApplication() {
-      throw new Error('unused');
-    },
-    async getCandidateOffer() {
-      throw new Error('unused');
-    },
-    async acceptOffer() {
-      throw new Error('unused');
-    },
-    async declineOffer() {
-      throw new Error('unused');
-    }
-  } as never);
+  const service = createService(
+    unusedApplicationClient({
+      async sendOffer(payload: Record<string, unknown>, requestId?: string) {
+        calls.push({ ...payload, requestId });
+        return { offer: { ...baseOfferMessage, sent_at: '2026-06-13T00:00:00.000Z', status: 'sent' } };
+      }
+    })
+  );
 
   const result = await service.sendOffer({
     identityId: 'employer-1',

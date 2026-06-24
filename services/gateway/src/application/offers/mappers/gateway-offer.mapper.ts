@@ -228,3 +228,49 @@ export function toGatewayHttpBenefitCatalogItem(catalog: BenefitCatalogMessage) 
     sortOrder: catalog.sort_order
   };
 }
+
+export type GatewayHttpEmployerOfferListItem = {
+  applicationId: string;
+  candidateName: string;
+  candidateUserId: string;
+  currency: string;
+  expiresAt: string;
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  salary: number;
+  status: string;
+  title: string;
+  workModel: 'remote' | 'hybrid' | 'onsite';
+};
+
+function normalizeWorkModel(value?: string | null): 'remote' | 'hybrid' | 'onsite' {
+  if (value === 'remote' || value === 'hybrid' || value === 'onsite') {
+    return value;
+  }
+
+  return 'onsite';
+}
+
+export function toGatewayHttpEmployerOfferListItem(input: {
+  candidateName: string;
+  jobTitle: string;
+  offer: OfferDetailMessage;
+}): GatewayHttpEmployerOfferListItem {
+  const salaryValue = Number(input.offer.salary ?? '0');
+
+  return {
+    applicationId: input.offer.application_id,
+    candidateName: input.candidateName,
+    candidateUserId: input.offer.candidate_identity_id,
+    currency: input.offer.currency?.trim() || 'USD',
+    expiresAt: input.offer.expires_at?.trim() || '',
+    id: input.offer.id,
+    jobId: input.offer.job_id,
+    jobTitle: input.jobTitle,
+    salary: Number.isFinite(salaryValue) ? salaryValue : 0,
+    status: input.offer.status,
+    title: input.offer.title,
+    workModel: normalizeWorkModel(input.offer.work_model)
+  };
+}

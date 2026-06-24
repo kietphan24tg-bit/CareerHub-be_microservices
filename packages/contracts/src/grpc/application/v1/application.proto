@@ -25,6 +25,7 @@ service ApplicationService {
   rpc SendOffer (SendOfferRequest) returns (SendOfferResponse);
   rpc UpdateOffer (UpdateOfferRequest) returns (UpdateOfferResponse);
   rpc SoftDeleteOffer (SoftDeleteOfferRequest) returns (SoftDeleteOfferResponse);
+  rpc ListEmployerOffers (ListEmployerOffersRequest) returns (ListEmployerOffersResponse);
   rpc ListEmployerOffersForApplication (ListEmployerOffersForApplicationRequest) returns (ListEmployerOffersForApplicationResponse);
   rpc GetEmployerOffer (GetEmployerOfferRequest) returns (GetEmployerOfferResponse);
   rpc ListCandidateOffersForApplication (ListCandidateOffersForApplicationRequest) returns (ListCandidateOffersForApplicationResponse);
@@ -650,6 +651,20 @@ message SoftDeleteOfferRequest {
 message SoftDeleteOfferResponse {
   bool deleted = 1;
   string id = 2;
+}
+
+message ListEmployerOffersRequest {
+  string employer_identity_id = 1;
+  string request_id = 2;
+  string status = 3;
+  string work_model = 4;
+  int32 page = 5;
+  int32 page_size = 6;
+}
+
+message ListEmployerOffersResponse {
+  repeated OfferDetailMessage items = 1;
+  ListEmployerInterviewsPaginationMeta meta = 2;
 }
 
 message ListEmployerOffersForApplicationRequest {

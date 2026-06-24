@@ -235,6 +235,22 @@ export type PaginatedInterviewListResult = {
   };
 };
 
+export type ListEmployerOffersFilters = {
+  page?: number;
+  pageSize?: number;
+  status?: string;
+  workModel?: string;
+};
+
+export type PaginatedOfferListResult = {
+  items: ApplicationOfferRecord[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+  };
+};
+
 export interface RecruitmentRepository {
   listEmployerInterviews(employerIdentityId: string): Promise<ApplicationInterviewRecord[]>;
   listEmployerInterviewsPage(
@@ -277,6 +293,11 @@ export interface RecruitmentRepository {
     candidateIdentityId: string
   ): Promise<ApplicationOfferRecord | null>;
   listOffersByApplicationId(applicationId: string): Promise<ApplicationOfferRecord[]>;
+  listEmployerOffersPage(
+    employerIdentityId: string,
+    filters?: ListEmployerOffersFilters
+  ): Promise<PaginatedOfferListResult>;
+  expireOpenOffersForEmployer(employerIdentityId: string, now: Date): Promise<void>;
   createOffer(
     data: CreateOfferData,
     benefits: CreateOfferBenefitData[]

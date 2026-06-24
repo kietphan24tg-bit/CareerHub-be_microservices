@@ -7,8 +7,10 @@ import type {
   CreateOfferData,
   InterviewerRecord,
   ListEmployerInterviewsFilters,
+  ListEmployerOffersFilters,
   OfferBenefitRecord,
   PaginatedInterviewListResult,
+  PaginatedOfferListResult,
   RecruitmentRepository,
   UpdateInterviewData,
   UpdateOfferData
@@ -439,6 +441,50 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
     return offers;
   }
 
+  async listEmployerOffersPage(
+    employerIdentityId: string,
+    filters: ListEmployerOffersFilters = {}
+  ): Promise<PaginatedOfferListResult> {
+    const page = Math.max(filters.page ?? 1, 1);
+    const pageSize = Math.min(Math.max(filters.pageSize ?? 20, 1), 100);
+    const where: {
+      deletedAt: null;
+      employerIdentityId: string;
+      status?: string;
+      workModel?: string;
+    } = {
+      deletedAt: null,
+      employerIdentityId
+    };
+
+    if (filters.status) {
+      where.status = filters.status;
+    }
+
+    if (filters.workModel) {
+      where.workModel = filters.workModel;
+    }
+
+    const [records, total] = await Promise.all([
+      this.prismaClient.jobOffer.findMany({
+        orderBy: [{ sentAt: 'desc' }, { createdAt: 'desc' }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        where
+      }),
+      this.prismaClient.jobOffer.count({ where })
+    ]);
+
+    return {
+      items: records.map((record) => mapOfferRecord(record)),
+      meta: {
+        page,
+        pageSize,
+        total
+      }
+    };
+  }
+
   async createOffer(
     data: CreateOfferData,
     benefits: CreateOfferBenefitData[]
@@ -604,6 +650,25 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
       where: {
         applicationId,
         deletedAt: null,
+        expiresAt: {
+          lt: now
+        },
+        status: {
+          in: [OFFER_STATUS.sent, OFFER_STATUS.viewed]
+        }
+      }
+    });
+  }
+
+  async expireOpenOffersForEmployer(employerIdentityId: string, now: Date): Promise<void> {
+    await this.prismaClient.jobOffer.updateMany({
+      data: {
+        status: OFFER_STATUS.expired,
+        updatedAt: now
+      },
+      where: {
+        deletedAt: null,
+        employerIdentityId,
         expiresAt: {
           lt: now
         },
