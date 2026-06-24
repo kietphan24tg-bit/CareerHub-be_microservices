@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   Param,
@@ -151,6 +152,24 @@ export class EmployerJobsController {
         requestId
       }),
       message: 'Job reopened successfully'
+    };
+  }
+
+  @Delete(':jobId')
+  async deleteEmployerJob(
+    @CurrentUser() user: GatewayAuthenticatedUser,
+    @Param('jobId') jobId: string,
+    @Headers('x-request-id') requestId?: string
+  ) {
+    await this.gatewayJobsService.deleteEmployerJob({
+      identityId: user.id,
+      jobId,
+      requestId
+    });
+
+    return {
+      data: null,
+      message: 'Job deleted successfully'
     };
   }
 }

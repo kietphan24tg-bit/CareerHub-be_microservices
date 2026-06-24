@@ -11,6 +11,8 @@ import type {
   CloseJobResponse,
   CreateJobRequest,
   CreateJobResponse,
+  DeleteJobRequest,
+  DeleteJobResponse,
   GetEmployerDashboardJobsSummaryRequest,
   GetEmployerDashboardJobsSummaryResponse,
   GetEmployerJobByIdRequest,
@@ -57,6 +59,11 @@ type JobGrpcServiceClient = {
     request: CloseJobRequest,
     metadata: Metadata,
     callback: (error: ServiceError | null, response: CloseJobResponse) => void
+  ): ClientUnaryCall;
+  DeleteJob(
+    request: DeleteJobRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: DeleteJobResponse) => void
   ): ClientUnaryCall;
   CreateJob(
     request: CreateJobRequest,
@@ -435,6 +442,31 @@ export class JobGrpcClient {
     requestId?: string
   ): Promise<ReopenJobResponse> {
     return this.transitionJob('ReopenJob', request, requestId);
+  }
+
+  async deleteJob(
+    request: DeleteJobRequest,
+    requestId?: string
+  ): Promise<DeleteJobResponse> {
+    const grpcRequest = {
+      ...request,
+      employerIdentityId: request.employer_identity_id,
+      jobId: request.job_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? request.request_id ?? ''
+    } as DeleteJobRequest & {
+      employerIdentityId: string;
+      jobId: string;
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      'DeleteJob',
+      (client, payload, metadata, callback) =>
+        client.DeleteJob(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
   }
 
   async listJobsByIds(

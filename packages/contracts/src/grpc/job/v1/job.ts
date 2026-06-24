@@ -219,6 +219,16 @@ export type ReopenJobResponse = {
   job: JobMessage;
 };
 
+export type DeleteJobRequest = {
+  employer_identity_id: string;
+  job_id: string;
+  request_id?: string;
+};
+
+export type DeleteJobResponse = {
+  deleted: boolean;
+};
+
 export type ListJobsByIdsRequest = {
   job_ids: string[];
   request_id?: string;

@@ -129,9 +129,11 @@ test('login sets refresh cookie and returns access token payload', async () => {
   assert.equal(result.message, 'Login successful');
   assert.equal(result.data.user.id, 'identity-flow-1');
   assert.equal(result.data.accessToken, 'access-token:candidate@example.com');
-  assert.equal(response.cookieCalls.length, 1);
+  assert.equal(response.cookieCalls.length, 2);
   assert.equal(response.cookieCalls[0]?.name, 'refresh_token');
   assert.equal(response.cookieCalls[0]?.value, 'refresh-token-1');
+  assert.equal(response.cookieCalls[1]?.name, 'refresh_token_present');
+  assert.equal(response.cookieCalls[1]?.value, '1');
 });
 
 test('refresh reads cookie and rotates refresh token', async () => {
@@ -154,7 +156,7 @@ test('refresh reads cookie and rotates refresh token', async () => {
   assert.equal(result.message, 'Token refreshed successfully');
   assert.equal(result.data.user.id, 'identity-flow-1');
   assert.equal(result.data.accessToken, 'access-token-refreshed:refresh-token-1');
-  assert.equal(response.cookieCalls.length, 1);
+  assert.equal(response.cookieCalls.length, 2);
   assert.equal(response.cookieCalls[0]?.value, 'refresh-token-2');
   assert.equal(response.cookieCalls[0]?.options.maxAge, undefined);
 });
@@ -178,8 +180,9 @@ test('logout clears cookie and reports loggedOut', async () => {
 
   assert.equal(result.message, 'Logout successful');
   assert.equal(result.data.loggedOut, true);
-  assert.equal(response.clearCookieCalls.length, 1);
+  assert.equal(response.clearCookieCalls.length, 2);
   assert.equal(response.clearCookieCalls[0]?.name, 'refresh_token');
+  assert.equal(response.clearCookieCalls[1]?.name, 'refresh_token_present');
 });
 
 test('refresh fails clearly when refresh cookie is missing', async () => {

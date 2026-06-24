@@ -144,4 +144,8 @@ export interface JobRepository {
     employerIdentityId: string,
     limit: number
   ): Promise<JobRecord[]>;
+  deleteByIdAndEmployer(
+    jobId: string,
+    employerIdentityId: string
+  ): Promise<boolean>;
 }

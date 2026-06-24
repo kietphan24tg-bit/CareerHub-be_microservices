@@ -44,6 +44,35 @@ export type EmployerProfileModelDelegate = {
   }): Promise<EmployerProfilePersistenceRecord>;
 };
 
+export type DepartmentPersistenceRecord = {
+  companyId: string;
+  createdAt: Date;
+  description: string | null;
+  id: string;
+  name: string;
+  updatedAt: Date;
+};
+
+export type DepartmentModelDelegate = {
+  create(args: {
+    data: { companyId: string; description?: string | null; id: string; name: string };
+  }): Promise<DepartmentPersistenceRecord>;
+  findMany(args: {
+    where?: Record<string, unknown>;
+    orderBy?: Record<string, unknown>;
+  }): Promise<DepartmentPersistenceRecord[]>;
+  findUnique(args: {
+    where: { id: string };
+  }): Promise<DepartmentPersistenceRecord | null>;
+  update(args: {
+    data: Partial<DepartmentPersistenceRecord>;
+    where: { id: string };
+  }): Promise<DepartmentPersistenceRecord>;
+  delete(args: { where: { id: string } }): Promise<DepartmentPersistenceRecord>;
+  count(args: { where?: Record<string, unknown> }): Promise<number>;
+};
+
 export type EmployerPrismaClient = PrismaClientLike & {
+  department: DepartmentModelDelegate;
   employerProfile: EmployerProfileModelDelegate;
 };

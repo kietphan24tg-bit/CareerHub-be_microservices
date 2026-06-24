@@ -409,4 +409,18 @@ export class PrismaJobRepository implements JobRepository {
 
     return records.map(mapRecord);
   }
+
+  async deleteByIdAndEmployer(
+    jobId: string,
+    employerIdentityId: string
+  ): Promise<boolean> {
+    const result = await this.prismaService.prisma.job.deleteMany({
+      where: {
+        id: jobId,
+        employerIdentityId
+      }
+    });
+
+    return result.count > 0;
+  }
 }

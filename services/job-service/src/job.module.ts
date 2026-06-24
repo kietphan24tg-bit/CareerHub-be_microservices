@@ -11,6 +11,7 @@ import {
   ArchiveJobCommandHandler,
   CloseJobCommandHandler,
   CreateJobCommandHandler,
+  DeleteJobCommandHandler,
   GetEmployerDashboardJobsSummaryQueryHandler,
   GetEmployerJobByIdQueryHandler,
   GetJobForApplicationQueryHandler,
@@ -197,6 +198,19 @@ import { JobGrpcController } from './presentation';
         outboxRepository: PrismaJobOutboxRepository,
         idGenerator: UuidIdGenerator
       ) => new ReopenJobCommandHandler(jobRepository, outboxRepository, idGenerator)
+    },
+    {
+      provide: DeleteJobCommandHandler,
+      inject: [
+        JOB_PORT_TOKENS.jobRepository,
+        JOB_PORT_TOKENS.outboxRepository,
+        JOB_PORT_TOKENS.idGenerator
+      ],
+      useFactory: (
+        jobRepository: PrismaJobRepository,
+        outboxRepository: PrismaJobOutboxRepository,
+        idGenerator: UuidIdGenerator
+      ) => new DeleteJobCommandHandler(jobRepository, outboxRepository, idGenerator)
     },
     {
       provide: ListPublicJobsQueryHandler,

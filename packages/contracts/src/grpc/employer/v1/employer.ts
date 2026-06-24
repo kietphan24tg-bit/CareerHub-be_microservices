@@ -74,3 +74,51 @@ export type UpdateEmployerProfileRequest = {
 export type UpdateEmployerProfileResponse = {
   profile: EmployerProfile;
 };
+
+export type Department = {
+  company_id: string;
+  created_at: string;
+  description: string;
+  id: string;
+  name: string;
+  null_fields: string[];
+  updated_at: string;
+};
+
+export type CreateDepartmentRequest = {
+  identity_id: string;
+  description?: string;
+  name: string;
+  request_id?: string;
+};
+
+export type UpdateDepartmentRequest = {
+  clear_fields?: string[];
+  description?: string;
+  id: string;
+  name?: string;
+  request_id?: string;
+  updated_fields?: string[];
+};
+
+export type DeleteDepartmentRequest = {
+  id: string;
+  request_id?: string;
+};
+
+export type DeleteDepartmentResponse = {
+  deleted: boolean;
+};
+
+export type DepartmentResponse = {
+  department: Department;
+};
+
+export type ListDepartmentsByCompanyRequest = {
+  identity_id: string;
+  request_id?: string;
+};
+
+export type ListDepartmentsByCompanyResponse = {
+  departments: Department[];
+};

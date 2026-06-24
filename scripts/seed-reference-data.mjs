@@ -86,135 +86,61 @@ async function upsertRows(client, tableName, conflictColumns, rows) {
   }
 }
 
-function createTemplateLayout(title, headline, accent) {
-  return {
-    accent,
-    header: {
-      title: {
-        fieldKey: 'full_name',
-        placeholder: 'Nguyen Van A'
-      },
-      subtitle: {
-        fieldKey: 'headline',
-        placeholder: headline
-      },
-      main: {
-        title: {
-          fieldKey: 'title',
-          placeholder: title
-        }
-      }
-    },
-    sections: [
-      {
-        source: 'resume_experiences',
-        title: 'Kinh nghiem',
-        sampleItems: [
-          {
-            company_name: 'CareerHub',
-            description: 'Xay dung backend microservices va toi uu hoa API.',
-            employment_type: 'full_time',
-            end_date: '',
-            is_current: true,
-            position: 'Backend Engineer',
-            start_date: '2024-01-01',
-            tech_stack: 'Node.js, NestJS, PostgreSQL'
-          }
-        ]
-      },
-      {
-        source: 'resume_educations',
-        title: 'Hoc van',
-        sampleItems: [
-          {
-            degree: 'Cu nhan',
-            end_date: '2024-06-01',
-            major: 'Cong nghe thong tin',
-            school_name: 'Dai hoc',
-            start_date: '2020-09-01'
-          }
-        ]
-      },
-      {
-        source: 'resume_skills',
-        title: 'Ky nang',
-        sampleItems: [
-          {
-            category: 'technical',
-            level: 'advanced',
-            name: 'Node.js',
-            sort_order: 1
-          },
-          {
-            category: 'technical',
-            level: 'advanced',
-            name: 'PostgreSQL',
-            sort_order: 2
-          }
-        ]
-      }
-    ],
-    version: 1
-  };
+function normalizeAssetUrls(value) {
+  if (typeof value === 'string') {
+    return value
+      .replaceAll('http://localhost:4000/templates/', '/templates/')
+      .replaceAll('https://localhost:4000/templates/', '/templates/');
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeAssetUrls(item));
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, normalizeAssetUrls(entry)])
+    );
+  }
+
+  return value;
 }
 
-const RESUME_TEMPLATES = [
-  {
-    id: '1',
-    name: 'Classic Professional',
-    category: 'professional',
-    thumbnail: null,
-    layout_data: createTemplateLayout(
-      'Backend Engineer',
-      'Professional resume',
-      '#24344d'
-    )
-  },
-  {
-    id: '2',
-    name: 'Olive Minimal',
-    category: 'minimal',
-    thumbnail: null,
-    layout_data: createTemplateLayout(
-      'Product Designer',
-      'Minimal resume',
-      '#556252'
-    )
-  },
-  {
-    id: '3',
-    name: 'Forest Editorial',
-    category: 'editorial',
-    thumbnail: null,
-    layout_data: createTemplateLayout(
-      'Frontend Developer',
-      'Editorial resume',
-      '#556252'
-    )
-  },
-  {
-    id: '4',
-    name: 'Skyline Modern',
-    category: 'modern',
-    thumbnail: null,
-    layout_data: createTemplateLayout(
-      'Data Analyst',
-      'Modern resume',
-      '#56b5e6'
-    )
-  },
-  {
-    id: '5',
-    name: 'Bold Portfolio',
-    category: 'creative',
-    thumbnail: null,
-    layout_data: createTemplateLayout(
-      'Full Stack Engineer',
-      'Creative resume',
-      '#56b5e6'
-    )
-  }
+const TEMPLATE_META = [
+  { id: '1', name: 'Classic Professional', category: 'professional' },
+  { id: '2', name: 'Olive Minimal', category: 'minimal' },
+  { id: '3', name: 'Forest Editorial', category: 'editorial' },
+  { id: '4', name: 'Skyline Modern', category: 'modern' },
+  { id: '5', name: 'Bold Portfolio', category: 'creative' }
 ];
+
+function loadResumeTemplatesFromFixtures() {
+  const fixturesDir = path.resolve(
+    process.cwd(),
+    '../CareerHub-fe/tests/e2e/fixtures/live-templates-raw'
+  );
+
+  return TEMPLATE_META.map((meta) => {
+    const fixturePath = path.join(fixturesDir, `template-${meta.id}.json`);
+
+    if (!fs.existsSync(fixturePath)) {
+      throw new Error(`Missing resume template fixture: ${fixturePath}`);
+    }
+
+    const fixture = JSON.parse(fs.readFileSync(fixturePath, 'utf8'));
+
+    return {
+      id: meta.id,
+      name: meta.name,
+      category: meta.category,
+      thumbnail: `/templates/thumbnails/resume_template_${meta.id}.webp`,
+      layout_data: normalizeAssetUrls(fixture.data.layoutData),
+      is_active: true
+    };
+  });
+}
+
+const RESUME_TEMPLATES = loadResumeTemplatesFromFixtures();
 
 const BENEFIT_CATALOGS = [
   {

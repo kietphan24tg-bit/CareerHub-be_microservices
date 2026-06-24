@@ -26,3 +26,15 @@ model EmployerProfile {
 
   @@map("employer_profiles")
 }
+
+model Department {
+  id          String   @id @db.VarChar(64)
+  companyId   String   @map("company_id") @db.VarChar(64)
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([companyId])
+  @@map("departments")
+}

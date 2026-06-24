@@ -260,6 +260,20 @@ export class GatewayJobsService {
     return this.transitionEmployerJob('reopen', input);
   }
 
+  async deleteEmployerJob(input: {
+    identityId: string;
+    jobId: string;
+    requestId?: string;
+  }): Promise<void> {
+    await this.jobGrpcClient.deleteJob(
+      {
+        employer_identity_id: input.identityId,
+        job_id: input.jobId
+      },
+      input.requestId
+    );
+  }
+
   private async transitionEmployerJob(
     action: 'publish' | 'close' | 'archive' | 'reopen',
     input: { identityId: string; jobId: string; requestId?: string }

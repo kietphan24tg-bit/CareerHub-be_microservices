@@ -5,10 +5,17 @@ import {
   type ServiceError
 } from '@grpc/grpc-js';
 import type {
+  CreateDepartmentRequest,
+  DeleteDepartmentRequest,
+  DeleteDepartmentResponse,
   DeleteEmployerProfileCompensationRequest,
   DeleteEmployerProfileCompensationResponse,
+  DepartmentResponse,
   GetEmployerProfileByIdentityIdRequest,
   GetEmployerProfileByIdentityIdResponse,
+  ListDepartmentsByCompanyRequest,
+  ListDepartmentsByCompanyResponse,
+  UpdateDepartmentRequest,
   UpdateEmployerProfileRequest,
   UpdateEmployerProfileResponse,
   CreateEmployerProfileRequest,
@@ -28,6 +35,11 @@ import { SpanKind, SpanStatusCode, context } from '@opentelemetry/api';
 import { GatewayGrpcClient } from './gateway-grpc.client';
 
 type EmployerGrpcServiceClient = {
+  CreateDepartment(
+    request: CreateDepartmentRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: DepartmentResponse) => void
+  ): ClientUnaryCall;
   CreateEmployerProfile(
     request: CreateEmployerProfileRequest,
     metadata: Metadata,
@@ -35,6 +47,11 @@ type EmployerGrpcServiceClient = {
       error: ServiceError | null,
       response: CreateEmployerProfileResponse
     ) => void
+  ): ClientUnaryCall;
+  DeleteDepartment(
+    request: DeleteDepartmentRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: DeleteDepartmentResponse) => void
   ): ClientUnaryCall;
   DeleteEmployerProfileCompensation(
     request: DeleteEmployerProfileCompensationRequest,
@@ -51,6 +68,16 @@ type EmployerGrpcServiceClient = {
       error: ServiceError | null,
       response: GetEmployerProfileByIdentityIdResponse
     ) => void
+  ): ClientUnaryCall;
+  ListDepartmentsByCompany(
+    request: ListDepartmentsByCompanyRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ListDepartmentsByCompanyResponse) => void
+  ): ClientUnaryCall;
+  UpdateDepartment(
+    request: UpdateDepartmentRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: DepartmentResponse) => void
   ): ClientUnaryCall;
   UpdateEmployerProfile(
     request: UpdateEmployerProfileRequest,
@@ -241,6 +268,90 @@ export class EmployerGrpcClient {
       'DeleteEmployerProfileCompensation',
       (client, payload, metadata, callback) =>
         client.DeleteEmployerProfileCompensation(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async listDepartmentsByCompany(
+    request: ListDepartmentsByCompanyRequest,
+    requestId?: string
+  ): Promise<ListDepartmentsByCompanyResponse> {
+    const grpcRequest = {
+      ...request,
+      identityId: request.identity_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as ListDepartmentsByCompanyRequest & { identityId: string; requestId: string };
+
+    return this.invokeUnary(
+      'ListDepartmentsByCompany',
+      (client, payload, metadata, callback) =>
+        client.ListDepartmentsByCompany(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async createDepartment(
+    request: CreateDepartmentRequest,
+    requestId?: string
+  ): Promise<DepartmentResponse> {
+    const grpcRequest = {
+      ...request,
+      identityId: request.identity_id,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as CreateDepartmentRequest & { identityId: string; requestId: string };
+
+    return this.invokeUnary(
+      'CreateDepartment',
+      (client, payload, metadata, callback) =>
+        client.CreateDepartment(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async updateDepartment(
+    request: UpdateDepartmentRequest,
+    requestId?: string
+  ): Promise<DepartmentResponse> {
+    const grpcRequest = {
+      ...request,
+      clearFields: request.clear_fields ?? [],
+      updatedFields: request.updated_fields ?? [],
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as UpdateDepartmentRequest & {
+      clearFields: string[];
+      updatedFields: string[];
+      requestId: string;
+    };
+
+    return this.invokeUnary(
+      'UpdateDepartment',
+      (client, payload, metadata, callback) =>
+        client.UpdateDepartment(payload, metadata, callback),
+      grpcRequest,
+      requestId
+    );
+  }
+
+  async deleteDepartment(
+    request: DeleteDepartmentRequest,
+    requestId?: string
+  ): Promise<DeleteDepartmentResponse> {
+    const grpcRequest = {
+      ...request,
+      requestId: requestId ?? '',
+      request_id: requestId ?? ''
+    } as DeleteDepartmentRequest & { requestId: string };
+
+    return this.invokeUnary(
+      'DeleteDepartment',
+      (client, payload, metadata, callback) =>
+        client.DeleteDepartment(payload, metadata, callback),
       grpcRequest,
       requestId
     );

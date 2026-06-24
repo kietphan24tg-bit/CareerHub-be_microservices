@@ -13,6 +13,7 @@ service JobService {
   rpc CloseJob (CloseJobRequest) returns (CloseJobResponse);
   rpc ArchiveJob (ArchiveJobRequest) returns (ArchiveJobResponse);
   rpc ReopenJob (ReopenJobRequest) returns (ReopenJobResponse);
+  rpc DeleteJob (DeleteJobRequest) returns (DeleteJobResponse);
   rpc ListJobsByIds (ListJobsByIdsRequest) returns (ListJobsByIdsResponse);
   rpc JobExists (JobExistsRequest) returns (JobExistsResponse);
   rpc GetJobForApplication (GetJobForApplicationRequest) returns (GetJobForApplicationResponse);
@@ -235,6 +236,16 @@ message ReopenJobRequest {
 
 message ReopenJobResponse {
   JobMessage job = 1;
+}
+
+message DeleteJobRequest {
+  string employer_identity_id = 1;
+  string job_id = 2;
+  string request_id = 3;
+}
+
+message DeleteJobResponse {
+  bool deleted = 1;
 }
 
 message ListJobsByIdsRequest {

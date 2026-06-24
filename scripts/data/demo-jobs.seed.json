@@ -49,6 +49,56 @@
       "country": "Vietnam",
       "description": "Studio delivering product design and engineering for startups.",
       "website": "https://greenstart.example.com"
+    },
+    {
+      "mockId": 6,
+      "companyName": "VNG Cloud",
+      "industry": "Technology",
+      "companySize": "1000+",
+      "city": "Hà Nội",
+      "country": "Vietnam",
+      "description": "Cloud infrastructure and platform services for regional enterprises.",
+      "website": "https://vngcloud.example.com"
+    },
+    {
+      "mockId": 7,
+      "companyName": "Momo Wallet",
+      "industry": "Fintech",
+      "companySize": "1000+",
+      "city": "TP.HCM",
+      "country": "Vietnam",
+      "description": "Digital wallet and payment products used nationwide.",
+      "website": "https://momo.example.com"
+    },
+    {
+      "mockId": 8,
+      "companyName": "Tiki Logistics",
+      "industry": "E-commerce",
+      "companySize": "1000+",
+      "city": "TP.HCM",
+      "country": "Vietnam",
+      "description": "E-commerce fulfillment and last-mile logistics platform.",
+      "website": "https://tiki.example.com"
+    },
+    {
+      "mockId": 9,
+      "companyName": "MetaCraft AI",
+      "industry": "Technology",
+      "companySize": "51-200",
+      "city": "Singapore",
+      "country": "Singapore",
+      "description": "Applied AI products for hiring analytics and workflow automation.",
+      "website": "https://metacraft.example.com"
+    },
+    {
+      "mockId": 10,
+      "companyName": "Nova Healthcare",
+      "industry": "Healthcare",
+      "companySize": "201-500",
+      "city": "Hà Nội",
+      "country": "Vietnam",
+      "description": "Healthcare operations software for clinics and hospital networks.",
+      "website": "https://novahealth.example.com"
     }
   ],
   "jobs": [
@@ -70,15 +120,19 @@
         "Comfortable with design systems and accessibility",
         "Experience shipping production features"
       ],
-      "benefits": ["Remote-first cadence", "Learning budget", "Regional salary benchmark"],
+      "benefits": [
+        "Remote-first cadence",
+        "Learning budget",
+        "Regional salary benchmark"
+      ],
       "employmentType": "fulltime",
       "level": "senior",
       "category": "Software Engineering",
       "city": "Singapore",
       "country": "Singapore",
       "isRemote": true,
-      "salaryMin": 5000,
-      "salaryMax": 7000,
+      "salaryMin": 4500,
+      "salaryMax": 7500,
       "currency": "USD",
       "status": "published",
       "saturdayPolicy": "works_saturday",
@@ -102,16 +156,20 @@
         "Experience with SaaS or workflow products",
         "Comfortable partnering with engineering"
       ],
-      "benefits": ["Hybrid work", "Health care", "Quarterly design offsite"],
+      "benefits": [
+        "Hybrid work",
+        "Health care",
+        "Quarterly design offsite"
+      ],
       "employmentType": "fulltime",
       "level": "mid",
       "category": "Design",
       "city": "Ho Chi Minh City",
       "country": "Vietnam",
       "isRemote": false,
-      "salaryMin": 2500,
-      "salaryMax": 4000,
-      "currency": "USD",
+      "salaryMin": 16,
+      "salaryMax": 26,
+      "currency": "VND",
       "status": "published",
       "saturdayPolicy": "off_saturday",
       "experienceLevel": "y3",
@@ -129,17 +187,25 @@
         "Design reliable pipelines for high-volume job applications.",
         "Collaborate on service contracts with gateway and workflow teams."
       ],
-      "requirements": ["Go experience", "Distributed systems fundamentals", "PostgreSQL fluency"],
-      "benefits": ["Annual bonus", "Remote allowance", "Conference budget"],
+      "requirements": [
+        "Go experience",
+        "Distributed systems fundamentals",
+        "PostgreSQL fluency"
+      ],
+      "benefits": [
+        "Annual bonus",
+        "Remote allowance",
+        "Conference budget"
+      ],
       "employmentType": "contract",
       "level": "senior",
       "category": "Software Engineering",
       "city": "Da Nang",
       "country": "Vietnam",
       "isRemote": true,
-      "salaryMin": 3500,
-      "salaryMax": 5500,
-      "currency": "USD",
+      "salaryMin": 30,
+      "salaryMax": 52,
+      "currency": "VND",
       "status": "closed",
       "saturdayPolicy": "off_saturday",
       "experienceLevel": "y5",
@@ -156,17 +222,25 @@
         "Lead frontend implementation for enterprise workflow products.",
         "Establish component standards and review practices for the team."
       ],
-      "requirements": ["React", "TypeScript", "Design systems"],
-      "benefits": ["Remote flexibility", "Insurance", "Learning stipend"],
+      "requirements": [
+        "React",
+        "TypeScript",
+        "Design systems"
+      ],
+      "benefits": [
+        "Remote flexibility",
+        "Insurance",
+        "Learning stipend"
+      ],
       "employmentType": "fulltime",
       "level": "senior",
       "category": "Software Engineering",
       "city": "TP.HCM",
       "country": "Vietnam",
       "isRemote": true,
-      "salaryMin": 1500,
-      "salaryMax": 2500,
-      "currency": "USD",
+      "salaryMin": 30,
+      "salaryMax": 48,
+      "currency": "VND",
       "status": "published",
       "saturdayPolicy": "off_saturday",
       "experienceLevel": "y5",
@@ -183,17 +257,25 @@
         "Own the UI architecture for internal finance operations tools.",
         "Drive accessibility and performance improvements across core surfaces."
       ],
-      "requirements": ["React", "Accessibility", "Design collaboration"],
-      "benefits": ["Hybrid schedule", "Health care", "Annual bonus"],
+      "requirements": [
+        "React",
+        "Accessibility",
+        "Design collaboration"
+      ],
+      "benefits": [
+        "Hybrid schedule",
+        "Health care",
+        "Annual bonus"
+      ],
       "employmentType": "fulltime",
       "level": "senior",
       "category": "Software Engineering",
       "city": "Hà Nội",
       "country": "Vietnam",
       "isRemote": false,
-      "salaryMin": 2000,
-      "salaryMax": 3000,
-      "currency": "USD",
+      "salaryMin": 22,
+      "salaryMax": 40,
+      "currency": "VND",
       "status": "published",
       "saturdayPolicy": "off_saturday",
       "experienceLevel": "y5",
@@ -210,17 +292,25 @@
         "Implement responsive interfaces for startup client products.",
         "Work closely with designers to refine interaction details."
       ],
-      "requirements": ["React", "CSS", "Product thinking"],
-      "benefits": ["Hybrid work", "Team retreat", "Mentorship"],
+      "requirements": [
+        "React",
+        "CSS",
+        "Product thinking"
+      ],
+      "benefits": [
+        "Hybrid work",
+        "Team retreat",
+        "Mentorship"
+      ],
       "employmentType": "fulltime",
       "level": "mid",
       "category": "Software Engineering",
       "city": "TP.HCM",
       "country": "Vietnam",
       "isRemote": false,
-      "salaryMin": 1200,
-      "salaryMax": 1800,
-      "currency": "USD",
+      "salaryMin": 14,
+      "salaryMax": 24,
+      "currency": "VND",
       "status": "published",
       "saturdayPolicy": "off_saturday",
       "experienceLevel": "y3",
@@ -237,16 +327,22 @@
         "Evolve the shared component library and design tokens.",
         "Support product teams adopting system patterns at scale."
       ],
-      "requirements": ["React", "Tokens", "Testing"],
-      "benefits": ["Remote-first cadence"],
+      "requirements": [
+        "React",
+        "Tokens",
+        "Testing"
+      ],
+      "benefits": [
+        "Remote-first cadence"
+      ],
       "employmentType": "fulltime",
       "level": "mid",
       "category": "Software Engineering",
       "city": "Singapore",
       "country": "Singapore",
       "isRemote": true,
-      "salaryMin": 1800,
-      "salaryMax": 2600,
+      "salaryMin": 2800,
+      "salaryMax": 4200,
       "currency": "USD",
       "status": "published",
       "saturdayPolicy": "works_saturday",
@@ -264,17 +360,22 @@
         "Design search and apply experiences for candidates.",
         "Prototype and validate flows with user research."
       ],
-      "requirements": ["Figma", "Systems thinking"],
-      "benefits": ["Hybrid work"],
+      "requirements": [
+        "Figma",
+        "Systems thinking"
+      ],
+      "benefits": [
+        "Hybrid work"
+      ],
       "employmentType": "fulltime",
       "level": "mid",
       "category": "Design",
       "city": "TP.HCM",
       "country": "Vietnam",
       "isRemote": false,
-      "salaryMin": 1400,
-      "salaryMax": 2200,
-      "currency": "USD",
+      "salaryMin": 18,
+      "salaryMax": 28,
+      "currency": "VND",
       "status": "published",
       "saturdayPolicy": "off_saturday",
       "experienceLevel": "y3",
@@ -291,17 +392,21 @@
         "Build and maintain React Native screens for workflow apps.",
         "Coordinate releases with backend and QA teams."
       ],
-      "requirements": ["React Native"],
-      "benefits": ["Equipment budget"],
+      "requirements": [
+        "React Native"
+      ],
+      "benefits": [
+        "Equipment budget"
+      ],
       "employmentType": "fulltime",
       "level": "mid",
       "category": "Software Engineering",
       "city": "Đà Nẵng",
       "country": "Vietnam",
       "isRemote": false,
-      "salaryMin": 1300,
-      "salaryMax": 2000,
-      "currency": "USD",
+      "salaryMin": 20,
+      "salaryMax": 30,
+      "currency": "VND",
       "status": "published",
       "saturdayPolicy": "off_saturday",
       "experienceLevel": "y3",
@@ -318,17 +423,21 @@
         "Write UX copy for onboarding and transaction flows.",
         "Maintain terminology guidelines across product teams."
       ],
-      "requirements": ["UX Writing"],
-      "benefits": ["Annual review"],
+      "requirements": [
+        "UX Writing"
+      ],
+      "benefits": [
+        "Annual review"
+      ],
       "employmentType": "fulltime",
       "level": "mid",
       "category": "Marketing",
       "city": "Hà Nội",
       "country": "Vietnam",
       "isRemote": false,
-      "salaryMin": 1000,
-      "salaryMax": 1600,
-      "currency": "USD",
+      "salaryMin": 12,
+      "salaryMax": 22,
+      "currency": "VND",
       "status": "published",
       "saturdayPolicy": "off_saturday",
       "experienceLevel": "y3",
@@ -345,17 +454,21 @@
         "Design regression suites for sprint releases.",
         "Automate critical user journeys with Playwright."
       ],
-      "requirements": ["Playwright"],
-      "benefits": ["Hybrid work"],
+      "requirements": [
+        "Playwright"
+      ],
+      "benefits": [
+        "Hybrid work"
+      ],
       "employmentType": "fulltime",
       "level": "mid",
       "category": "Software Engineering",
       "city": "TP.HCM",
       "country": "Vietnam",
       "isRemote": false,
-      "salaryMin": 900,
-      "salaryMax": 1400,
-      "currency": "USD",
+      "salaryMin": 14,
+      "salaryMax": 24,
+      "currency": "VND",
       "status": "published",
       "saturdayPolicy": "off_saturday",
       "experienceLevel": "y3",
@@ -372,17 +485,21 @@
         "Coordinate cross-team launch checklists and rollout comms.",
         "Track tooling updates for recruiting operations."
       ],
-      "requirements": ["Operations"],
-      "benefits": ["Flexible hours"],
+      "requirements": [
+        "Operations"
+      ],
+      "benefits": [
+        "Flexible hours"
+      ],
       "employmentType": "fulltime",
       "level": "junior",
       "category": "IT Management/Specialist",
       "city": "TP.HCM",
       "country": "Vietnam",
       "isRemote": false,
-      "salaryMin": 800,
-      "salaryMax": 1200,
-      "currency": "USD",
+      "salaryMin": 11,
+      "salaryMax": 16,
+      "currency": "VND",
       "status": "published",
       "saturdayPolicy": "off_saturday",
       "experienceLevel": "y1",
@@ -399,16 +516,20 @@
         "Create campaign visuals aligned with brand guidelines.",
         "Support product marketing with reusable asset systems."
       ],
-      "requirements": ["Brand design"],
-      "benefits": ["Regional team"],
+      "requirements": [
+        "Brand design"
+      ],
+      "benefits": [
+        "Regional team"
+      ],
       "employmentType": "fulltime",
       "level": "mid",
       "category": "Marketing",
       "city": "Singapore",
       "country": "Singapore",
       "isRemote": false,
-      "salaryMin": 1100,
-      "salaryMax": 1700,
+      "salaryMin": 2800,
+      "salaryMax": 4200,
       "currency": "USD",
       "status": "published",
       "saturdayPolicy": "works_saturday",
@@ -426,17 +547,21 @@
         "Assist engineers with UI implementation tasks.",
         "Participate in code review and QA for sprint deliverables."
       ],
-      "requirements": ["HTML/CSS"],
-      "benefits": ["Mentorship"],
+      "requirements": [
+        "HTML/CSS"
+      ],
+      "benefits": [
+        "Mentorship"
+      ],
       "employmentType": "intern",
       "level": "junior",
       "category": "Software Engineering",
       "city": "TP.HCM",
       "country": "Vietnam",
       "isRemote": false,
-      "salaryMin": 300,
-      "salaryMax": 500,
-      "currency": "USD",
+      "salaryMin": 3,
+      "salaryMax": 7,
+      "currency": "VND",
       "status": "published",
       "saturdayPolicy": "off_saturday",
       "experienceLevel": "none",
@@ -453,22 +578,1042 @@
         "Plan and execute adoption campaigns across digital channels.",
         "Report on campaign performance and iterate messaging."
       ],
-      "requirements": ["Campaign planning"],
-      "benefits": ["Bonus structure"],
+      "requirements": [
+        "Campaign planning"
+      ],
+      "benefits": [
+        "Bonus structure"
+      ],
       "employmentType": "fulltime",
       "level": "mid",
       "category": "Marketing/PR/Quảng cáo khác",
       "city": "Hà Nội",
       "country": "Vietnam",
       "isRemote": false,
-      "salaryMin": 900,
-      "salaryMax": 1300,
-      "currency": "USD",
+      "salaryMin": 12,
+      "salaryMax": 22,
+      "currency": "VND",
       "status": "published",
       "saturdayPolicy": "off_saturday",
       "experienceLevel": "y3",
       "expiresAt": "2026-12-31T00:00:00.000Z",
       "createdAt": "2026-04-16T00:00:00.000Z"
+    },
+    {
+      "mockId": 116,
+      "companyMockId": 6,
+      "title": "DevOps Engineer",
+      "slug": "devops-engineer-vng-cloud",
+      "description": "Automate deployment pipelines and improve reliability for cloud platform services.",
+      "responsibilities": [
+        "Maintain CI/CD pipelines",
+        "Monitor production SLOs",
+        "Harden Kubernetes clusters"
+      ],
+      "requirements": [
+        "Kubernetes",
+        "Terraform",
+        "Linux"
+      ],
+      "benefits": [
+        "On-call allowance",
+        "Certification budget"
+      ],
+      "employmentType": "fulltime",
+      "level": "senior",
+      "category": "Software Engineering",
+      "city": "Hà Nội",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 24,
+      "salaryMax": 42,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "works_saturday",
+      "experienceLevel": "y5",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-01T00:00:00.000Z"
+    },
+    {
+      "mockId": 117,
+      "companyMockId": 7,
+      "title": "Backend Engineer (Java)",
+      "slug": "backend-engineer-java-momo",
+      "description": "Build high-throughput payment APIs and ledger services for wallet transactions.",
+      "responsibilities": [
+        "Design payment APIs",
+        "Optimize database queries",
+        "Review service contracts"
+      ],
+      "requirements": [
+        "Java",
+        "Spring Boot",
+        "PostgreSQL"
+      ],
+      "benefits": [
+        "Stock options",
+        "Meal allowance"
+      ],
+      "employmentType": "fulltime",
+      "level": "senior",
+      "category": "Software Engineering",
+      "city": "TP.HCM",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 26,
+      "salaryMax": 44,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "off_saturday",
+      "experienceLevel": "over_5",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-02T00:00:00.000Z"
+    },
+    {
+      "mockId": 118,
+      "companyMockId": 8,
+      "title": "Data Analyst",
+      "slug": "data-analyst-tiki-logistics",
+      "description": "Analyze fulfillment metrics and build dashboards for operations leaders.",
+      "responsibilities": [
+        "Build logistics dashboards",
+        "Partner with ops on KPI definitions",
+        "Automate weekly reports"
+      ],
+      "requirements": [
+        "SQL",
+        "Python",
+        "Looker or Metabase"
+      ],
+      "benefits": [
+        "Hybrid work",
+        "Learning budget"
+      ],
+      "employmentType": "fulltime",
+      "level": "mid",
+      "category": "IT Management/Specialist",
+      "city": "Ho Chi Minh City",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 18,
+      "salaryMax": 28,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "off_saturday",
+      "experienceLevel": "y2",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-03T00:00:00.000Z"
+    },
+    {
+      "mockId": 119,
+      "companyMockId": 9,
+      "title": "Machine Learning Engineer",
+      "slug": "machine-learning-engineer-metacraft",
+      "description": "Ship ranking and matching models for hiring recommendation surfaces.",
+      "responsibilities": [
+        "Train ranking models",
+        "Deploy inference services",
+        "Monitor model drift"
+      ],
+      "requirements": [
+        "Python",
+        "PyTorch",
+        "Feature pipelines"
+      ],
+      "benefits": [
+        "Remote stipend",
+        "Conference travel"
+      ],
+      "employmentType": "fulltime",
+      "level": "senior",
+      "category": "Software Engineering",
+      "city": "Singapore",
+      "country": "Singapore",
+      "isRemote": true,
+      "salaryMin": 4500,
+      "salaryMax": 7500,
+      "currency": "USD",
+      "status": "published",
+      "saturdayPolicy": "unspecified",
+      "experienceLevel": "over_5",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-04T00:00:00.000Z"
+    },
+    {
+      "mockId": 120,
+      "companyMockId": 10,
+      "title": "IT Support Specialist",
+      "slug": "it-support-specialist-nova",
+      "description": "Support clinic staff with internal tooling, devices, and access management.",
+      "responsibilities": [
+        "Resolve helpdesk tickets",
+        "Maintain device inventory",
+        "Document runbooks"
+      ],
+      "requirements": [
+        "Windows/macOS support",
+        "Basic networking"
+      ],
+      "benefits": [
+        "Shift allowance"
+      ],
+      "employmentType": "fulltime",
+      "level": "junior",
+      "category": "IT Management/Specialist",
+      "city": "Hà Nội",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 7,
+      "salaryMax": 12,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "works_saturday",
+      "experienceLevel": "y1",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-05T00:00:00.000Z"
+    },
+    {
+      "mockId": 121,
+      "companyMockId": 2,
+      "title": "Android Developer",
+      "slug": "android-developer-shopee",
+      "description": "Improve buyer app performance and release quality across Southeast Asia markets.",
+      "responsibilities": [
+        "Build Android features",
+        "Improve app startup time",
+        "Collaborate with QA on release trains"
+      ],
+      "requirements": [
+        "Kotlin",
+        "Android SDK",
+        "Performance profiling"
+      ],
+      "benefits": [
+        "Regional mobility",
+        "Device budget"
+      ],
+      "employmentType": "fulltime",
+      "level": "mid",
+      "category": "Software Engineering",
+      "city": "Singapore",
+      "country": "Singapore",
+      "isRemote": false,
+      "salaryMin": 2800,
+      "salaryMax": 4200,
+      "currency": "USD",
+      "status": "published",
+      "saturdayPolicy": "works_saturday",
+      "experienceLevel": "y4",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-06T00:00:00.000Z"
+    },
+    {
+      "mockId": 122,
+      "companyMockId": 3,
+      "title": "Python Backend Developer",
+      "slug": "python-backend-developer-techcorp",
+      "description": "Develop workflow automation services with FastAPI and event-driven workers.",
+      "responsibilities": [
+        "Implement REST APIs",
+        "Maintain async workers",
+        "Write integration tests"
+      ],
+      "requirements": [
+        "Python",
+        "FastAPI",
+        "RabbitMQ"
+      ],
+      "benefits": [
+        "Remote flexibility"
+      ],
+      "employmentType": "fulltime",
+      "level": "mid",
+      "category": "Software Engineering",
+      "city": "TP.HCM",
+      "country": "Vietnam",
+      "isRemote": true,
+      "salaryMin": 16,
+      "salaryMax": 26,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "off_saturday",
+      "experienceLevel": "y3",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-07T00:00:00.000Z"
+    },
+    {
+      "mockId": 123,
+      "companyMockId": 4,
+      "title": "SEO Specialist",
+      "slug": "seo-specialist-finbase",
+      "description": "Grow organic acquisition for fintech product landing pages and content hubs.",
+      "responsibilities": [
+        "Run keyword research",
+        "Optimize landing pages",
+        "Report on organic KPIs"
+      ],
+      "requirements": [
+        "SEO tools",
+        "Content strategy",
+        "Analytics"
+      ],
+      "benefits": [
+        "Performance bonus"
+      ],
+      "employmentType": "fulltime",
+      "level": "mid",
+      "category": "Marketing",
+      "city": "Hà Nội",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 18,
+      "salaryMax": 28,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "off_saturday",
+      "experienceLevel": "y2",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-08T00:00:00.000Z"
+    },
+    {
+      "mockId": 124,
+      "companyMockId": 5,
+      "title": "Content Marketing Lead",
+      "slug": "content-marketing-lead-greenstart",
+      "description": "Own editorial calendar and thought leadership for studio brand channels.",
+      "responsibilities": [
+        "Plan content calendar",
+        "Manage freelance writers",
+        "Measure content ROI"
+      ],
+      "requirements": [
+        "B2B content",
+        "Editorial leadership"
+      ],
+      "benefits": [
+        "Creative budget"
+      ],
+      "employmentType": "fulltime",
+      "level": "senior",
+      "category": "Marketing/PR/Quảng cáo khác",
+      "city": "TP.HCM",
+      "country": "Vietnam",
+      "isRemote": true,
+      "salaryMin": 30,
+      "salaryMax": 48,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "unspecified",
+      "experienceLevel": "y5",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-09T00:00:00.000Z"
+    },
+    {
+      "mockId": 125,
+      "companyMockId": 1,
+      "title": "Scrum Master",
+      "slug": "scrum-master-careerhub-labs",
+      "description": "Facilitate agile delivery for cross-functional recruiting product squads.",
+      "responsibilities": [
+        "Run ceremonies",
+        "Remove delivery blockers",
+        "Coach teams on agile metrics"
+      ],
+      "requirements": [
+        "Scrum",
+        "Facilitation",
+        "SaaS delivery"
+      ],
+      "benefits": [
+        "Training budget"
+      ],
+      "employmentType": "fulltime",
+      "level": "mid",
+      "category": "IT Management/Specialist",
+      "city": "Ho Chi Minh City",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 12,
+      "salaryMax": 22,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "off_saturday",
+      "experienceLevel": "y4",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-10T00:00:00.000Z"
+    },
+    {
+      "mockId": 126,
+      "companyMockId": 6,
+      "title": "Site Reliability Engineer",
+      "slug": "site-reliability-engineer-vng",
+      "description": "Improve observability and incident response for multi-region cloud workloads.",
+      "responsibilities": [
+        "Define SLOs",
+        "Build alerting",
+        "Lead incident reviews"
+      ],
+      "requirements": [
+        "Prometheus",
+        "Grafana",
+        "On-call experience"
+      ],
+      "benefits": [
+        "Night shift premium"
+      ],
+      "employmentType": "fulltime",
+      "level": "senior",
+      "category": "Software Engineering",
+      "city": "Hà Nội",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 24,
+      "salaryMax": 42,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "works_saturday",
+      "experienceLevel": "over_5",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-11T00:00:00.000Z"
+    },
+    {
+      "mockId": 127,
+      "companyMockId": 7,
+      "title": "Product Marketing Manager",
+      "slug": "product-marketing-manager-momo",
+      "description": "Launch wallet features and coordinate go-to-market with growth teams.",
+      "responsibilities": [
+        "Own launch plans",
+        "Craft positioning",
+        "Analyze campaign results"
+      ],
+      "requirements": [
+        "Product marketing",
+        "Fintech domain"
+      ],
+      "benefits": [
+        "Quarterly bonus"
+      ],
+      "employmentType": "fulltime",
+      "level": "senior",
+      "category": "Marketing/PR/Quảng cáo khác",
+      "city": "TP.HCM",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 26,
+      "salaryMax": 44,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "off_saturday",
+      "experienceLevel": "y5",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-12T00:00:00.000Z"
+    },
+    {
+      "mockId": 128,
+      "companyMockId": 8,
+      "title": "Warehouse Operations Coordinator",
+      "slug": "warehouse-operations-coordinator-tiki",
+      "description": "Coordinate shift planning and SLA tracking for fulfillment centers.",
+      "responsibilities": [
+        "Track daily SLAs",
+        "Coordinate shift handovers",
+        "Escalate bottlenecks"
+      ],
+      "requirements": [
+        "Operations",
+        "Excel",
+        "Communication"
+      ],
+      "benefits": [
+        "Transport allowance"
+      ],
+      "employmentType": "fulltime",
+      "level": "junior",
+      "category": "IT Management/Specialist",
+      "city": "TP.HCM",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 13,
+      "salaryMax": 18,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "works_saturday",
+      "experienceLevel": "under_1",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-13T00:00:00.000Z"
+    },
+    {
+      "mockId": 129,
+      "companyMockId": 9,
+      "title": "UI/UX Designer",
+      "slug": "ui-ux-designer-metacraft",
+      "description": "Design analytics dashboards and recruiter workflow interfaces.",
+      "responsibilities": [
+        "Create dashboard wireframes",
+        "Run usability tests",
+        "Maintain design specs"
+      ],
+      "requirements": [
+        "Figma",
+        "UX research",
+        "Dashboard design"
+      ],
+      "benefits": [
+        "Remote-first"
+      ],
+      "employmentType": "fulltime",
+      "level": "mid",
+      "category": "Design",
+      "city": "Singapore",
+      "country": "Singapore",
+      "isRemote": true,
+      "salaryMin": 2800,
+      "salaryMax": 4200,
+      "currency": "USD",
+      "status": "published",
+      "saturdayPolicy": "unspecified",
+      "experienceLevel": "y3",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-14T00:00:00.000Z"
+    },
+    {
+      "mockId": 130,
+      "companyMockId": 10,
+      "title": "Healthcare Product Specialist",
+      "slug": "healthcare-product-specialist-nova",
+      "description": "Bridge clinical teams and engineering for patient scheduling modules.",
+      "responsibilities": [
+        "Gather clinical requirements",
+        "Validate releases with users",
+        "Document workflows"
+      ],
+      "requirements": [
+        "Healthcare ops",
+        "Requirements gathering"
+      ],
+      "benefits": [
+        "Health insurance"
+      ],
+      "employmentType": "fulltime",
+      "level": "mid",
+      "category": "IT Management/Specialist",
+      "city": "Hà Nội",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 12,
+      "salaryMax": 22,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "off_saturday",
+      "experienceLevel": "y2",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-15T00:00:00.000Z"
+    },
+    {
+      "mockId": 131,
+      "companyMockId": 2,
+      "title": "Growth Marketing Intern",
+      "slug": "growth-marketing-intern-shopee",
+      "description": "Support campaign setup and creative testing for regional growth experiments.",
+      "responsibilities": [
+        "Prepare campaign assets",
+        "Track experiment metrics",
+        "Support weekly reporting"
+      ],
+      "requirements": [
+        "Marketing fundamentals",
+        "Spreadsheets"
+      ],
+      "benefits": [
+        "Mentorship",
+        "Intern stipend"
+      ],
+      "employmentType": "intern",
+      "level": "junior",
+      "category": "Marketing",
+      "city": "Singapore",
+      "country": "Singapore",
+      "isRemote": false,
+      "salaryMin": 1200,
+      "salaryMax": 2000,
+      "currency": "USD",
+      "status": "published",
+      "saturdayPolicy": "works_saturday",
+      "experienceLevel": "none",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-16T00:00:00.000Z"
+    },
+    {
+      "mockId": 132,
+      "companyMockId": 3,
+      "title": "Part-time Technical Writer",
+      "slug": "part-time-technical-writer-techcorp",
+      "description": "Document internal APIs and onboarding guides for engineering teams.",
+      "responsibilities": [
+        "Write API docs",
+        "Maintain onboarding guides",
+        "Review doc PRs"
+      ],
+      "requirements": [
+        "Technical writing",
+        "Markdown",
+        "API docs"
+      ],
+      "benefits": [
+        "Flexible hours"
+      ],
+      "employmentType": "parttime",
+      "level": "mid",
+      "category": "Software Engineering",
+      "city": "TP.HCM",
+      "country": "Vietnam",
+      "isRemote": true,
+      "salaryMin": 12,
+      "salaryMax": 18,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "off_saturday",
+      "experienceLevel": "y3",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-17T00:00:00.000Z"
+    },
+    {
+      "mockId": 133,
+      "companyMockId": 4,
+      "title": "PR & Communications Executive",
+      "slug": "pr-communications-executive-finbase",
+      "description": "Manage press releases and executive communications for product milestones.",
+      "responsibilities": [
+        "Draft press releases",
+        "Coordinate media outreach",
+        "Support crisis comms"
+      ],
+      "requirements": [
+        "PR writing",
+        "Media relations"
+      ],
+      "benefits": [
+        "Event budget"
+      ],
+      "employmentType": "fulltime",
+      "level": "mid",
+      "category": "Marketing/PR/Quảng cáo khác",
+      "city": "Hà Nội",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 18,
+      "salaryMax": 28,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "unspecified",
+      "experienceLevel": "y3",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-18T00:00:00.000Z"
+    },
+    {
+      "mockId": 134,
+      "companyMockId": 5,
+      "title": "Visual Designer",
+      "slug": "visual-designer-greenstart",
+      "description": "Create marketing visuals and presentation systems for client launches.",
+      "responsibilities": [
+        "Design campaign visuals",
+        "Build presentation templates",
+        "Support brand reviews"
+      ],
+      "requirements": [
+        "Visual design",
+        "Adobe Creative Suite"
+      ],
+      "benefits": [
+        "Studio equipment"
+      ],
+      "employmentType": "contract",
+      "level": "mid",
+      "category": "Design",
+      "city": "TP.HCM",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 22,
+      "salaryMax": 36,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "off_saturday",
+      "experienceLevel": "y2",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-19T00:00:00.000Z"
+    },
+    {
+      "mockId": 135,
+      "companyMockId": 6,
+      "title": "Cloud Security Engineer",
+      "slug": "cloud-security-engineer-vng",
+      "description": "Harden cloud accounts and automate compliance checks for platform tenants.",
+      "responsibilities": [
+        "Run security reviews",
+        "Automate compliance scans",
+        "Respond to security incidents"
+      ],
+      "requirements": [
+        "Cloud security",
+        "IAM",
+        "Terraform"
+      ],
+      "benefits": [
+        "Security cert support"
+      ],
+      "employmentType": "fulltime",
+      "level": "senior",
+      "category": "Software Engineering",
+      "city": "Hà Nội",
+      "country": "Vietnam",
+      "isRemote": true,
+      "salaryMin": 22,
+      "salaryMax": 40,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "works_saturday",
+      "experienceLevel": "y5",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-20T00:00:00.000Z"
+    },
+    {
+      "mockId": 136,
+      "companyMockId": 7,
+      "title": "Mobile QA Engineer",
+      "slug": "mobile-qa-engineer-momo",
+      "description": "Test wallet releases across Android and iOS with automation coverage.",
+      "responsibilities": [
+        "Build mobile test suites",
+        "Report release defects",
+        "Maintain device lab"
+      ],
+      "requirements": [
+        "Mobile QA",
+        "Appium",
+        "Test planning"
+      ],
+      "benefits": [
+        "Device lab access"
+      ],
+      "employmentType": "fulltime",
+      "level": "mid",
+      "category": "Software Engineering",
+      "city": "TP.HCM",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 14,
+      "salaryMax": 24,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "off_saturday",
+      "experienceLevel": "y3",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-21T00:00:00.000Z"
+    },
+    {
+      "mockId": 137,
+      "companyMockId": 8,
+      "title": "Social Media Specialist",
+      "slug": "social-media-specialist-tiki",
+      "description": "Manage social channels and community campaigns for e-commerce promotions.",
+      "responsibilities": [
+        "Plan social campaigns",
+        "Coordinate with creative team",
+        "Track engagement metrics"
+      ],
+      "requirements": [
+        "Social media",
+        "Community management"
+      ],
+      "benefits": [
+        "Campaign incentives"
+      ],
+      "employmentType": "parttime",
+      "level": "junior",
+      "category": "Marketing",
+      "city": "Ho Chi Minh City",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 7,
+      "salaryMax": 10,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "unspecified",
+      "experienceLevel": "under_1",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-22T00:00:00.000Z"
+    },
+    {
+      "mockId": 138,
+      "companyMockId": 9,
+      "title": "Fullstack Engineer (Node.js)",
+      "slug": "fullstack-engineer-node-metacraft",
+      "description": "Build recruiter dashboards with Node.js, React, and search integrations.",
+      "responsibilities": [
+        "Ship dashboard features",
+        "Integrate search APIs",
+        "Improve test coverage"
+      ],
+      "requirements": [
+        "Node.js",
+        "React",
+        "PostgreSQL"
+      ],
+      "benefits": [
+        "Remote-first",
+        "Learning stipend"
+      ],
+      "employmentType": "fulltime",
+      "level": "mid",
+      "category": "Software Engineering",
+      "city": "Singapore",
+      "country": "Singapore",
+      "isRemote": true,
+      "salaryMin": 2800,
+      "salaryMax": 4200,
+      "currency": "USD",
+      "status": "published",
+      "saturdayPolicy": "off_saturday",
+      "experienceLevel": "y4",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-23T00:00:00.000Z"
+    },
+    {
+      "mockId": 139,
+      "companyMockId": 10,
+      "title": "Clinical Data Intern",
+      "slug": "clinical-data-intern-nova",
+      "description": "Support data cleanup and reporting for clinic scheduling pilots.",
+      "responsibilities": [
+        "Clean clinic datasets",
+        "Prepare weekly reports",
+        "Assist QA checks"
+      ],
+      "requirements": [
+        "Excel",
+        "Attention to detail"
+      ],
+      "benefits": [
+        "Intern certificate"
+      ],
+      "employmentType": "intern",
+      "level": "junior",
+      "category": "IT Management/Specialist",
+      "city": "Hà Nội",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 4,
+      "salaryMax": 8,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "off_saturday",
+      "experienceLevel": "none",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "mockId": 140,
+      "companyMockId": 1,
+      "title": "Employer Success Manager",
+      "slug": "employer-success-manager-careerhub",
+      "description": "Help employer accounts adopt hiring workflows and improve job posting quality.",
+      "responsibilities": [
+        "Onboard employer accounts",
+        "Review job posting quality",
+        "Run success workshops"
+      ],
+      "requirements": [
+        "Customer success",
+        "HR tech"
+      ],
+      "benefits": [
+        "Commission plan"
+      ],
+      "employmentType": "fulltime",
+      "level": "mid",
+      "category": "Marketing/PR/Quảng cáo khác",
+      "city": "TP.HCM",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 12,
+      "salaryMax": 22,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "off_saturday",
+      "experienceLevel": "y3",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-25T00:00:00.000Z"
+    },
+    {
+      "mockId": 141,
+      "companyMockId": 2,
+      "title": "iOS Developer",
+      "slug": "ios-developer-shopee",
+      "description": "Deliver buyer-facing iOS features with strong performance and accessibility.",
+      "responsibilities": [
+        "Implement SwiftUI screens",
+        "Profile memory usage",
+        "Participate in app review fixes"
+      ],
+      "requirements": [
+        "Swift",
+        "iOS SDK",
+        "Accessibility"
+      ],
+      "benefits": [
+        "MacBook provision"
+      ],
+      "employmentType": "fulltime",
+      "level": "senior",
+      "category": "Software Engineering",
+      "city": "Singapore",
+      "country": "Singapore",
+      "isRemote": false,
+      "salaryMin": 4500,
+      "salaryMax": 7500,
+      "currency": "USD",
+      "status": "published",
+      "saturdayPolicy": "works_saturday",
+      "experienceLevel": "over_5",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-26T00:00:00.000Z"
+    },
+    {
+      "mockId": 142,
+      "companyMockId": 3,
+      "title": "Database Administrator",
+      "slug": "database-administrator-techcorp",
+      "description": "Operate PostgreSQL clusters and backup strategy for workflow services.",
+      "responsibilities": [
+        "Manage PostgreSQL clusters",
+        "Tune query performance",
+        "Run backup drills"
+      ],
+      "requirements": [
+        "PostgreSQL",
+        "Backup strategy",
+        "Monitoring"
+      ],
+      "benefits": [
+        "On-call compensation"
+      ],
+      "employmentType": "contract",
+      "level": "senior",
+      "category": "Software Engineering",
+      "city": "Đà Nẵng",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 28,
+      "salaryMax": 50,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "unspecified",
+      "experienceLevel": "y5",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-27T00:00:00.000Z"
+    },
+    {
+      "mockId": 143,
+      "companyMockId": 4,
+      "title": "Performance Marketing Specialist",
+      "slug": "performance-marketing-specialist-finbase",
+      "description": "Run paid acquisition experiments across search and social for fintech products.",
+      "responsibilities": [
+        "Manage ad campaigns",
+        "Optimize landing pages",
+        "Report ROAS weekly"
+      ],
+      "requirements": [
+        "Google Ads",
+        "Meta Ads",
+        "Analytics"
+      ],
+      "benefits": [
+        "Performance bonus"
+      ],
+      "employmentType": "parttime",
+      "level": "mid",
+      "category": "Marketing",
+      "city": "Hà Nội",
+      "country": "Vietnam",
+      "isRemote": true,
+      "salaryMin": 14,
+      "salaryMax": 20,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "off_saturday",
+      "experienceLevel": "y2",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-28T00:00:00.000Z"
+    },
+    {
+      "mockId": 144,
+      "companyMockId": 5,
+      "title": "Design Intern",
+      "slug": "design-intern-greenstart",
+      "description": "Support design team with wireframes, asset prep, and user test notes.",
+      "responsibilities": [
+        "Prepare design assets",
+        "Take usability notes",
+        "Maintain component library"
+      ],
+      "requirements": [
+        "Figma basics",
+        "Visual taste"
+      ],
+      "benefits": [
+        "Portfolio mentorship"
+      ],
+      "employmentType": "intern",
+      "level": "junior",
+      "category": "Design",
+      "city": "TP.HCM",
+      "country": "Vietnam",
+      "isRemote": false,
+      "salaryMin": 3,
+      "salaryMax": 7,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "off_saturday",
+      "experienceLevel": "under_1",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-29T00:00:00.000Z"
+    },
+    {
+      "mockId": 145,
+      "companyMockId": 8,
+      "title": "Platform Engineer (Go)",
+      "slug": "platform-engineer-go-tiki",
+      "description": "Build internal developer platform services for logistics engineering teams.",
+      "responsibilities": [
+        "Build platform APIs in Go",
+        "Improve developer tooling",
+        "Own service templates"
+      ],
+      "requirements": [
+        "Go",
+        "Microservices",
+        "Platform thinking"
+      ],
+      "benefits": [
+        "Tech talk budget"
+      ],
+      "employmentType": "fulltime",
+      "level": "senior",
+      "category": "Software Engineering",
+      "city": "Da Nang",
+      "country": "Vietnam",
+      "isRemote": true,
+      "salaryMin": 22,
+      "salaryMax": 40,
+      "currency": "VND",
+      "status": "published",
+      "saturdayPolicy": "works_saturday",
+      "experienceLevel": "y4",
+      "expiresAt": "2026-12-31T00:00:00.000Z",
+      "createdAt": "2026-05-30T00:00:00.000Z"
     }
   ]
 }

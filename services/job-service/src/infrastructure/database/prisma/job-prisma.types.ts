@@ -135,6 +135,7 @@ export type JobModelDelegate = {
     data: { status?: string; updatedAt?: Date };
     where?: JobWhereInput;
   }): Promise<{ count: number }>;
+  deleteMany(args: { where?: JobWhereInput }): Promise<{ count: number }>;
 };
 
 export type JobPrismaClient = PrismaClientLike & {

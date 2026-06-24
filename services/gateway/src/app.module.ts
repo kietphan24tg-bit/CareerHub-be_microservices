@@ -18,6 +18,7 @@ import {
 } from '@careerhub/contracts';
 import { ConfigService } from '@nestjs/config';
 import { GatewayAuthService } from './application/auth/gateway-auth.service';
+import { GatewayDepartmentsService } from './application/departments/gateway-departments.service';
 import { GatewayProfileService } from './application/profiles/gateway-profile.service';
 import { GatewayResumeExportService } from './application/resumes/gateway-resume-export.service';
 import { GatewayResumesService } from './application/resumes/gateway-resumes.service';
@@ -42,6 +43,7 @@ import { WorkflowGrpcClient } from './infrastructure/transport/grpc/workflow-grp
 import { AuthController } from './presentation/http/auth/auth.controller';
 import { CandidateProfilesController } from './presentation/http/candidate-profiles/candidate-profiles.controller';
 import { CompanyProfilesController } from './presentation/http/company-profiles/company-profiles.controller';
+import { EmployerDepartmentsController } from './presentation/http/departments/employer-departments.controller';
 import { ResumesController } from './presentation/http/resumes/resumes.controller';
 import { EmployerJobsController } from './presentation/http/jobs/employer-jobs.controller';
 import { PublicJobsController } from './presentation/http/jobs/public-jobs.controller';
@@ -82,6 +84,7 @@ import {
     CandidateInterviewsController,
     CandidateOffersController,
     CompanyProfilesController,
+    EmployerDepartmentsController,
     EmployerApplicationsController,
     EmployerDashboardController,
     EmployerInterviewsController,
@@ -120,6 +123,7 @@ import {
   ],
   providers: [
     GatewayAuthService,
+    GatewayDepartmentsService,
     GatewayProfileService,
     GatewayResumeExportService,
     GatewayApplicationsService,

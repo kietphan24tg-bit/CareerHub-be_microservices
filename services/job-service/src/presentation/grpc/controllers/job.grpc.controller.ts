@@ -6,6 +6,8 @@
   type CloseJobResponse,
   type CreateJobRequest,
   type CreateJobResponse,
+  type DeleteJobRequest,
+  type DeleteJobResponse,
   type GetEmployerDashboardJobsSummaryRequest,
   type GetEmployerDashboardJobsSummaryResponse,
   type GetEmployerJobByIdRequest,
@@ -35,6 +37,7 @@ import {
   ArchiveJobCommandHandler,
   CloseJobCommandHandler,
   CreateJobCommandHandler,
+  DeleteJobCommandHandler,
   GetEmployerDashboardJobsSummaryQueryHandler,
   GetEmployerJobByIdQueryHandler,
   GetJobForApplicationQueryHandler,
@@ -59,6 +62,7 @@ export class JobGrpcController {
     private readonly archiveJobCommandHandler: ArchiveJobCommandHandler,
     private readonly closeJobCommandHandler: CloseJobCommandHandler,
     private readonly createJobCommandHandler: CreateJobCommandHandler,
+    private readonly deleteJobCommandHandler: DeleteJobCommandHandler,
     private readonly getEmployerDashboardJobsSummaryQueryHandler: GetEmployerDashboardJobsSummaryQueryHandler,
     private readonly getEmployerJobByIdQueryHandler: GetEmployerJobByIdQueryHandler,
     private readonly getJobForApplicationQueryHandler: GetJobForApplicationQueryHandler,
@@ -368,6 +372,22 @@ export class JobGrpcController {
 
       return {
         job: toGrpcJobMessage(job)
+      };
+    } catch (error) {
+      throw mapErrorToJobGrpcException(error);
+    }
+  }
+
+  @GrpcMethod(JOB_GRPC_SERVICE_NAME, 'DeleteJob')
+  async deleteJob(request: DeleteJobRequest): Promise<DeleteJobResponse> {
+    try {
+      await this.deleteJobCommandHandler.execute({
+        employerIdentityId: request.employer_identity_id,
+        jobId: request.job_id
+      });
+
+      return {
+        deleted: true
       };
     } catch (error) {
       throw mapErrorToJobGrpcException(error);

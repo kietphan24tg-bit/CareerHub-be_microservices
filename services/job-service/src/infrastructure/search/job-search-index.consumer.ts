@@ -1,6 +1,7 @@
 import {
   JOB_ARCHIVED_EVENT_NAME,
   JOB_CLOSED_EVENT_NAME,
+  JOB_DELETED_EVENT_NAME,
   JOB_PUBLISHED_EVENT_NAME,
   JOB_REOPENED_EVENT_NAME,
   JOB_UPDATED_EVENT_NAME,
@@ -44,7 +45,8 @@ const JOB_INDEX_EVENT_NAMES = [
   JOB_UPDATED_EVENT_NAME,
   JOB_CLOSED_EVENT_NAME,
   JOB_ARCHIVED_EVENT_NAME,
-  JOB_REOPENED_EVENT_NAME
+  JOB_REOPENED_EVENT_NAME,
+  JOB_DELETED_EVENT_NAME
 ] as const;
 
 type JobIndexEventName = (typeof JOB_INDEX_EVENT_NAMES)[number];
@@ -234,7 +236,8 @@ export class JobSearchIndexConsumer implements OnModuleInit, OnModuleDestroy {
     try {
       if (
         eventName === JOB_CLOSED_EVENT_NAME ||
-        eventName === JOB_ARCHIVED_EVENT_NAME
+        eventName === JOB_ARCHIVED_EVENT_NAME ||
+        eventName === JOB_DELETED_EVENT_NAME
       ) {
         await this.jobSearchIndexer.remove(jobId);
         this.logger.debug(`Job removed from search index: ${jobId}`);

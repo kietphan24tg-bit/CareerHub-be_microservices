@@ -75,6 +75,7 @@ function resolveRequestId(request: RequestIdRequest): string {
 @Controller('auth')
 export class AuthController {
   private readonly refreshCookieMaxAge: number;
+  private readonly sessionPresenceCookieName: string;
 
   constructor(
     private readonly gatewayAuthService: GatewayAuthService,
@@ -84,6 +85,7 @@ export class AuthController {
     this.refreshCookieMaxAge = parseDurationToMs(
       gatewayRuntimeConfig.jwtRefreshExpiresIn
     );
+    this.sessionPresenceCookieName = `${gatewayRuntimeConfig.authRefreshCookieName}_present`;
   }
 
   @Post('candidate/register')
@@ -290,11 +292,21 @@ export class AuthController {
     refreshToken: string,
     rememberMe: boolean
   ): void {
+    const cookieMaxAge = rememberMe ? this.refreshCookieMaxAge : undefined;
+
     response.cookie(this.gatewayRuntimeConfig.authRefreshCookieName, refreshToken, {
       domain: this.gatewayRuntimeConfig.authRefreshCookieDomain,
       httpOnly: true,
-      maxAge: rememberMe ? this.refreshCookieMaxAge : undefined,
+      maxAge: cookieMaxAge,
       path: '/auth',
+      sameSite: 'lax',
+      secure: this.gatewayRuntimeConfig.authRefreshCookieSecure
+    });
+    response.cookie(this.sessionPresenceCookieName, '1', {
+      domain: this.gatewayRuntimeConfig.authRefreshCookieDomain,
+      httpOnly: true,
+      maxAge: cookieMaxAge,
+      path: '/',
       sameSite: 'lax',
       secure: this.gatewayRuntimeConfig.authRefreshCookieSecure
     });
@@ -305,6 +317,13 @@ export class AuthController {
       domain: this.gatewayRuntimeConfig.authRefreshCookieDomain,
       httpOnly: true,
       path: '/auth',
+      sameSite: 'lax',
+      secure: this.gatewayRuntimeConfig.authRefreshCookieSecure
+    });
+    response.clearCookie(this.sessionPresenceCookieName, {
+      domain: this.gatewayRuntimeConfig.authRefreshCookieDomain,
+      httpOnly: true,
+      path: '/',
       sameSite: 'lax',
       secure: this.gatewayRuntimeConfig.authRefreshCookieSecure
     });
