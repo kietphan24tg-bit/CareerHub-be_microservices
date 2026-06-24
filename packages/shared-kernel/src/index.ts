@@ -6,3 +6,4 @@ export * from './domain/errors';
 export * from './domain/events/domain-event';
 export * from './domain/events/domain-event.type';
 export * from './helpers/object';
+export * from './reference/company-industries';

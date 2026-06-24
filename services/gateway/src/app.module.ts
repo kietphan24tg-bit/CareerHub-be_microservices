@@ -22,6 +22,7 @@ import { GatewayDepartmentsService } from './application/departments/gateway-dep
 import { GatewayProfileService } from './application/profiles/gateway-profile.service';
 import { GatewayResumeExportService } from './application/resumes/gateway-resume-export.service';
 import { GatewayResumesService } from './application/resumes/gateway-resumes.service';
+import { GatewayMetadataService } from './application/metadata/gateway-metadata.service';
 import { GatewayJobsService } from './application/jobs/gateway-jobs.service';
 import { GatewayApplicationsService } from './application/applications/gateway-applications.service';
 import { GatewayDashboardService } from './application/dashboard/gateway-dashboard.service';
@@ -58,6 +59,7 @@ import { EmployerDashboardController } from './presentation/http/dashboard/emplo
 import { EmployerRecruiterNotesController } from './presentation/http/recruiter-notes/employer-recruiter-notes.controller';
 import { NotificationsController } from './presentation/http/notifications/notifications.controller';
 import { SavedJobsController } from './presentation/http/saved-jobs/saved-jobs.controller';
+import { MetadataController } from './presentation/http/metadata/metadata.controller';
 import { GatewayController } from './presentation/http/health/gateway.controller';
 import { GRPC_CLIENT_OPTIONS } from './infrastructure/transport/grpc/grpc.constants';
 import { GatewayGrpcClient } from './infrastructure/transport/grpc/gateway-grpc.client';
@@ -95,6 +97,7 @@ import {
     PublicJobsController,
     ResumesController,
     SavedJobsController,
+    MetadataController,
     GatewayController
   ],
   imports: [
@@ -130,6 +133,7 @@ import {
     GatewayDashboardService,
     GatewayInterviewsService,
     GatewayJobsService,
+    GatewayMetadataService,
     GatewayNotificationsService,
     GatewayOffersService,
     GatewayRecruiterNotesService,
