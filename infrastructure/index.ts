@@ -28,6 +28,7 @@ export * from './observability/tracing/open-telemetry';
 export * from './runtime/request-context/request-id';
 export * from './outbox/outbox.processor';
 export * from './outbox/outbox.types';
+export * from './outbox/outbox-persistence.mapper';
 export * from './transport/rpc/rpc-error.mapper';
 export * from './transport/rpc/rpc-to-http-error.mapper';
 export * from './transport/grpc/grpc-request-context';

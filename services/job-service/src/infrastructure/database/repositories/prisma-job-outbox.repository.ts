@@ -1,35 +1,11 @@
 import type { OutboxBacklogSummary, OutboxRepository } from '../../../application';
 import type { OutboxRecord } from '@careerhub/contracts';
-import type {
-  JobPrismaClient,
-  OutboxPersistenceRecord
-} from '../prisma/job-prisma.types';
-
-function toOutboxRecord(record: {
-  eventName: string;
-  id: string;
-  lastError: string | null;
-  nextRetryAt: Date | null;
-  occurredAt: Date;
-  payload: OutboxRecord['payload'];
-  processingAt: Date | null;
-  processedAt: Date | null;
-  retryCount: number;
-  status: OutboxRecord['status'];
-}): OutboxRecord {
-  return {
-    eventName: record.eventName,
-    id: record.id,
-    lastError: record.lastError ?? undefined,
-    nextRetryAt: record.nextRetryAt?.toISOString(),
-    occurredAt: record.occurredAt.toISOString(),
-    payload: record.payload,
-    processingAt: record.processingAt?.toISOString(),
-    processedAt: record.processedAt?.toISOString(),
-    retryCount: record.retryCount,
-    status: record.status
-  };
-}
+import {
+  normalizeOutboxPersistenceRecord,
+  toOutboxRecord,
+  type OutboxPersistenceShape
+} from '@careerhub/infrastructure';
+import type { JobPrismaClient } from '../prisma/job-prisma.types';
 
 export class PrismaJobOutboxRepository implements OutboxRepository {
   constructor(private readonly prismaClient: JobPrismaClient) {}
@@ -45,7 +21,7 @@ export class PrismaJobOutboxRepository implements OutboxRepository {
     }
 
     const record = await this.prismaClient.outbox.findUnique({ where: { id } });
-    return record ? toOutboxRecord(record as Parameters<typeof toOutboxRecord>[0]) : null;
+    return record ? toOutboxRecord(record as OutboxPersistenceShape) : null;
   }
 
   async create(record: OutboxRecord): Promise<void> {
@@ -107,7 +83,7 @@ export class PrismaJobOutboxRepository implements OutboxRepository {
     const raw = this.prismaClient as unknown as {
       $queryRawUnsafe: <T>(query: string, ...values: unknown[]) => Promise<T>;
     };
-    const records = await raw.$queryRawUnsafe<OutboxPersistenceRecord[]>(
+    const records = await raw.$queryRawUnsafe<Record<string, unknown>[]>(
       `UPDATE outbox
        SET status = 'processing', processing_at = $1
        WHERE id IN (
@@ -122,7 +98,9 @@ export class PrismaJobOutboxRepository implements OutboxRepository {
       limit
     );
 
-    return records.map((record) => toOutboxRecord(record));
+    return records.map((record) =>
+      toOutboxRecord(normalizeOutboxPersistenceRecord(record))
+    );
   }
 
   async findPendingBatch(limit: number): Promise<OutboxRecord[]> {
@@ -132,7 +110,7 @@ export class PrismaJobOutboxRepository implements OutboxRepository {
       where: { status: 'pending' }
     });
 
-    return records.map((r) => toOutboxRecord(r as Parameters<typeof toOutboxRecord>[0]));
+    return records.map((record) => toOutboxRecord(record as OutboxPersistenceShape));
   }
 
   async markFailed(
