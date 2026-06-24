@@ -239,6 +239,7 @@ export type InterviewModelDelegate = {
   findMany(args: {
     where?: ApplicationWhereInput;
     orderBy?: Record<string, 'asc' | 'desc'> | Record<string, 'asc' | 'desc'>[];
+    skip?: number;
     take?: number;
   }): Promise<InterviewPersistenceRecord[]>;
   updateMany(args: {

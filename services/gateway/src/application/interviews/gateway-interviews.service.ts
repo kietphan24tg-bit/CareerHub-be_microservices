@@ -14,6 +14,8 @@ import {
   toGrpcCreateInterviewInput,
   toGrpcUpdateInterviewInput
 } from './mappers/gateway-interview.mapper';
+import type { EmployerInterviewsQueryDto } from '../../presentation/http/interviews/dto/employer-interviews-query.dto';
+import type { GatewayHttpEmployerInterviewListItem } from './mappers/gateway-interview.mapper';
 import type {
   CancelInterviewRequestDto,
   CandidateInterviewResponseRequestDto,
@@ -35,6 +37,72 @@ type CompanySnapshot = {
   logoUrl: string | null;
 };
 
+const SEARCH_FETCH_PAGE_SIZE = 500;
+
+function toIsoLocalDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function resolveInterviewDateRange(input: Pick<EmployerInterviewsQueryDto, 'date' | 'dateFilter'>) {
+  const exactDate = input.date?.trim();
+  if (exactDate) {
+    return { date: exactDate };
+  }
+
+  const today = new Date();
+  const todayIso = toIsoLocalDate(today);
+
+  if (input.dateFilter === 'today') {
+    return {
+      dateFrom: todayIso,
+      dateTo: toIsoLocalDate(addDays(today, 1))
+    };
+  }
+
+  if (input.dateFilter === 'thisWeek') {
+    return {
+      dateFrom: todayIso,
+      dateTo: toIsoLocalDate(addDays(today, 7))
+    };
+  }
+
+  return {};
+}
+
+function matchesInterviewSearch(
+  item: GatewayHttpEmployerInterviewListItem,
+  search?: string
+) {
+  const normalized = search?.trim().toLowerCase();
+  if (!normalized) {
+    return true;
+  }
+
+  const haystack = [
+    item.candidate.fullName,
+    item.job.title,
+    item.round,
+    item.platform,
+    item.locationDetail,
+    item.fullAddress,
+    ...item.interviewers.map((interviewer) => interviewer.name)
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return haystack.includes(normalized);
+}
+
 @Injectable()
 export class GatewayInterviewsService {
   constructor(
@@ -44,22 +112,72 @@ export class GatewayInterviewsService {
     private readonly jobGrpcClient: JobGrpcClient
   ) {}
 
-  async listEmployerInterviews(input: { identityId: string; requestId?: string }) {
+  async listEmployerInterviews(
+    input: EmployerInterviewsQueryDto & { identityId: string; requestId?: string }
+  ) {
+    const dateRange = resolveInterviewDateRange(input);
+    const page = input.page ?? 1;
+    const pageSize = input.pageSize ?? 20;
+    const hasSearch = Boolean(input.search?.trim());
+    const grpcRequest = {
+      date: dateRange.date,
+      date_from: dateRange.dateFrom,
+      date_to: dateRange.dateTo,
+      employer_identity_id: input.identityId,
+      page: hasSearch ? 1 : page,
+      page_size: hasSearch ? SEARCH_FETCH_PAGE_SIZE : pageSize,
+      status: input.status && input.status !== 'all' ? input.status : undefined,
+      type: input.type && input.type !== 'all' ? input.type : undefined
+    };
+
     const response = await this.applicationGrpcClient.listEmployerInterviews(
-      { employer_identity_id: input.identityId },
+      grpcRequest,
       input.requestId
     );
     const interviews = response.items ?? [];
+    const enriched = await this.enrichEmployerInterviewList(interviews, input.identityId, input.requestId);
+
+    if (!hasSearch) {
+      return {
+        items: enriched,
+        meta: {
+          page: response.meta?.page ?? page,
+          pageSize: response.meta?.page_size ?? pageSize,
+          total: response.meta?.total ?? enriched.length
+        }
+      };
+    }
+
+    const filtered = enriched.filter((item) => matchesInterviewSearch(item, input.search));
+    const start = (page - 1) * pageSize;
+
+    return {
+      items: filtered.slice(start, start + pageSize),
+      meta: {
+        page,
+        pageSize,
+        total: filtered.length
+      }
+    };
+  }
+
+  private async enrichEmployerInterviewList(
+    interviews: NonNullable<
+      Awaited<ReturnType<ApplicationGrpcClient['listEmployerInterviews']>>['items']
+    >,
+    identityId: string,
+    requestId?: string
+  ) {
     const [jobLookup, candidateLookup, company] = await Promise.all([
       this.loadJobLookup(
         interviews.map((item) => item.job_id).filter((id): id is string => Boolean(id)),
-        input.requestId
+        requestId
       ),
       this.loadCandidateLookup(
         interviews.map((item) => item.candidate_identity_id).filter((id): id is string => Boolean(id)),
-        input.requestId
+        requestId
       ),
-      this.loadCompanySnapshot(input.identityId, input.requestId)
+      this.loadCompanySnapshot(identityId, requestId)
     ]);
 
     return interviews.map((interview) =>

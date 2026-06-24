@@ -5,6 +5,6 @@ export class ListEmployerInterviewsQueryHandler {
   constructor(private readonly interviewOperations: InterviewOperations) {}
 
   execute(query: ListEmployerInterviewsQuery) {
-    return this.interviewOperations.listEmployerInterviews(query.employerIdentityId);
+    return this.interviewOperations.listEmployerInterviewsPage(query);
   }
 }

@@ -216,8 +216,31 @@ export type UpdateOfferData = Partial<
   deletedAt?: Date | null;
 };
 
+export type ListEmployerInterviewsFilters = {
+  date?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  pageSize?: number;
+  status?: string;
+  type?: string;
+};
+
+export type PaginatedInterviewListResult = {
+  items: ApplicationInterviewRecord[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+  };
+};
+
 export interface RecruitmentRepository {
   listEmployerInterviews(employerIdentityId: string): Promise<ApplicationInterviewRecord[]>;
+  listEmployerInterviewsPage(
+    employerIdentityId: string,
+    filters?: ListEmployerInterviewsFilters
+  ): Promise<PaginatedInterviewListResult>;
   findInterviewById(interviewId: string): Promise<ApplicationInterviewRecord | null>;
   findInterviewByIdAndEmployer(
     interviewId: string,

@@ -11,7 +11,10 @@ test('employer interviews controller returns response envelope for list and crea
   const controller = new EmployerInterviewsController({
     async listEmployerInterviews() {
       calls.push('list');
-      return [{ id: 'interview-1', status: 'scheduled' }];
+      return {
+        items: [{ id: 'interview-1', status: 'scheduled' }],
+        meta: { page: 1, pageSize: 20, total: 1 }
+      };
     },
     async createInterview() {
       calls.push('create');
@@ -25,7 +28,7 @@ test('employer interviews controller returns response envelope for list and crea
     }
   } as never);
 
-  const listed = await controller.listEmployerInterviews(user, 'req-1');
+  const listed = await controller.listEmployerInterviews(user, {}, 'req-1');
   const created = await controller.createInterview(
     user,
     'application-1',
@@ -40,7 +43,7 @@ test('employer interviews controller returns response envelope for list and crea
   );
 
   assert.equal(listed.message, 'Employer interviews loaded successfully');
-  assert.equal(listed.data[0]?.id, 'interview-1');
+  assert.equal(listed.data.items[0]?.id, 'interview-1');
   assert.equal(created.message, 'Interview created successfully');
   assert.equal(created.data.id, 'interview-1');
   assert.deepEqual(calls, ['list', 'create']);

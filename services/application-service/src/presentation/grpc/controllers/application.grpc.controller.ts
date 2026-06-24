@@ -390,12 +390,24 @@ export class ApplicationGrpcController {
     request: ListEmployerInterviewsRequest
   ): Promise<ListEmployerInterviewsResponse> {
     try {
-      const items = await this.listEmployerInterviewsQueryHandler.execute({
-        employerIdentityId: request.employer_identity_id
+      const result = await this.listEmployerInterviewsQueryHandler.execute({
+        date: request.date,
+        dateFrom: request.date_from,
+        dateTo: request.date_to,
+        employerIdentityId: request.employer_identity_id,
+        page: request.page ?? 1,
+        pageSize: request.page_size ?? 20,
+        status: request.status,
+        type: request.type
       });
 
       return {
-        items: items.map(toGrpcInterviewDetailMessage)
+        items: result.items.map(toGrpcInterviewDetailMessage),
+        meta: {
+          page: result.meta.page,
+          page_size: result.meta.pageSize,
+          total: result.meta.total
+        }
       };
     } catch (error) {
       throw mapErrorToApplicationGrpcException(error);

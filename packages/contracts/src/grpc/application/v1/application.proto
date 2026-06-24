@@ -505,10 +505,24 @@ message CandidateOfferDecisionInputMessage {
 message ListEmployerInterviewsRequest {
   string employer_identity_id = 1;
   string request_id = 2;
+  string status = 3;
+  string type = 4;
+  string date = 5;
+  string date_from = 6;
+  string date_to = 7;
+  int32 page = 8;
+  int32 page_size = 9;
+}
+
+message ListEmployerInterviewsPaginationMeta {
+  int32 page = 1;
+  int32 page_size = 2;
+  int32 total = 3;
 }
 
 message ListEmployerInterviewsResponse {
   repeated InterviewDetailMessage items = 1;
+  ListEmployerInterviewsPaginationMeta meta = 2;
 }
 
 message CreateInterviewRequest {

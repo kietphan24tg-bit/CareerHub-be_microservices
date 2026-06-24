@@ -6,7 +6,9 @@ import type {
   CreateOfferBenefitData,
   CreateOfferData,
   InterviewerRecord,
+  ListEmployerInterviewsFilters,
   OfferBenefitRecord,
+  PaginatedInterviewListResult,
   RecruitmentRepository,
   UpdateInterviewData,
   UpdateOfferData
@@ -147,12 +149,62 @@ export class PrismaRecruitmentRepository implements RecruitmentRepository {
   constructor(private readonly prismaClient: ApplicationPrismaRepositoryClient) {}
 
   async listEmployerInterviews(employerIdentityId: string): Promise<ApplicationInterviewRecord[]> {
-    const records = await this.prismaClient.interview.findMany({
-      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
-      where: { employerIdentityId }
+    const result = await this.listEmployerInterviewsPage(employerIdentityId, {
+      page: 1,
+      pageSize: 10_000
     });
 
-    return records.map(mapInterviewRecord);
+    return result.items;
+  }
+
+  async listEmployerInterviewsPage(
+    employerIdentityId: string,
+    filters: ListEmployerInterviewsFilters = {}
+  ): Promise<PaginatedInterviewListResult> {
+    const page = Math.max(filters.page ?? 1, 1);
+    const pageSize = Math.min(Math.max(filters.pageSize ?? 20, 1), 100);
+    const where: {
+      employerIdentityId: string;
+      status?: string;
+      type?: string;
+      date?: string | { gte?: string; lt?: string };
+    } = { employerIdentityId };
+
+    if (filters.status) {
+      where.status = filters.status;
+    }
+
+    if (filters.type) {
+      where.type = filters.type;
+    }
+
+    if (filters.date) {
+      where.date = filters.date;
+    } else if (filters.dateFrom || filters.dateTo) {
+      where.date = {
+        ...(filters.dateFrom ? { gte: filters.dateFrom } : {}),
+        ...(filters.dateTo ? { lt: filters.dateTo } : {})
+      };
+    }
+
+    const [records, total] = await Promise.all([
+      this.prismaClient.interview.findMany({
+        orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        where
+      }),
+      this.prismaClient.interview.count({ where })
+    ]);
+
+    return {
+      items: records.map(mapInterviewRecord),
+      meta: {
+        page,
+        pageSize,
+        total
+      }
+    };
   }
 
   async findInterviewById(interviewId: string): Promise<ApplicationInterviewRecord | null> {

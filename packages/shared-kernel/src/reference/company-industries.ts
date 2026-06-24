@@ -7,33 +7,48 @@ export type CompanyIndustryOption = {
 export const COMPANY_INDUSTRY_OTHER_VALUE = 'other';
 
 export const COMPANY_INDUSTRY_OPTIONS: CompanyIndustryOption[] = [
-  { value: 'technology', label: 'Cong nghe thong tin' },
+  { value: 'technology', label: 'Công nghệ thông tin' },
   { value: 'hr-technology', label: 'HR Technology' },
-  { value: 'finance-banking', label: 'Tai chinh - Ngan hang' },
-  { value: 'marketing-communications', label: 'Marketing - Truyen thong' },
-  { value: 'education-training', label: 'Giao duc - Dao tao' },
-  { value: 'healthcare', label: 'Y te - Cham soc suc khoe' },
+  { value: 'finance-banking', label: 'Tài chính - Ngân hàng' },
+  { value: 'marketing-communications', label: 'Marketing - Truyền thông' },
+  { value: 'education-training', label: 'Giáo dục - Đào tạo' },
+  { value: 'healthcare', label: 'Y tế - Chăm sóc sức khỏe' },
   { value: 'e-commerce', label: 'E-commerce' },
-  { value: 'retail-consumer', label: 'Ban le - Tieu dung' },
-  { value: COMPANY_INDUSTRY_OTHER_VALUE, label: 'Khac', allowsCustom: true }
+  { value: 'retail-consumer', label: 'Bán lẻ - Tiêu dùng' },
+  { value: COMPANY_INDUSTRY_OTHER_VALUE, label: 'Khác', allowsCustom: true }
 ];
 
 export const COMPANY_INDUSTRY_LEGACY_ALIASES: Record<string, string> = {
   technology: 'technology',
   'cong nghe thong tin': 'technology',
+  'công nghệ thông tin': 'technology',
   'hr technology': 'hr-technology',
   finance: 'finance-banking',
   'tai chinh / ngan hang': 'finance-banking',
   'tai chinh - ngan hang': 'finance-banking',
+  'tài chính / ngân hàng': 'finance-banking',
+  'tài chính - ngân hàng': 'finance-banking',
   marketing: 'marketing-communications',
   'marketing / truyen thong': 'marketing-communications',
   'marketing - truyen thong': 'marketing-communications',
+  'marketing / truyền thông': 'marketing-communications',
+  'marketing - truyền thông': 'marketing-communications',
   'giao duc / dao tao': 'education-training',
   'giao duc - dao tao': 'education-training',
+  'giáo dục / đào tạo': 'education-training',
+  'giáo dục - đào tạo': 'education-training',
   'y te / cham soc suc khoe': 'healthcare',
   'y te - cham soc suc khoe': 'healthcare',
+  'y tế / chăm sóc sức khỏe': 'healthcare',
+  'y tế - chăm sóc sức khỏe': 'healthcare',
   'e-commerce': 'e-commerce',
   retail: 'retail-consumer',
+  'ban le / tieu dung': 'retail-consumer',
+  'ban le - tieu dung': 'retail-consumer',
+  'bán lẻ / tiêu dùng': 'retail-consumer',
+  'bán lẻ - tiêu dùng': 'retail-consumer',
+  khac: COMPANY_INDUSTRY_OTHER_VALUE,
+  'khác': COMPANY_INDUSTRY_OTHER_VALUE,
   other: COMPANY_INDUSTRY_OTHER_VALUE
 };
 

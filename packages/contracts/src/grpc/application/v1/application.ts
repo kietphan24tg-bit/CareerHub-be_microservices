@@ -385,10 +385,24 @@ export type CandidateOfferDecisionInputMessage = {
 export type ListEmployerInterviewsRequest = {
   employer_identity_id: string;
   request_id?: string;
+  status?: string;
+  type?: string;
+  date?: string;
+  date_from?: string;
+  date_to?: string;
+  page?: number;
+  page_size?: number;
+};
+
+export type ListEmployerInterviewsPaginationMeta = {
+  page?: number;
+  page_size?: number;
+  total?: number;
 };
 
 export type ListEmployerInterviewsResponse = {
   items: InterviewDetailMessage[];
+  meta?: ListEmployerInterviewsPaginationMeta;
 };
 
 export type CreateInterviewRequest = {

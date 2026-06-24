@@ -5,7 +5,8 @@ import {
   Headers,
   Param,
   Patch,
-  Post
+  Post,
+  Query
 } from '@nestjs/common';
 import { GatewayInterviewsService } from '../../../application/interviews/gateway-interviews.service';
 import { CurrentUser } from '../../../auth/decorators/current-user.decorator';
@@ -16,6 +17,7 @@ import {
   CreateInterviewRequestDto,
   UpdateInterviewRequestDto
 } from './dto/interview-write.request.dto';
+import { EmployerInterviewsQueryDto } from './dto/employer-interviews-query.dto';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Interviews')
@@ -28,10 +30,12 @@ export class EmployerInterviewsController {
   @Get('employer/interviews')
   async listEmployerInterviews(
     @CurrentUser() user: GatewayAuthenticatedUser,
+    @Query() query: EmployerInterviewsQueryDto,
     @Headers('x-request-id') requestId?: string
   ) {
     return {
       data: await this.gatewayInterviewsService.listEmployerInterviews({
+        ...query,
         identityId: user.id,
         requestId
       }),

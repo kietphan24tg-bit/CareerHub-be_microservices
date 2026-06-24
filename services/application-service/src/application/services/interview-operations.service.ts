@@ -16,6 +16,8 @@ import type {
   ApplicationStatus,
   ApplicationWriteTransaction,
   IdGenerator,
+  ListEmployerInterviewsFilters,
+  PaginatedInterviewListResult,
   RecruitmentRepository
 } from '../ports';
 import {
@@ -105,6 +107,15 @@ function buildInterviewChangedEvent(
   );
 }
 
+function normalizeInterviewListFilter(value?: string) {
+  const normalized = value?.trim();
+  if (!normalized || normalized === 'all') {
+    return undefined;
+  }
+
+  return normalized;
+}
+
 export class InterviewOperations {
   constructor(
     private readonly applicationRepository: ApplicationRepository,
@@ -117,6 +128,32 @@ export class InterviewOperations {
 
   async listEmployerInterviews(employerIdentityId: string): Promise<ApplicationInterviewRecord[]> {
     return this.recruitmentRepository.listEmployerInterviews(employerIdentityId.trim());
+  }
+
+  async listEmployerInterviewsPage(input: {
+    employerIdentityId: string;
+    status?: string;
+    type?: string;
+    date?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<PaginatedInterviewListResult> {
+    const filters: ListEmployerInterviewsFilters = {
+      date: input.date?.trim() || undefined,
+      dateFrom: input.dateFrom?.trim() || undefined,
+      dateTo: input.dateTo?.trim() || undefined,
+      page: input.page,
+      pageSize: input.pageSize,
+      status: normalizeInterviewListFilter(input.status),
+      type: normalizeInterviewListFilter(input.type)
+    };
+
+    return this.recruitmentRepository.listEmployerInterviewsPage(
+      input.employerIdentityId.trim(),
+      filters
+    );
   }
 
   async createInterview(
