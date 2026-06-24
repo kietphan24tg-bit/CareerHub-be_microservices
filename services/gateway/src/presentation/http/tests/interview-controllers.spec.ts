@@ -28,7 +28,11 @@ test('employer interviews controller returns response envelope for list and crea
     }
   } as never);
 
-  const listed = await controller.listEmployerInterviews(user, {}, 'req-1');
+  const listed = await controller.listEmployerInterviews(
+    user,
+    { page: 1, pageSize: 20 },
+    'req-1'
+  );
   const created = await controller.createInterview(
     user,
     'application-1',

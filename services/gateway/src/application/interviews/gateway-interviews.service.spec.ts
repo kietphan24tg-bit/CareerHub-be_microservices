@@ -112,7 +112,12 @@ test('gateway interviews list employer enriches items with job and candidate sna
               type: 'online',
               updated_at: '2026-06-12T00:00:00.000Z'
             }
-          ]
+          ],
+          meta: {
+            page: 1,
+            page_size: 20,
+            total: 1
+          }
         };
       },
       async createInterview() {
@@ -181,12 +186,15 @@ test('gateway interviews list employer enriches items with job and candidate sna
 
   const result = await service.listEmployerInterviews({
     identityId: 'employer-1',
+    page: 1,
+    pageSize: 20,
     requestId: 'req-1'
   });
 
-  assert.equal(result.length, 1);
-  assert.equal(result[0]?.id, 'interview-1');
-  assert.equal(result[0]?.candidate?.fullName, 'Jane Candidate');
-  assert.equal(result[0]?.job?.title, 'Senior Engineer');
-  assert.equal(result[0]?.company?.companyName, 'Acme Corp');
+  assert.equal(result.items.length, 1);
+  assert.equal(result.meta.total, 1);
+  assert.equal(result.items[0]?.id, 'interview-1');
+  assert.equal(result.items[0]?.candidate?.fullName, 'Jane Candidate');
+  assert.equal(result.items[0]?.job?.title, 'Senior Engineer');
+  assert.equal(result.items[0]?.company?.companyName, 'Acme Corp');
 });
