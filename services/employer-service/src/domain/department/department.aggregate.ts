@@ -107,11 +107,13 @@ export class DepartmentAggregate extends AggregateRoot<DepartmentProps> {
   }
 
   validate(): void {
-    if (!this.propsRef.name.trim()) {
+    const props = this.getProps();
+
+    if (!props.name.trim()) {
       throw new ValidationError('Department name is required');
     }
 
-    if (!this.propsRef.companyId.trim()) {
+    if (!props.companyId.trim()) {
       throw new ValidationError('Department company id is required');
     }
   }
