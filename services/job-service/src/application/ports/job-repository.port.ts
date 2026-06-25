@@ -13,6 +13,7 @@ export type JobRecord = {
   country: string | null;
   createdAt: Date;
   currency: string | null;
+  departmentId: string | null;
   description: string | null;
   employerIdentityId: string;
   employmentType: string | null;
@@ -50,6 +51,7 @@ export type ListPublicJobsFilter = {
 
 export type ListEmployerJobsFilter = {
   category?: string;
+  departmentId?: string;
   employerIdentityId: string;
   page: number;
   pageSize: number;
@@ -67,6 +69,7 @@ export type CreateJobData = {
   companyWebsite: string | null;
   country: string | null;
   currency: string | null;
+  departmentId: string | null;
   description: string | null;
   employerIdentityId: string;
   employmentType: string | null;
@@ -90,6 +93,7 @@ export type UpdateJobPatch = {
   city?: string | null;
   country?: string | null;
   currency?: string | null;
+  departmentId?: string | null;
   description?: string | null;
   employmentType?: string | null;
   experienceLevel?: string;

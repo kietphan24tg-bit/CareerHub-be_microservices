@@ -61,6 +61,7 @@ message JobMessage {
   repeated string null_fields = 24;
   string saturday_policy = 25;
   string experience_level = 26;
+  string department_id = 27;
 }
 
 message SavedJobSummary {
@@ -121,6 +122,7 @@ message ListEmployerJobsRequest {
   int32 page_size = 4;
   string request_id = 5;
   string category = 6;
+  string department_id = 7;
 }
 
 message ListEmployerJobsResponse {
@@ -163,6 +165,7 @@ message CreateJobRequest {
   string request_id = 22;
   string saturday_policy = 23;
   string experience_level = 24;
+  string department_id = 25;
 }
 
 message CreateJobResponse {
@@ -192,6 +195,7 @@ message UpdateJobRequest {
   string request_id = 20;
   string saturday_policy = 21;
   string experience_level = 22;
+  string department_id = 23;
 }
 
 message UpdateJobResponse {

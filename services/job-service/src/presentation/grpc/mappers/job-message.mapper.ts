@@ -14,6 +14,7 @@ export function toGrpcJobMessage(job: JobRecord): JobMessage {
   collectNullable('employment_type', job.employmentType);
   collectNullable('level', job.level);
   collectNullable('category', job.category);
+  collectNullable('department_id', job.departmentId);
   collectNullable('city', job.city);
   collectNullable('country', job.country);
   collectNullable('currency', job.currency);
@@ -37,6 +38,7 @@ export function toGrpcJobMessage(job: JobRecord): JobMessage {
     country: job.country ?? '',
     created_at: job.createdAt.toISOString(),
     currency: job.currency ?? '',
+    department_id: job.departmentId ?? '',
     description: job.description ?? '',
     employment_type: job.employmentType ?? '',
     experience_level: job.experienceLevel,

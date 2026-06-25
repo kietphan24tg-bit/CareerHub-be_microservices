@@ -87,6 +87,10 @@ export class CreateJobRequestDto {
   @IsIn(experienceLevels)
   experienceLevel?: (typeof experienceLevels)[number];
 
+  @IsOptional()
+  @IsString()
+  departmentId?: string;
+
   @Transform(({ value }) => trimOptional(value))
   @IsOptional()
   @IsString()

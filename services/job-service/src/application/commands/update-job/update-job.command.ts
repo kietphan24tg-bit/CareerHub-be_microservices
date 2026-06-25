@@ -4,6 +4,7 @@ export type UpdateJobCommand = {
   city?: string | null;
   country?: string | null;
   currency?: string | null;
+  departmentId?: string | null;
   description?: string | null;
   employerIdentityId: string;
   employmentType?: string | null;

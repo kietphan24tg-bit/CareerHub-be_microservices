@@ -95,6 +95,11 @@ export class UpdateJobRequestDto {
   @Transform(({ value }) => trimOptional(value))
   @IsOptional()
   @IsString()
+  departmentId?: string | null;
+
+  @Transform(({ value }) => trimOptional(value))
+  @IsOptional()
+  @IsString()
   category?: string | null;
 
   @Transform(({ value }) => trimOptional(value))

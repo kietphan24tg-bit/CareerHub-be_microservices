@@ -24,6 +24,7 @@ model Job {
   employmentType       String?   @map("employment_type")
   level                String?
   category             String?
+  departmentId         String?   @map("department_id") @db.VarChar(64)
   city                 String?
   country              String?
   isRemote             Boolean   @default(false) @map("is_remote")
@@ -38,6 +39,7 @@ model Job {
   updatedAt            DateTime  @updatedAt @map("updated_at")
 
   @@index([employerIdentityId])
+  @@index([employerIdentityId, departmentId])
   @@index([companyId])
   @@index([status])
   @@index([status, createdAt])

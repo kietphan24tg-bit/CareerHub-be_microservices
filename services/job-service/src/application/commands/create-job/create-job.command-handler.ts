@@ -45,6 +45,7 @@ export class CreateJobCommandHandler {
           companyWebsite: command.companyWebsite?.trim() || null,
           country: command.country?.trim() || null,
           currency: command.currency?.trim() || null,
+          departmentId: command.departmentId?.trim() || null,
           description: command.description?.trim() || null,
           employerIdentityId: job.employerIdentityId,
           employmentType: command.employmentType ?? null,

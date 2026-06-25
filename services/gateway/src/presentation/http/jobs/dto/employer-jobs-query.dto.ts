@@ -7,6 +7,10 @@ export class EmployerJobsQueryDto {
   category?: string;
 
   @IsOptional()
+  @IsString()
+  departmentId?: string;
+
+  @IsOptional()
   @IsIn(['draft', 'published', 'closed', 'archived'])
   status?: string;
 

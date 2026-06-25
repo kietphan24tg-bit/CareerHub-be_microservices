@@ -56,6 +56,9 @@ export class UpdateJobCommandHandler {
       ...(command.category !== undefined
         ? { category: command.category?.trim() || null }
         : {}),
+      ...(command.departmentId !== undefined
+        ? { departmentId: command.departmentId?.trim() || null }
+        : {}),
       ...(command.city !== undefined
         ? { city: command.city?.trim() || null }
         : {}),

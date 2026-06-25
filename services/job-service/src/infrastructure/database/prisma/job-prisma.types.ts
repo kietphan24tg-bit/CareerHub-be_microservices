@@ -13,6 +13,7 @@ export type JobPersistenceRecord = {
   country: string | null;
   createdAt: Date;
   currency: string | null;
+  departmentId: string | null;
   description: string | null;
   employerIdentityId: string;
   employmentType: string | null;
@@ -43,6 +44,7 @@ export type JobCreateInput = {
   companyWebsite: string | null;
   country: string | null;
   currency: string | null;
+  departmentId: string | null;
   description: string | null;
   employerIdentityId: string;
   employmentType: string | null;

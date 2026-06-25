@@ -17,6 +17,8 @@ export type GatewayHttpJob = {
   country: string | null;
   createdAt: string;
   currency: string | null;
+  departmentId: string | null;
+  departmentLabel: string | null;
   description: string | null;
   employmentType: string | null;
   experienceLevel: string;
@@ -84,6 +86,8 @@ export function toGatewayHttpJob(job: JobMessage): GatewayHttpJob {
     country: nullableString(job.country, nullFields, 'country'),
     createdAt: job.created_at,
     currency: nullableString(job.currency, nullFields, 'currency'),
+    departmentId: nullableString(job.department_id, nullFields, 'department_id'),
+    departmentLabel: null,
     description: nullableString(job.description, nullFields, 'description'),
     employmentType: nullableString(job.employment_type, nullFields, 'employment_type'),
     experienceLevel: job.experience_level || 'unspecified',

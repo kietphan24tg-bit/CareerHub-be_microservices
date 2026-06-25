@@ -135,6 +135,7 @@ export class JobGrpcController {
     try {
       const result = await this.listEmployerJobsQueryHandler.execute({
         category: request.category,
+        departmentId: request.department_id,
         employerIdentityId: request.employer_identity_id,
         page: request.page ?? 1,
         pageSize: request.page_size ?? 20,
@@ -212,6 +213,7 @@ export class JobGrpcController {
         companyWebsite: request.company_website,
         country: request.country,
         currency: request.currency,
+        departmentId: request.department_id,
         description: request.description,
         employerIdentityId: request.employer_identity_id,
         employmentType: request.employment_type,
@@ -245,6 +247,11 @@ export class JobGrpcController {
         category: updatedFields.has('category')
           ? request.category
           : clearFields.has('category')
+            ? null
+            : undefined,
+        departmentId: updatedFields.has('department_id')
+          ? request.department_id
+          : clearFields.has('department_id')
             ? null
             : undefined,
         city: updatedFields.has('city')

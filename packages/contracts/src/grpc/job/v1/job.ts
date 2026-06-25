@@ -25,6 +25,7 @@ export type JobMessage = {
   country: string;
   created_at: string;
   currency: string;
+  department_id: string;
   description: string;
   employment_type: string;
   experience_level: string;
@@ -97,6 +98,7 @@ export type GetPublicJobBySlugResponse = {
 
 export type ListEmployerJobsRequest = {
   category?: string;
+  department_id?: string;
   employer_identity_id: string;
   page?: number;
   page_size?: number;
@@ -130,6 +132,7 @@ export type CreateJobRequest = {
   company_website?: string;
   country?: string;
   currency?: string;
+  department_id?: string;
   description?: string;
   employer_identity_id: string;
   employment_type?: string;
@@ -157,6 +160,7 @@ export type UpdateJobRequest = {
   clear_fields?: string[];
   country?: string;
   currency?: string;
+  department_id?: string;
   description?: string;
   employer_identity_id: string;
   employment_type?: string;

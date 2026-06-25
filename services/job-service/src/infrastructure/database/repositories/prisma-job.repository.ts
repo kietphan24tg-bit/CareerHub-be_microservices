@@ -50,6 +50,7 @@ function mapRecord(record: JobPersistenceRecord): JobRecord {
     country: record.country,
     createdAt: record.createdAt,
     currency: record.currency,
+    departmentId: record.departmentId,
     description: record.description,
     employerIdentityId: record.employerIdentityId,
     employmentType: record.employmentType,
@@ -174,6 +175,7 @@ function mapUpdatePatch(patch: UpdateJobPatch) {
       : {}),
     ...(patch.level !== undefined ? { level: patch.level } : {}),
     ...(patch.category !== undefined ? { category: patch.category } : {}),
+    ...(patch.departmentId !== undefined ? { departmentId: patch.departmentId } : {}),
     ...(patch.city !== undefined ? { city: patch.city } : {}),
     ...(patch.country !== undefined ? { country: patch.country } : {}),
     ...(patch.isRemote !== undefined ? { isRemote: patch.isRemote } : {}),
@@ -203,6 +205,7 @@ export class PrismaJobRepository implements JobRepository {
         companyWebsite: data.companyWebsite,
         country: data.country,
         currency: data.currency,
+        departmentId: data.departmentId,
         description: data.description,
         employerIdentityId: data.employerIdentityId,
         employmentType: data.employmentType,
@@ -288,6 +291,7 @@ export class PrismaJobRepository implements JobRepository {
     const where: JobWhereInput = {
       employerIdentityId: filter.employerIdentityId,
       ...(filter.status ? { status: filter.status } : {}),
+      ...(filter.departmentId ? { departmentId: filter.departmentId } : {}),
       ...(filter.category ? { category: filter.category } : {})
     };
 

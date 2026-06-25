@@ -9,6 +9,7 @@ export type CreateJobCommand = {
   companyWebsite?: string;
   country?: string;
   currency?: string;
+  departmentId?: string;
   description?: string;
   employerIdentityId: string;
   employmentType?: string;

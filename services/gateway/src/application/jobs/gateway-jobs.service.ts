@@ -1,5 +1,5 @@
 import type { JobMessage } from '@careerhub/contracts';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ApplicationGrpcClient } from '../../infrastructure/transport/grpc/application-grpc.client';
 import { EmployerGrpcClient } from '../../infrastructure/transport/grpc/employer-grpc.client';
 import { JobGrpcClient } from '../../infrastructure/transport/grpc/job-grpc.client';
@@ -77,6 +77,7 @@ export class GatewayJobsService {
 
   async listEmployerJobs(input: {
     category?: string;
+    departmentId?: string;
     identityId: string;
     page?: number;
     pageSize?: number;
@@ -86,6 +87,7 @@ export class GatewayJobsService {
     const response = await this.jobGrpcClient.listEmployerJobs(
       {
         category: input.category,
+        department_id: input.departmentId,
         employer_identity_id: input.identityId,
         page: input.page,
         page_size: input.pageSize,
@@ -98,8 +100,14 @@ export class GatewayJobsService {
       input.requestId
     );
 
+    const items = await this.enrichHttpJobsWithDepartmentLabels(
+      enrichedItems.map(toGatewayHttpJob),
+      input.identityId,
+      input.requestId
+    );
+
     return {
-      items: enrichedItems.map(toGatewayHttpJob),
+      items,
       meta: response.meta ? toGatewayHttpPageMeta(response.meta) : undefined
     };
   }
@@ -118,7 +126,12 @@ export class GatewayJobsService {
     );
 
     const [job] = await this.enrichJobApplicationCounts([response.job], input.requestId);
-    return toGatewayHttpJob(job);
+    const [enrichedJob] = await this.enrichHttpJobsWithDepartmentLabels(
+      [toGatewayHttpJob(job)],
+      input.identityId,
+      input.requestId
+    );
+    return enrichedJob;
   }
 
   async createEmployerJob(input: {
@@ -127,6 +140,7 @@ export class GatewayJobsService {
     city?: string;
     country?: string;
     currency?: string;
+    departmentId?: string;
     description?: string;
     employmentType?: string;
     experienceLevel?: string;
@@ -143,6 +157,11 @@ export class GatewayJobsService {
     title: string;
   }): Promise<GatewayHttpJob> {
     const company = await this.resolveEmployerCompany(input.identityId, input.requestId);
+    await this.assertDepartmentBelongsToEmployer(
+      input.identityId,
+      input.departmentId,
+      input.requestId
+    );
     const response = await this.jobGrpcClient.createJob(
       {
         benefits: input.benefits,
@@ -155,6 +174,7 @@ export class GatewayJobsService {
         company_website: company.companyWebsite ?? undefined,
         country: input.country,
         currency: input.currency,
+        department_id: input.departmentId,
         description: input.description,
         employer_identity_id: input.identityId,
         employment_type: input.employmentType,
@@ -172,7 +192,12 @@ export class GatewayJobsService {
       input.requestId
     );
 
-    return toGatewayHttpJob(response.job);
+    const [enrichedJob] = await this.enrichHttpJobsWithDepartmentLabels(
+      [toGatewayHttpJob(response.job)],
+      input.identityId,
+      input.requestId
+    );
+    return enrichedJob;
   }
 
   async updateEmployerJob(input: {
@@ -181,6 +206,7 @@ export class GatewayJobsService {
     city?: string | null;
     country?: string | null;
     currency?: string | null;
+    departmentId?: string | null;
     description?: string | null;
     employmentType?: string | null;
     experienceLevel?: string | null;
@@ -198,6 +224,13 @@ export class GatewayJobsService {
     title?: string;
   }): Promise<GatewayHttpJob> {
     const { clearFields, updatedFields } = this.collectFieldChanges(input);
+    if (input.departmentId) {
+      await this.assertDepartmentBelongsToEmployer(
+        input.identityId,
+        input.departmentId,
+        input.requestId
+      );
+    }
     const response = await this.jobGrpcClient.updateJob(
       {
         benefits: input.benefits,
@@ -206,6 +239,7 @@ export class GatewayJobsService {
         clear_fields: clearFields,
         country: input.country ?? undefined,
         currency: input.currency ?? undefined,
+        department_id: input.departmentId ?? undefined,
         description: input.description ?? undefined,
         employer_identity_id: input.identityId,
         employment_type: input.employmentType ?? undefined,
@@ -225,7 +259,12 @@ export class GatewayJobsService {
       input.requestId
     );
 
-    return toGatewayHttpJob(response.job);
+    const [enrichedJob] = await this.enrichHttpJobsWithDepartmentLabels(
+      [toGatewayHttpJob(response.job)],
+      input.identityId,
+      input.requestId
+    );
+    return enrichedJob;
   }
 
   async publishEmployerJob(input: {
@@ -322,6 +361,7 @@ export class GatewayJobsService {
       city: 'city',
       country: 'country',
       currency: 'currency',
+      departmentId: 'department_id',
       description: 'description',
       employmentType: 'employment_type',
       experienceLevel: 'experience_level',
@@ -381,6 +421,64 @@ export class GatewayJobsService {
     return jobs.map((job) => ({
       ...job,
       application_count: countsByJobId.get(job.id) ?? 0
+    }));
+  }
+
+  private async assertDepartmentBelongsToEmployer(
+    identityId: string,
+    departmentId: string | undefined | null,
+    requestId?: string
+  ) {
+    const normalizedDepartmentId = departmentId?.trim();
+    if (!normalizedDepartmentId) {
+      return;
+    }
+
+    const response = await this.employerGrpcClient.listDepartmentsByCompany(
+      { identity_id: identityId },
+      requestId
+    );
+    const exists = (response.departments ?? []).some(
+      (department) => department.id === normalizedDepartmentId
+    );
+
+    if (!exists) {
+      throw new BadRequestException({
+        fieldErrors: {
+          departmentId: ['Phòng ban không hợp lệ.']
+        },
+        message: 'Phòng ban không hợp lệ.'
+      });
+    }
+  }
+
+  private async enrichHttpJobsWithDepartmentLabels(
+    jobs: GatewayHttpJob[],
+    identityId: string,
+    requestId?: string
+  ): Promise<GatewayHttpJob[]> {
+    if (jobs.length === 0) {
+      return jobs;
+    }
+
+    const needsLabel = jobs.some((job) => job.departmentId);
+    if (!needsLabel) {
+      return jobs;
+    }
+
+    const response = await this.employerGrpcClient.listDepartmentsByCompany(
+      { identity_id: identityId },
+      requestId
+    );
+    const nameById = new Map(
+      (response.departments ?? []).map((department) => [department.id, department.name])
+    );
+
+    return jobs.map((job) => ({
+      ...job,
+      departmentLabel: job.departmentId
+        ? nameById.get(job.departmentId) ?? job.departmentLabel
+        : null
     }));
   }
 }
