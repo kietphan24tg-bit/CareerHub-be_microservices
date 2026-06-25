@@ -22,6 +22,7 @@ type JobDocument = {
   country: string | null;
   createdAt: number;
   currency: string | null;
+  departmentId: string | null;
   description: string | null;
   employerIdentityId: string;
   employmentType: string | null;
@@ -55,6 +56,7 @@ function toDocument(job: JobRecord): JobDocument {
     companyWebsite: job.companyWebsite,
     country: job.country,
     currency: job.currency,
+    departmentId: job.departmentId,
     employerIdentityId: job.employerIdentityId,
     employmentType: job.employmentType,
     experienceLevel: job.experienceLevel,
@@ -88,6 +90,7 @@ function fromDocument(doc: JobDocument): JobRecord {
     country: doc.country,
     createdAt: new Date(doc.createdAt),
     currency: doc.currency,
+    departmentId: doc.departmentId ?? null,
     description: doc.description,
     employerIdentityId: doc.employerIdentityId,
     employmentType: doc.employmentType,
