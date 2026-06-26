@@ -1,0 +1,66 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "saga: build",
+      "detail": "Build packages + 5 service cần cho saga (chạy 1 lần, hoặc khi đổi code)",
+      "type": "shell",
+      "command": "pnpm build:saga",
+      "problemMatcher": [],
+      "presentation": { "panel": "dedicated", "reveal": "always", "clear": true }
+    },
+    {
+      "label": "svc: iam",
+      "type": "shell",
+      "command": "pnpm --filter @careerhub/iam-service start",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "panel": "dedicated", "reveal": "always" }
+    },
+    {
+      "label": "svc: candidate",
+      "type": "shell",
+      "command": "pnpm --filter @careerhub/candidate-service start",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "panel": "dedicated", "reveal": "always" }
+    },
+    {
+      "label": "svc: employer",
+      "type": "shell",
+      "command": "pnpm --filter @careerhub/employer-service start",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "panel": "dedicated", "reveal": "always" }
+    },
+    {
+      "label": "svc: workflow",
+      "type": "shell",
+      "command": "pnpm --filter @careerhub/workflow-service start",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "panel": "dedicated", "reveal": "always" }
+    },
+    {
+      "label": "svc: gateway",
+      "type": "shell",
+      "command": "pnpm --filter @careerhub/gateway start",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "panel": "dedicated", "reveal": "always" }
+    },
+    {
+      "label": "saga: run all",
+      "detail": "Chạy 5 service song song, mỗi service 1 terminal trong VS Code",
+      "dependsOn": [
+        "svc: iam",
+        "svc: candidate",
+        "svc: employer",
+        "svc: workflow",
+        "svc: gateway"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    }
+  ]
+}

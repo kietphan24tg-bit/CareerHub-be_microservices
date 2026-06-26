@@ -1,0 +1,43 @@
+{
+  "checkedAt": "2026-06-21T13:17:49.933Z",
+  "requestId": "req-rollback-1782047869933-3m6d9k",
+  "email": "saga.rollback.1782047869933-3m6d9k@example.com",
+  "response": {
+    "status": 500,
+    "ok": false,
+    "body": {
+      "success": false,
+      "error": {
+        "code": "UNKNOWN",
+        "details": "No connection established. Last error: null. Resolution note: ",
+        "message": "No connection established. Last error: null. Resolution note: "
+      },
+      "statusCode": 500,
+      "path": "/auth/candidate/register",
+      "requestId": "req-rollback-1782047869933-3m6d9k",
+      "timestamp": "2026-06-21T13:17:50.726Z"
+    }
+  },
+  "saga": {
+    "id": "9d5a78e7-fd99-4b60-a1b5-0ea490011f60",
+    "request_id": "req-rollback-1782047869933-3m6d9k",
+    "status": "FAILED",
+    "last_step": "CREATE_PROFILE",
+    "flow": "candidate_registration",
+    "role": "candidate",
+    "identity_id": "9911c872-a6d4-4832-8712-d1d3048e30d1",
+    "profile_id": null,
+    "failure_code": "UNAVAILABLE",
+    "failure_message": "No connection established. Last error: null. Resolution note: ",
+    "compensated_at": null
+  },
+  "steps": null,
+  "identityCount": null,
+  "profileCount": null,
+  "errors": [
+    {
+      "message": "column \"failure_code\" does not exist",
+      "stack": "error: column \"failure_code\" does not exist\n    at D:\\UIT\\SE361\\Microservice\\CareerHub-be-microservices\\node_modules\\.pnpm\\pg@8.21.0\\node_modules\\pg\\lib\\client.js:646:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async main ([stdin]:106:21)"
+    }
+  ]
+}

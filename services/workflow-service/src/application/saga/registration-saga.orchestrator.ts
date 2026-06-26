@@ -1188,7 +1188,16 @@ export class RegistrationSagaOrchestrator {
   }
 
   private isNotFoundError(error: unknown): boolean {
-    return getErrorCode(error) === 'NOT_FOUND';
+    if (getErrorCode(error) === 'NOT_FOUND') {
+      return true;
+    }
+
+    // gRPC does not preserve the NOT_FOUND status when a downstream service
+    // raises it as a string error code (it collapses to UNKNOWN over the wire),
+    // so fall back to the not-found message signature. This guard only runs on
+    // profile/identity existence reads, where "not found" reliably means the
+    // record is absent and the saga should treat it as a missing record.
+    return /\bnot found\b/i.test(getErrorMessage(error));
   }
 
   private assertCandidateProfilePayload(

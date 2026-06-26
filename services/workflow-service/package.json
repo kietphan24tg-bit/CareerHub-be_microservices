@@ -35,6 +35,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy --schema ./prisma/schema.prisma",
     "prisma:migrate:dev": "prisma migrate dev --schema ./prisma/schema.prisma",
     "start": "node dist/services/workflow-service/src/main.js",
-    "test": "powershell -Command \"if (Test-Path dist-test) { Remove-Item -Recurse -Force dist-test }; & ..\\..\\node_modules\\.bin\\tsc.cmd -p tsconfig.spec.json; node --test dist-test/**/*.spec.js\""
+    "test": "powershell -Command \"if (Test-Path dist-test) { Remove-Item -Recurse -Force dist-test }; & ..\\..\\node_modules\\.bin\\tsc.cmd -p tsconfig.spec.json; node --test dist-test/**/*.spec.js\"",
+    "prisma:studio": "prisma studio --port 5555 --browser none"
   }
 }

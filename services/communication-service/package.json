@@ -38,6 +38,7 @@
     "prisma:migrate:dev": "prisma migrate dev --schema ./prisma/schema.prisma",
     "start": "node dist/services/communication-service/src/main.js",
     "test": "pnpm run prisma:generate && node ../../scripts/run-service-tests.mjs --service services/communication-service --mode unit",
-    "test:smoke": "pnpm run prisma:generate && node ../../scripts/run-service-tests.mjs --service services/communication-service --mode smoke --include communication-notification.consumer.spec.js"
+    "test:smoke": "pnpm run prisma:generate && node ../../scripts/run-service-tests.mjs --service services/communication-service --mode smoke --include communication-notification.consumer.spec.js",
+    "prisma:studio": "prisma studio --port 5561 --browser none"
   }
 }

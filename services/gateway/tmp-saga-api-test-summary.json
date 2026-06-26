@@ -1,0 +1,96 @@
+{
+  "checkedAt": "2026-06-21T13:16:14.117Z",
+  "gatewayBase": "http://127.0.0.1:3000",
+  "docsReachable": true,
+  "candidateExplicit": {
+    "requestId": "req-candidate-1782047774224-conhuz",
+    "email": "saga.candidate.20260621131614.pe9e4c@example.com",
+    "firstStatus": 201,
+    "replayStatus": 201,
+    "replayReturnedSameUserId": true,
+    "sagaStatus": "COMPLETED",
+    "sagaFlow": "candidate_registration",
+    "sagaRole": "candidate",
+    "identityIdMatchesSaga": true,
+    "profileIdMatchesSaga": true,
+    "profileNameMatchesPayload": true,
+    "profilePhoneMatchesPayload": true,
+    "stepStatuses": [
+      {
+        "step_name": "REGISTER_IDENTITY",
+        "status": "COMPLETED",
+        "compensation_status": "NOT_REQUIRED",
+        "attempts": 1
+      },
+      {
+        "step_name": "CREATE_PROFILE",
+        "status": "COMPLETED",
+        "compensation_status": "NOT_REQUIRED",
+        "attempts": 1
+      },
+      {
+        "step_name": "ACTIVATE_IDENTITY",
+        "status": "COMPLETED",
+        "compensation_status": "NOT_REQUIRED",
+        "attempts": 1
+      }
+    ],
+    "identityStatus": "active",
+    "identityRole": "candidate",
+    "profileCount": 1,
+    "authMeStatus": 200,
+    "candidateProfileStatus": 200
+  },
+  "candidateFallback": {
+    "generatedRequestId": "fef95529-045b-4b19-87e1-b72600d0a847",
+    "email": "saga.fallback.20260621131615.gyjz6k@example.com",
+    "registerStatus": 201,
+    "sagaStatus": "COMPLETED",
+    "sagaFlow": "candidate_registration",
+    "sagaRole": "candidate",
+    "loginStatus": 200
+  },
+  "employerExplicit": {
+    "requestId": "req-employer-1782047776703-sg7x3p",
+    "email": "saga.employer.20260621131616.ev2xlo@example.com",
+    "firstStatus": 201,
+    "replayStatus": 201,
+    "replayReturnedSameUserId": true,
+    "sagaStatus": "COMPLETED",
+    "sagaFlow": "employer_registration",
+    "sagaRole": "employer",
+    "identityIdMatchesSaga": true,
+    "profileIdMatchesSaga": true,
+    "profileCompanyMatchesPayload": true,
+    "profileContactMatchesPayload": true,
+    "profilePhoneMatchesPayload": true,
+    "profileIndustryMatchesPayload": true,
+    "profileAddressMatchesPayload": true,
+    "stepStatuses": [
+      {
+        "step_name": "REGISTER_IDENTITY",
+        "status": "COMPLETED",
+        "compensation_status": "NOT_REQUIRED",
+        "attempts": 1
+      },
+      {
+        "step_name": "CREATE_PROFILE",
+        "status": "COMPLETED",
+        "compensation_status": "NOT_REQUIRED",
+        "attempts": 1
+      },
+      {
+        "step_name": "ACTIVATE_IDENTITY",
+        "status": "COMPLETED",
+        "compensation_status": "NOT_REQUIRED",
+        "attempts": 1
+      }
+    ],
+    "identityStatus": "active",
+    "identityRole": "employer",
+    "profileCount": 1,
+    "authMeStatus": 200,
+    "companyProfileStatus": 200
+  },
+  "errors": []
+}

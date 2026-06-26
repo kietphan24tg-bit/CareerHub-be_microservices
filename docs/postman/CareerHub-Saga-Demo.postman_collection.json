@@ -1,0 +1,326 @@
+{
+  "info": {
+    "name": "CareerHub — Saga Demo",
+    "description": "Bo suu tap demo Saga dang ky (workflow-service). Gom: Happy path, Rollback (compensation), Idempotency, Register Employer, va Auth ho tro (Login/Me/Logout). Base URL mac dinh http://localhost:3000.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000", "type": "string" },
+    { "key": "accessToken", "value": "", "type": "string" },
+    { "key": "loginEmail", "value": "", "type": "string" },
+    { "key": "happyEmail", "value": "", "type": "string" },
+    { "key": "happyRequestId", "value": "", "type": "string" },
+    { "key": "rollbackEmail", "value": "", "type": "string" },
+    { "key": "rollbackRequestId", "value": "", "type": "string" },
+    { "key": "idemEmail", "value": "", "type": "string" },
+    { "key": "idemRequestId", "value": "", "type": "string" },
+    { "key": "idemUserId", "value": "", "type": "string" },
+    { "key": "empEmail", "value": "", "type": "string" },
+    { "key": "empRequestId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "00 - Saga Demo (bao cao)",
+      "item": [
+        {
+          "name": "1. Register Candidate - Happy Path",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.collectionVariables.set('happyEmail', 'demo.happy.' + ts + '@example.com');",
+                  "pm.collectionVariables.set('happyRequestId', 'demo-happy-' + ts);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 2xx -> saga COMPLETED', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('Response co data.userId', function () {",
+                  "  pm.expect(json.data).to.have.property('userId');",
+                  "});",
+                  "pm.collectionVariables.set('loginEmail', pm.collectionVariables.get('happyEmail'));",
+                  "console.log('HAPPY userId =', json.data && json.data.userId, '| email =', pm.collectionVariables.get('happyEmail'), '| requestId =', pm.collectionVariables.get('happyRequestId'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-request-id", "value": "{{happyRequestId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{happyEmail}}\",\n  \"password\": \"12345678\",\n  \"confirmPassword\": \"12345678\",\n  \"fullName\": \"Demo Happy\",\n  \"phone\": \"0900000001\",\n  \"acceptTerms\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/candidate/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "candidate", "register"]
+            },
+            "description": "Saga chay 3 buoc gRPC: IAM.RegisterIdentity -> Candidate.CreateProfile -> IAM.ActivateIdentity. Sau khi goi: mo Prisma Studio xem registration_sagas (status COMPLETED) + registration_saga_steps (3 buoc COMPLETED)."
+          }
+        },
+        {
+          "name": "2. Register Candidate - Rollback (TAT candidate-service truoc)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.collectionVariables.set('rollbackEmail', 'demo.rollback.' + ts + '@example.com');",
+                  "pm.collectionVariables.set('rollbackRequestId', 'demo-rollback-' + ts);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('candidate-service tat -> tra loi 5xx (saga FAILED roi COMPENSATED)', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([500, 502, 503]);",
+                  "});",
+                  "console.log('ROLLBACK email =', pm.collectionVariables.get('rollbackEmail'), '| requestId =', pm.collectionVariables.get('rollbackRequestId'));",
+                  "console.log('=> Mo Prisma Studio: registration_sagas status = FAILED/COMPENSATED, last_step = CREATE_PROFILE. Identity pending da bi compensation huy.');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-request-id", "value": "{{rollbackRequestId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{rollbackEmail}}\",\n  \"password\": \"12345678\",\n  \"confirmPassword\": \"12345678\",\n  \"fullName\": \"Demo Rollback\",\n  \"phone\": \"0900000002\",\n  \"acceptTerms\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/candidate/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "candidate", "register"]
+            },
+            "description": "TRUOC khi goi: tat candidate-service (Ctrl+C terminal cua no). Buoc CREATE_PROFILE se fail -> saga chay compensation: huy identity vua tao. Nho bat lai candidate-service sau khi demo."
+          }
+        },
+        {
+          "name": "3a. Idempotency - Call #1",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.collectionVariables.set('idemEmail', 'demo.idem.' + ts + '@example.com');",
+                  "pm.collectionVariables.set('idemRequestId', 'demo-idem-' + ts);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Call #1 thanh cong (2xx)', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('idemUserId', json.data && json.data.userId);",
+                  "console.log('IDEM call#1 userId =', json.data && json.data.userId, '| requestId =', pm.collectionVariables.get('idemRequestId'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-request-id", "value": "{{idemRequestId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{idemEmail}}\",\n  \"password\": \"12345678\",\n  \"confirmPassword\": \"12345678\",\n  \"fullName\": \"Demo Idem\",\n  \"phone\": \"0900000003\",\n  \"acceptTerms\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/candidate/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "candidate", "register"]
+            },
+            "description": "Sinh idemEmail + idemRequestId moi. Chay Call #1 roi Call #2 (cung request-id)."
+          }
+        },
+        {
+          "name": "3b. Idempotency - Call #2 (cung request-id)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Call #2 tra ve CUNG userId (idempotent)', function () {",
+                  "  pm.expect(String(json.data && json.data.userId)).to.eql(String(pm.collectionVariables.get('idemUserId')));",
+                  "});",
+                  "console.log('IDEM call#2 userId =', json.data && json.data.userId, '=> chi 1 dong trong registration_sagas voi request_id =', pm.collectionVariables.get('idemRequestId'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-request-id", "value": "{{idemRequestId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{idemEmail}}\",\n  \"password\": \"12345678\",\n  \"confirmPassword\": \"12345678\",\n  \"fullName\": \"Demo Idem\",\n  \"phone\": \"0900000003\",\n  \"acceptTerms\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/candidate/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "candidate", "register"]
+            },
+            "description": "Body + x-request-id Y HET Call #1. Saga nhan ra requestId da ton tai -> tra ket qua cu, KHONG tao saga/identity trung."
+          }
+        },
+        {
+          "name": "4. Register Employer - Happy Path",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ts = Date.now();",
+                  "pm.collectionVariables.set('empEmail', 'demo.employer.' + ts + '@example.com');",
+                  "pm.collectionVariables.set('empRequestId', 'demo-employer-' + ts);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 2xx -> saga employer COMPLETED', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "console.log('EMPLOYER userId =', json.data && json.data.userId, '| email =', pm.collectionVariables.get('empEmail'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-request-id", "value": "{{empRequestId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyEmail\": \"{{empEmail}}\",\n  \"password\": \"12345678\",\n  \"confirmPassword\": \"12345678\",\n  \"companyName\": \"Demo Company\",\n  \"fullName\": \"Demo Recruiter\",\n  \"industry\": \"Information Technology\",\n  \"address\": \"123 Demo Street, HCMC\",\n  \"phone\": \"0900000009\",\n  \"acceptTerms\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/employer/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "employer", "register"]
+            },
+            "description": "Saga employer: IAM.RegisterIdentity -> Employer.CreateEmployerProfile -> IAM.ActivateIdentity. Co the tat employer-service de demo rollback tuong tu."
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 - Auth (ho tro)",
+      "item": [
+        {
+          "name": "Login (luu accessToken)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', json.data.accessToken);",
+                  "  console.log('accessToken da luu.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-request-id", "value": "demo-login-001" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{loginEmail}}\",\n  \"password\": \"12345678\",\n  \"rememberMe\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Dung email vua dang ky o Happy Path (bien loginEmail tu dong set). Tra accessToken (body) + refresh token (cookie)."
+          }
+        },
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "x-request-id", "value": "demo-me-001" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Chung minh identity da active sau saga: tra ve user { id, email, role, status: active }. Gateway goi gRPC IAM.ValidateAccessToken (guard) + IAM.GetCurrentIdentity + Candidate.GetProfile."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-request-id", "value": "demo-logout-001" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Revoke session. Postman tu gui lai refresh cookie da nhan tu Login (neu cung domain localhost)."
+          }
+        }
+      ]
+    }
+  ]
+}
